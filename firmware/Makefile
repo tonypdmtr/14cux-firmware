@@ -89,4 +89,3 @@ cleandata:
 
 clean:
 	rm -f $(SREC) $(IMAGE) $(IMAGE_UNFIXED) $(FINALIZE) data.asm
-
