@@ -1,39 +1,39 @@
-;------------------------------------------------------------------------------
-;   14CUX Firmware Rebuild Project
-;
-;   File Date: 14-Nov-2013
-;
-;   Description:    6803U4 Vectors and Other End-of-PROM Data
-;
-;   This file contains the microprocessor's vector table, the tune number and
-;   the checksum fixer byte. In addition, some now unused values are stored
-;   here (CRC16 and TUNE_IDENT). The unused area between the end of active
-;   code and the beginning of this data is filled using the DS psuedo-op.
-;
-;------------------------------------------------------------------------------
+; ------------------------------------------------------------------------------
+; 14CUX Firmware Rebuild Project
 
- org                        $FFE0               ; The positions of the data/vectors at the
-                                                ; end of the ROM are fixed, so set the PC
-                                                ; explicitly here.
+; File Date: 14-Nov-2013
 
-                DW          CRC16               ; unused, no need to update
+; Description:    6803U4 Vectors and Other End-of-PROM Data
 
-                DW          $FFFF,$FFFF,$FFFF
+; This file contains the microprocessor's vector table, the tune number and
+; the checksum fixer byte. In addition, some now unused values are stored
+; here (CRC16 and TUNE_IDENT). The unused area between the end of active
+; code and the beginning of this data is filled using the DS psuedo-op.
 
- org                        $FFE8               ; this location is important
+; ------------------------------------------------------------------------------
 
-                DB          $00                 ; unknown; usually $00
-                DW          TUNE_NUMBER
-                DB          CHECKSUM_FIXER
-                DW          TUNE_IDENT
-                DW          reset               ; unused vector?
+                    org       $FFE0               ; The positions of the data/vectors at the
+; end of the ROM are fixed, so set the PC
+; explicitly here.
 
-                DW          purgeValveInt
-                DW          purgeValveInt
-                DW          purgeValveInt
-                DW          inputCapInt
+                    dw        CRC16               ; unused, no need to update
 
-                DW          nmiInterrupt
-                DW          purgeValveInt
-                DW          nmiInterrupt
-                DW          reset
+                    dw        $FFFF,$FFFF,$FFFF
+
+                    org       $FFE8               ; this location is important
+
+                    db        $00                 ; unknown; usually $00
+                    dw        TUNE_NUMBER
+                    db        CHECKSUM_FIXER
+                    dw        TUNE_IDENT
+                    dw        reset               ; unused vector?
+
+                    dw        purgeValveInt
+                    dw        purgeValveInt
+                    dw        purgeValveInt
+                    dw        inputCapInt
+
+                    dw        nmiInterrupt
+                    dw        purgeValveInt
+                    dw        nmiInterrupt
+                    dw        reset
