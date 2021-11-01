@@ -24,11 +24,24 @@ hiRpmAdcMux         equ       $C231               ; load address of special ADC 
                     mset      #','
                     mdo
                     mswap     1,:mloop
-            #ifdef ~1~
+            #ifdef ?
+              #if :mloop = 1
+                    #Hint     +--------------------------------------------
+                    #Hint     | Available builds (for use with -D option)
+                    #Hint     +--------------------------------------------
+              #endif
+                    #Hint     | ~1~
+            #else ifdef ~1~
                     mexit
             #endif
                     mloop     :n
-                    #Fatal    Define one of ~text~
+            #ifdef ?
+                    #Hint     +--------------------------------------------
+                    #Fatal    Run \@asm11 ~filename~ -dX\@ (where x is one of the above)
+            #else
+?
+                    @@~0~
+            #endif
           #endif
                     mset      #
           #if :index > 1
