@@ -8,14 +8,8 @@ embedded code in the Lucas 14CUX engine management computer.
             and modifications made by Land Rover (such as the cold-start fix.)
 
             Notes: These source modules have been formatted to be compatible
-            with CRASM (the open source Motorola cross assembler.) CRASM was
-            selected as the assembler of choice to take advantage of a number of
-            features such as local-scope labels and conditional-assembly blocks.
-            This led to the discovery of a few bugs in CRASM 1.5 that affect the
-            instructions SUBD, RTI, and MUL. Version 1.6 (or later) of CRASM is
-            required to produce correct binary output. Further stability
-            improvements were made after 1.6, so you should get the most recent
-            version if possible.
+            with ASM11 macro cross assembler. ASM11 has features such as
+            local-scope labels and conditional-assembly blocks.
 
      utils: Supporting utilities that perform tasks such as finalizing a
             firmware image (by balancing its checksum) and converting a
@@ -24,4 +18,3 @@ embedded code in the Lucas 14CUX engine management computer.
 whitepaper: LaTeX source for a document that describes in detail the design of
             the 14CUX ECU, the programmatic flow of the 14CUX firmware, and the
             software diagnostic protocol used over the ECU's serial port.
-
