@@ -2,8 +2,8 @@
 # Borland compatible makefile				     <tonyp@acm.org>
 ################################################################################
 
-ASM = asm11 main -s+ -l+ -fq+
-EXBIN = lua53 exbin.lua
+ASM = @asm11 main -s+ -l+ -fq+
+EXBIN = @lua53 exbin.lua
 
 ################################################################################
 # Implicit rules
