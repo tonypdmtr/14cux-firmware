@@ -4,7 +4,7 @@
 ;   File Date: 03-Jan-2014
 ;
 ;   Description:
-;       This is the file that is passed to CRASM (the open source assembler).
+;       This is the file that is passed to ASM11 macro assembler.
 ;   The ordering of the files matches the original 14CUX code. This is to
 ;   enable a binary comparison with the original file in order to validate
 ;   our code rebuild.
