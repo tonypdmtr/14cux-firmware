@@ -678,13 +678,13 @@ idleControl         ldd       baseIdleSetting
                     beq       .LD9CB
                     lda       iacvEctValue        ; calc value based on coolant temp (100 -> 160)
                     adda      iacvObsolete        ; nothing changes this
-                    cmpa      #$B4                ; $B4 = 180 dec
+                    cmpa      #180
                     bcc       .LD9B2
-                    adda      #$4B                ; $4B = 75 dec
-                    cmpa      #$B5
+                    adda      #75
+                    cmpa      #181
                     bcs       .LD9B4
 
-.LD9B2              lda       #$B4                ; $B4 = 180d
+.LD9B2              lda       #180
 
 .LD9B4              suba      iacPosition
                     beq       .LD9C7
@@ -755,7 +755,7 @@ driveIacMotor       tpa                           ; xfer CCR to A
                     beq       .LDA12              ; branch ahead if zero
                     ldd       $00C8
                     subd      stepperMotorTimer   ; counter subtract value
-                    subd      #$0C35              ; subtract 3125 dec
+                    subd      #3125               ; subtract 3125 dec
                     bcs       .LDA2D              ; if carry set, branch to jump to pop CCR and rtn
                     bra       .LDA3D              ; carry clr, branch ahead
 
@@ -773,7 +773,7 @@ driveIacMotor       tpa                           ; xfer CCR to A
                     bne       .LDA34
                     ldd       $00C8
                     subd      stepperMotorTimer   ; counter subtract value
-                    subd      #$186A              ; subtract 6250 dec
+                    subd      #6250               ; subtract 6250 dec
 
 .LDA2D              bcs       .LDA31              ; branch to jmp to pop CCR and rtn
                     bra       .LDA3D
@@ -782,7 +782,7 @@ driveIacMotor       tpa                           ; xfer CCR to A
 
 .LDA34              ldd       $00C8
                     subd      stepperMotorTimer   ; counter subtract value
-                    subd      #$0C35              ; subtract 3125 dec
+                    subd      #3125               ; subtract 3125 dec
                     bcs       .LDA31
 
 .LDA3D              lda       $008A               ; code gets here from 2 places if carry clr
@@ -822,7 +822,7 @@ driveIacMotor       tpa                           ; xfer CCR to A
                     anda      #$CF                ; mask 5:4 to zero
                     ora       $00CA               ; OR in new drive bits
                     sta       port1data           ; <-- drive stepper mtr
-                    cmpb      #$B4                ; compare IAC position with limit of 180 dec
+                    cmpb      #180                ; compare IAC position with limit of 180 dec
                     bcs       .LDA80
                     ldb       #$B4                ; if over, clip value to 180
 
@@ -843,7 +843,7 @@ driveIacMotor       tpa                           ; xfer CCR to A
 ; When 'iacvWorkingValue' is Positive
 ; -------------------------------------
 ; deca                ; decrement A
-; cmpa    #$4C        ; 4C op code is inca (cmpa result not used)
+; cmpa    #$4C        ; 4C op code is INCA (CMPA result not used)
 ; -------------------------------------
 ; When 'iacvWorkingValue' is Negative
 ; -------------------------------------

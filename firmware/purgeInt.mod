@@ -42,10 +42,10 @@ purgeValveInt       lda       timerCSR            ; OCF2 flag is reset by readin
                     bne       .LDB24              ; branch ahead if bit is set
 
                     ldd       purgeValveTimer     ; load purge valve timer value
-                    subd      #$0FA0              ; subtract 4000 dec
+                    subd      #4000               ; subtract 4000 dec
                     bcs       .LDB24              ; branch to .LDB24 if value < 4000 dec
 
-                    subd      #$61A8              ; subtract 25,000 dec
+                    subd      #25000              ; subtract 25,000 dec
                     bcc       .LDB2E              ; branch to .LDB2E if value > 29,000
 
                     lda       port1data
@@ -72,7 +72,7 @@ purgeValveInt       lda       timerCSR            ; OCF2 flag is reset by readin
 
 ; if here, bit is high, purge valve turns OFF
 .LDB34              ldd       ocr2high            ; purgeValveTimer is between 4K and 29K
-                    addd      #$7A12              ; 31250 dec (stay off for 31 minus ? ms)
+                    addd      #31250              ; 31250 dec (stay off for 31 minus ? ms)
                     subd      purgeValveTimer     ; subtract purge valve timer value
 
 .LDB3B              std       ocr2high            ; write to 16-bit MPU register

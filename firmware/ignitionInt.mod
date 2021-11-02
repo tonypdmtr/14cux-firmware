@@ -574,7 +574,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; running. X0087.0 is set or cleared here. This bit is used for open/closed
 ; loop control. (bit is set when TPS > 40% and ECT cooler than 122 F)
 ; ------------------------------------------------------------------------------
-.LDD22              subd      #$019A              ; subtract 410 dec from TPS (40% or 2.0 volts)
+.LDD22              subd      #410                ; subtract 410 dec from TPS (40% or 2.0 volts)
                     bcs       .LDD33              ; branch ahead to clr bit if TPS < 2.0 volts
 
                     lda       coolantTempCount    ; load ECT sensor count
@@ -596,8 +596,8 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; But it looks like it's never used so we can delete this.
 ; -------------------------------------------------------------------------------
                     ldd       throttlePot         ; load 10-bit TPS value
-                    subd      #$0133              ; subtract 307 dec from TPS (30% or 1.5 Volts)
-                    lda       $00E2               ; lda does not affect carry
+                    subd      #307                ; subtract 307 dec from TPS (30% or 1.5 Volts)
+                    lda       $00E2               ; LDA does not affect carry
                     bcc       .LDD4C              ; branch ahead to clr X00E2.3 if TPS > 1.5 Volts
 
                     ldb       coolantTempCount    ; load ECT sensor count
@@ -939,7 +939,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     clr       tpsFaultDelayCount  ; fail delay counter (not in TVR code)
           #endif
                     ldd       $00C8               ; reload air flow sum
-                    subd      #$0199              ; subtract 409 dec or 1.0 volt average
+                    subd      #409                ; subtract 409 dec or 1.0 volt average
                     bcc       .LDED2              ; branch ahead if airflow > 1.0 volt average
 
                     ldd       throttlePot         ; load 10-bit TPS value
@@ -951,7 +951,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     bra       .LDED2              ; branch ahead
 
 .LDEB7              ldd       throttlePot         ; load TPS value
-                    subd      #$00CD              ; subtract 205 dec or 1.0 volt
+                    subd      #205                ; subtract 205 dec or 1.0 volt
           #ifdef BUILD_R3360_AND_LATER
                     bcc       .LDECF              ; branch ahead if TPS > 1.0 volt
           #else
@@ -978,7 +978,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     bcc       .linearizeMaf       ; skip to next section if RPM lower than this
 
                     ldd       $00C8               ; reload air flow sum
-                    subd      #$0050              ; subtract 80 decimal (about 195 mV)
+                    subd      #80                 ; subtract 80 decimal (about 195 mV)
           #ifdef BUILD_R3360_AND_LATER
                     bcs       .LDEEA              ; branch to increment fault delay counter if less than 195 mV
           #else
@@ -1042,9 +1042,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
           #else
 .linearizeMaf       ldd       $00C8               ; reload MAF sum
           #endif
-                    asld                          ; 2x
-                    asld                          ; 4x
-                    asld                          ; 8x
+                    asld:3                        ; 8x
                     addd      $C1C3               ; data value is $225D (8797 dec)
 
 .linMafLoop         sta       $00C8               ; squaring function starts here
@@ -1054,9 +1052,9 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     tab
                     mul
                     addb      $00C9
-                    adca      #$00
+                    adca      #0
                     addb      $00C9
-                    adca      #$00                ; squaring function ends here
+                    adca      #0                  ; squaring function ends here
 
                     com       $00CE               ; previously cleared at code address LDCEB
                     beq       .LDF30              ; 1's comp forced branch out here on 2nd pass
@@ -1176,7 +1174,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     ldd       neutralSwitchDelay  ; this is the 16-bit neutral fault delay counter
                     addd      #$0001              ; add 1
                     std       neutralSwitchDelay  ; store it
-                    subd      #$01F4              ; subtract 500 decimal
+                    subd      #500                ; subtract 500 decimal
                     bcs       .LDFA8              ; branch to next section if counter < 500
 
                     lda       faultBits_4C
@@ -1939,7 +1937,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 .LE2DC              ldx       #$C094              ; lean code below uses XC092 (both are 8000 decimal)
 
-.LE2DF              addd      $00,x               ; add 8000 decimal
+.LE2DF              addd      ,x                  ; add 8000 decimal
 
 .LE2E1              std       $00CE               ; store this value in temporary location
                     ldd       $00C8               ; still the short-term lambda trim value from earlier?

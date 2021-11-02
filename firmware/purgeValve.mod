@@ -46,13 +46,13 @@ purgeValve          lda       bits_008D           ; load bits value
                     ora       #$04                ; set X00DC.2 (this is a block of 1-time code)
                     sta       $00DC               ; store bits value
                     lda       fuelTempCount       ; load EFT sensor count
-                    cmpa      #$55                ; compare with 85 decimal (48 C or 118 F)
+                    cmpa      #85                 ; compare with 85 decimal (48 C or 118 F)
                     bcc       .LEE63              ; branch ahead if EFT is cooler than this
                     ldd       $C145               ; data value is $2EE0 (12000 dec)
                     std       purgeValveTimer2    ; reset down counter to 12000 dec
 
 .LEE63              lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      #$32                ; compare with $32 (51 C or 124 F)
+                    cmpa      #50                 ; compare with $32 (50 C or 122 F)
                     bcc       .LEEE3              ; branch ahead to jump if cooler than this
 
                     lda       $008A               ; load bits value

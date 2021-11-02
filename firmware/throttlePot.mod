@@ -43,14 +43,14 @@ TpFaultCheck        std       throttlePot
                     std       throttlePot
                     tba                           ; default value is 8-bits, fits in A
                     jsr       setTempTPFaults     ; this subroutine sets fault code 17
-                    lda       #$F0                ; reset slowdown counter to 240 dec
+                    lda       #240                ; reset slowdown counter to 240 dec
                     sta       tpFaultSlowdown
 
 .LCD12              lda       tpFaultSlowdown     ; load counter
                     beq       .LCD26              ; branch ahead if zero
 
                     ldd       throttlePot         ; load 10-bit TPS value
-                    subd      #$00CD              ; subtract 205 dec (1.0 Volt) from value
+                    subd      #205                ; subtract 205 dec (1.0 Volt) from value
                     bcs       .tpLessThan1V       ; branch ahead if less than 1 volt
 
                     dec       tpFaultSlowdown     ; TPS > 1 V, decrement counter

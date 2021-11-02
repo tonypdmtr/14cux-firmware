@@ -303,7 +303,7 @@ reInitVars          lda       #$FF                ; init engine PW values to $FF
                     lda       #$11
                     sta       $0085               ; set X0085.4 (0 = end of ADC list)
 ; set X0085.0 (1 = RPM < 505 or 375 for CWC)
-                    ldd       #$00C0              ; 192 decimal (double inj rate for 192 sparks)
+                    ldd       #192                ; 192 decimal (double inj rate for 192 sparks)
                     std       doubleInjecterRate  ; note that this does not need to be 2-bytes
                     clra
                     tab

@@ -95,7 +95,7 @@ LF04D               lda       timerStsReg
 ;*** Start Loop ***
 .LF085              cmpa      timerStsReg         ; part of resetting routine?
                     std       ocr3high            ; store new value in ocr3
-                    subd      #$0578              ; subtract 1400 dec
+                    subd      #1400               ; subtract 1400 dec
                     std       ocr1High            ; store in ocr1
                     jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
                     subd      ocr3high
@@ -128,7 +128,7 @@ LF04D               lda       timerStsReg
 ;*** Start Loop ***
 .LF0B2              cmpa      timerStsReg         ; part of resetting routine?
                     std       ocr1High            ; store new value in ocr1
-                    subd      #$0578              ; subtract 1400 dec
+                    subd      #1400               ; subtract 1400 dec
                     std       ocr3high            ; store it in ocr3
                     jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
                     subd      ocr1High

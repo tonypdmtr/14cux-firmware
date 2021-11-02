@@ -59,8 +59,8 @@ adcRoutine0         ldb       $0085               ; load X0085 bits value
 ; if here, voltage dropped below thrshold
                     ldb       inertiaCounter      ; local counter
                     incb                          ; increment the delay counter
-                    cmpb      #$32                ; compare with 50 decimal
-                    bcc       .LCFEE              ; if counter = 50, branch to start shutdown
+                    cmpb      #50                 ; compare with 50 decimal
+                    bhs       .LCFEE              ; if counter >= 50, branch to start shutdown
 
                     stb       inertiaCounter      ; count < 50, so just store it
                     rts                           ; and return
@@ -116,7 +116,7 @@ adcRoutine0         ldb       $0085               ; load X0085 bits value
                     ldb       $008A
                     andb      #$FE                ; clr X008A.0 (stepper mtr direction bit, 0 = open)
                     stb       $008A
-                    ldb       #$C8                ; load B with 200 decimal
+                    ldb       #200                ; load B with 200 decimal
                     stb       iacMotorStepCount   ; store the number of counts to move stepper motor
                     ldb       $0085               ; load X0085 bits value
                     orb       #$04                ; set X0085.2 (to indicate start of shutdown sequence)
