@@ -10,3 +10,4 @@ asm11 main -s+ -l+ -fq+ -dR3365 -br3365.s
 asm11 main -s+ -l+ -fq+ -dR3383 -br3383.s
 asm11 main -s+ -l+ -fq+ -dR3526 -br3526.s
 asm11 main -s+ -l+ -fq+ -dR3652 -br3652.s
+lua53 exbin.lua *.s
