@@ -1,23 +1,19 @@
 ; ------------------------------------------------------------------------------
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 07-Jan-2014
-
+;
 ; Description: R3116 Data and build flags
-
+;
 ; This file includes the the 2K byte data section of the R2967_E0 ROM
 ; which is from $0000 through $3FFF (mapped to $C000 through $C7FF in board).
 ; The file also contains build flags which control how the code is assembled
 ; or modified.
-
+;
 ; Unfortunately, different versions of TVR code have the same R2967 tune
 ; number, which is why we add the checksum fixer byte to uniquely identify
 ; a TVR tune.
-
 ; ------------------------------------------------------------------------------
-
-; cpu 6803                ; tell assembler to output 6803 code
-; output SCODE            ; output Motorola S code format (srec2bin will be used)
 
 ; ZERO                   ; used for convenient code deletion
 
@@ -101,11 +97,11 @@ dtc69_rpmMinimum    =         $0E                 ; used in ignitionInt.asm (MSB
 ; ----------------------------------------------------------
 ignPeriodHiSpeed    =         $07                 ; 4185 RPM (to switch in hi-speed ADC mux table)
 pwRpmComputeLimit   =         $0E                 ; 2092 RPM (beyond this, the actual RPM is not computed because it's math intensive)
-compRpmMaxConst     =         $079E               ; 1950 RPM (used when the engine speed exceeds pwRpmComputeLimit)
+compRpmMaxConst     =         1950                ; 1950 RPM (used when the engine speed exceeds pwRpmComputeLimit)
 throttlePotDefault  =         $0076               ; 576mV
 mapMultiplierOffset =         $80
 mapRpmLimitOffset   =         $8C
-mapAdcMuxTableOffset =         $7A
+mapAdcMuxTableOffset =        $7A
 
 ; ----------------------------------------------------------
 ; Start of Data
@@ -125,14 +121,14 @@ limpHomeMap         db        $14,$14,$14,$14,$14,$14,$14,$13,$11,$11,$11,$11,$1
 
                     db        $87,$86,$02,$03,$84,$02,$8D,$88,$02,$8B,$80,$85,$81,$8E,$FA,$FA  ; ADC mux table
 
-                    dw        $1F40               ; Used for cond B in ICI (8000 dec)
-                    dw        $1F40               ; Used for cond A in ICI (8000 dec)
+                    dw        8000                ; Used for cond B in ICI
+                    dw        8000                ; Used for cond A in ICI
                     db        $40                 ; Used for cond A in ICI
                     db        $04                 ; Used in cond A and B in ICI
                     db        $00                 ; Used in ICI
                     db        $00                 ; Used in ICI
-                    dw        $F830               ; Used in ICI (-2000d)
-                    dw        $07D0               ; Used in ICI (+2000d)
+                    dw        -2000               ; Used in ICI
+                    dw        2000                ; Used in ICI
                     dw        $0002               ; Location X0094 is set to this value
                     db        $80                 ; Used in ICI and other places
 
@@ -181,9 +177,9 @@ rsFaultSlowdownThreshold
                     db        $2C                 ; Used during initialization
                     db        $14                 ; Used in throttle pot and ICI
                     db        $7A                 ; -> X200E (default fuel map value)
-                    db        $C8                 ; 200 dec, multiplier for purge valve timer
+                    db        200                 ; multiplier for purge valve timer
                     db        $64                 ; possibly unused
-                    db        $3C                 ; 60 dec, multiplier for purge valve timer
+                    db        60                  ;  multiplier for purge valve timer
                     db        $14,$82             ; Related to purge valve timer
                     db        $06,$B8             ; Used in main loop S/R (1720 RPM, used in purge valve routine)
                     db        $0A                 ; Used in ICI
@@ -259,8 +255,8 @@ engInitDataC        db        $00                 ; Init value for X9200
 
                     db        $FF
                     dw        $FFEC               ; This inits the value in idleControlValue to minus 20
-                    db        $2C                 ; This inits the value in acDownCounter to 44 dec
-                    db        $2C                 ; This inits the value in acDownCounter to 44 dec (alt. code path)
+                    db        44                  ; This inits the value in acDownCounter
+                    db        44                  ; This inits the value in acDownCounter (alt. code path)
                     dw        $0200               ; value used in ICI only
 idleAdjForHeatedScreen
                     dw        $0000               ; Value zero (idle setting adjustment for heated screen)
@@ -277,7 +273,7 @@ hotFuelThreshold    db        $44                 ; condenser fan timer will be 
                     dw        $0000               ; Subtracted from throttle pot value in ICI
                     db        $99                 ; compared with coolant temp in ICI
                     db        $C3,$02,02          ; C1F9 TO C1FB unused
-                    dw        $00C8               ; Inits O2 sample counters?? value is 200 dec
+                    dw        200                 ; Inits O2 sample counters??
                     db        $10                 ; O2 sensors are ignored for this many seconds after startup
                     db        $03                 ; startup timer value (conditionally loaded into 2020 and 2021)
                     dw        $0004               ; Related to purge valve timer??
@@ -549,15 +545,15 @@ LC7CE               db        $0A                 ; comparison value in TP Routi
 LC7CF               db        $01                 ; (unused?)
 LC7D0               db        $0A                 ; comparison value in A/C service routine
 
-LC7D1               dw        $0FA0               ; ICI: 4000 dec used for lean condition check (alt value to 8000 in C092) added to X008E
-LC7D3               dw        $0FA0               ; ICI: 4000 dec used for rich condition check (alt value to 8000 in C094) added to X0090
+LC7D1               dw        4000                ; ICI: used for lean condition check (alt value to 8000 in C092) added to X008E
+LC7D3               dw        4000                ; ICI: used for rich condition check (alt value to 8000 in C094) added to X0090
 
 LC7D5               db        $40                 ; ICI: used in rich condition code
 LC7D6               db        $36                 ; ICI: used in lean condition code
 LC7D7               db        $00                 ; ICI: used for code control (zero vs non-zero)
-LC7D8               dw        $0064               ; used as eng speed delta (100 RPM)
+LC7D8               dw        100                 ; used as eng speed delta (100 RPM)
 LC7DA               db        $18                 ; idle speed adjustment
-LC7DB               dw        $05DC               ; (1500 dec) subtract from short term trim in s/r (bank related adjustment)
+LC7DB               dw        1500                ; subtract from short term trim in s/r (bank related adjustment)
 
 ; ------------------------------------------------------------------------------
 ; Data ends here for Griff but there are 7 more bytes in later LR code.
@@ -585,27 +581,26 @@ LC7DB               dw        $05DC               ; (1500 dec) subtract from sho
 ; units. The first two columns in the table are the 16-bit ignition period
 ; brackets and the right two columns tell the software how to interpolate
 ; the remainder.
-
+;
 ; If editing this table, it's important to make sure that the interpolation
 ; values are correct for a smoothly changing curve.
-
 ; ------------------------------------------------------------------------------
 
                     org       $C800
 
-rpmTable            db        $04,$81,$40,$00     ; 6505 RPM
-                    db        $05,$18,$00,$13     ; 5752 RPM
-                    db        $05,$DC,$00,$10     ; 5000 RPM
-                    db        $06,$E4,$00,$18     ; 4252 RPM
-                    db        $08,$5E,$80,$9C     ; 3501 RPM
-                    db        $0A,$A7,$80,$B7     ; 2750 RPM
-                    db        $0E,$A6,$80,$43     ; 2000 RPM
-                    db        $10,$BD,$80,$7A     ; 1750 RPM
-                    db        $14,$ED,$80,$3D     ; 1400 RPM
-                    db        $1A,$A2,$80,$2C     ; 1100 RPM
-                    db        $20,$8D,$80,$2B     ; 900 RPM
-                    db        $25,$8F,$80,$33     ; 780 RPM
-                    db        $29,$DA,$80,$3B     ; 700 RPM
-                    db        $2F,$40,$80,$2F     ; 620 RPM
-                    db        $3D,$09,$80,$12     ; 480 RPM
-                    db        $92,$7C,$40,$2F     ; 200 RPM
+rpmTable            long      $04814000           ; 6505 RPM
+                    long      $05180013           ; 5752 RPM
+                    long      $05DC0010           ; 5000 RPM
+                    long      $06E40018           ; 4252 RPM
+                    long      $085E809C           ; 3501 RPM
+                    long      $0AA780B7           ; 2750 RPM
+                    long      $0EA68043           ; 2000 RPM
+                    long      $10BD807A           ; 1750 RPM
+                    long      $14ED803D           ; 1400 RPM
+                    long      $1AA2802C           ; 1100 RPM
+                    long      $208D802B           ; 900 RPM
+                    long      $258F8033           ; 780 RPM
+                    long      $29DA803B           ; 700 RPM
+                    long      $2F40802F           ; 620 RPM
+                    long      $3D098012           ; 480 RPM
+                    long      $927C402F           ; 200 RPM
