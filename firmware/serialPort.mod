@@ -57,77 +57,77 @@
 
 ; ------------------------------------------------------------------------------
 
-sciService          sei                           ; set interrupt mask
-                    ldb       $00E5               ; index offset (starts at zero due to 00E7 timeout)
-                    inc       $00E7               ; timeout counter
-                    bne       .LF9CC              ; branch ahead if not zero
+sciService          sei                           ;set interrupt mask
+                    ldb       $00E5               ;index offset (starts at zero due to 00E7 timeout)
+                    inc       $00E7               ;timeout counter
+                    bne       .LF9CC              ;branch ahead if not zero
                     clrb
 
-.LF9CC              stb       $00E5               ; 00E5 is clrd cond on 00E7
+.LF9CC              stb       $00E5               ;00E5 is clrd cond on 00E7
 ; ldx #$F9DE (see below)
-                    ldx       #.sci1              ; load sciRoutine1
-                    abx                           ; add B to X
-                    ldd       sciTRCS             ; load control/status and rcv reg
-                    asla                          ; this tests rcv reg full flag
-                    bcc       .LF9DC              ; branch ahead if no rcv data
-                    clr       $00E7               ; char rcvd! reset the timer
-                    tba                           ; transfer char to A
-                    sec                           ; set carry flag
+                    ldx       #.sci1              ;load sciRoutine1
+                    abx                           ;add B to X
+                    ldd       sciTRCS             ;load control/status and rcv reg
+                    asla                          ;this tests rcv reg full flag
+                    bcc       .LF9DC              ;branch ahead if no rcv data
+                    clr       $00E7               ;char rcvd! reset the timer
+                    tba                           ;transfer char to A
+                    sec                           ;set carry flag
 
-.LF9DC              jmp       $00,x               ; jump to sciRoutine1 + Index
-
-; ------------------------------------------------------------------------------
-
-.sci1               bcc       .LF9F0              ; return if no rcv data
-                    bmi       .LFA0B              ; bra ahead if bit 7 set (7 = transaction 2)
-                    sta       $00E8               ; store rcvd char at 00E8
-                    ldb       #$1B                ; load B with #1B (3rd index offset)
-
-.LF9E6              stb       $00E5               ; store index offset
-
-.LF9E8              ldb       sciTRCS             ; read control/status
-                    bitb      #$20                ; check TDRE bit
-                    beq       .LF9E8              ; loop back if waiting for xmt
-                    sta       sciTxData           ; echo rcv char
-
-.LF9F0              rts                           ; return
+.LF9DC              jmp       $00,x               ;jump to sciRoutine1 + Index
 
 ; ------------------------------------------------------------------------------
-                    bcc       .LF9F0              ; return if no rcv data
-                    bsr       .LFA18              ; X = 00EB + 00E6
+
+.sci1               bcc       .LF9F0              ;return if no rcv data
+                    bmi       .LFA0B              ;bra ahead if bit 7 set (7 = transaction 2)
+                    sta       $00E8               ;store rcvd char at 00E8
+                    ldb       #$1B                ;load B with #1B (3rd index offset)
+
+.LF9E6              stb       $00E5               ;store index offset
+
+.LF9E8              ldb       sciTRCS             ;read control/status
+                    bitb      #$20                ;check TDRE bit
+                    beq       .LF9E8              ;loop back if waiting for xmt
+                    sta       sciTxData           ;echo rcv char
+
+.LF9F0              rts                           ;return
+
+; ------------------------------------------------------------------------------
+                    bcc       .LF9F0              ;return if no rcv data
+                    bsr       .LFA18              ;X = 00EB + 00E6
                     sta       $00,x
-                    bra       .LFA08              ; see below
+                    bra       .LFA08              ;see below
 
 ; ------------------------------------------------------------------------------
-                    bcc       .LF9F0              ; return if no rcv data (2nd char?)
-                    psha                          ; push A (2nd rcv char?)
-                    tab                           ; 2nd char in B (0000 00YY)
-                    lda       $00E8               ; 1st char in A (XXXX XXXX)
+                    bcc       .LF9F0              ;return if no rcv data (2nd char?)
+                    psha                          ;push A (2nd rcv char?)
+                    tab                           ;2nd char in B (0000 00YY)
+                    lda       $00E8               ;1st char in A (XXXX XXXX)
                     asld
                     asld
                     asld
                     asld
                     asld
-                    asld                          ; (YYXX XXXX XX00 0000)
-                    std       $00EB               ; store shifted 2-char value (address now formed in 00EB/EC)
-                    pula                          ; pull 2nd rcvd char
+                    asld                          ;(YYXX XXXX XX00 0000)
+                    std       $00EB               ;store shifted 2-char value (address now formed in 00EB/EC)
+                    pula                          ;pull 2nd rcvd char
 
 .LFA08              clrb
-                    bra       .LF9E6              ; str 0 at E5, echo 2nd char
+                    bra       .LF9E6              ;str 0 at E5, echo 2nd char
 
 ; ------------------------------------------------------------------------------
 ; branches here if bit 7 is set
 .LFA0B              tab
-                    andb      #$3F                ; mask to just bits 5:0
-                    stb       $00E6               ; store 5-bit value at 00E6
-                    bita      #$40                ; test bit 6 in rcvd char
-                    bne       .LFA1E              ; branch if bit 6 is 1 (read op) to xmt serial char(s)
-                    ldb       #$13                ; this index offset waits for final write value
-                    bra       .LF9E6              ; store $13 at E5, echo 1st transaction 2 char and return
+                    andb      #$3F                ;mask to just bits 5:0
+                    stb       $00E6               ;store 5-bit value at 00E6
+                    bita      #$40                ;test bit 6 in rcvd char
+                    bne       .LFA1E              ;branch if bit 6 is 1 (read op) to xmt serial char(s)
+                    ldb       #$13                ;this index offset waits for final write value
+                    bra       .LF9E6              ;store $13 at E5, echo 1st transaction 2 char and return
 
 ; ------------------------------------------------------------------------------
 ; this is a subroutine called by both read and write code
-.LFA18              ldx       $00EB               ; it creates the fully formed 16-bit address
+.LFA18              ldx       $00EB               ;it creates the fully formed 16-bit address
                     ldb       $00E6
                     abx
                     rts
@@ -138,48 +138,48 @@ sciService          sei                           ; set interrupt mask
 ; table at the end of the file.
 ; ------------------------------------------------------------------------------
 ;*** Read Routine ***
-.LFA1E              bsr       .LFA18              ; create index from 00EB + 00E6
-                    stx       $00E9               ; store it at 00E9
+.LFA1E              bsr       .LFA18              ;create index from 00EB + 00E6
+                    stx       $00E9               ;store it at 00E9
                     clra
-                    ldb       $00E8               ; retrieve original address byte (qqqq qqaa)
-                    lsrb                          ; (0qqq qqqa)
-                    lsrb                          ; (00qq qqqq)
-                    incb                          ; add 1
-                    cmpb      #$11                ; val of 40h gives 11h
-                    bcs       .LFA33              ; branch ahead if B < $11 (qty will be 1 thru 16)
-                    aslb                          ; get qty from table
-                    ldx       #.was.FA31          ; load X with #FA31
-                    abx                           ; add B to X
+                    ldb       $00E8               ;retrieve original address byte (qqqq qqaa)
+                    lsrb                          ;(0qqq qqqa)
+                    lsrb                          ;(00qq qqqq)
+                    incb                          ;add 1
+                    cmpb      #$11                ;val of 40h gives 11h
+                    bcs       .LFA33              ;branch ahead if B < $11 (qty will be 1 thru 16)
+                    aslb                          ;get qty from table
+                    ldx       #.was.FA31          ;load X with #FA31
+                    abx                           ;add B to X
 
-.was.FA31           ldd       $00,x               ; load 16-bit qty from indexed loc
+.was.FA31           ldd       $00,x               ;load 16-bit qty from indexed loc
 
-.LFA33              addd      $00E9               ; add address to qty
-                    std       $00ED               ; and store it here as compare value to stop loop
+.LFA33              addd      $00E9               ;add address to qty
+                    std       $00ED               ;and store it here as compare value to stop loop
 ;*** RE-ENTRY POINT FOR MULTIPLE READ ***
-                    ldx       $00E9               ; get the updated address pointer
-                    ldb       #$59                ; index offset for xmt loop
-                    stb       $00E7               ; timer keeps getting reset to this convenient value
-                    lda       sciTRCS             ; read SCI control/status
-                    bita      #$20                ; test for xmt reg empty
-                    beq       .LFA4F              ; branch ahead if still full
-                    lda       $00,x               ; xmt bfr ptr = 00E9/EA, get char
-                    sta       sciTxData           ; transmit char
-                    inx                           ; increment bfr ptr
-                    stx       $00E9               ; restore it
-                    cpx       $00ED               ; compare it with 00ED/EE
+                    ldx       $00E9               ;get the updated address pointer
+                    ldb       #$59                ;index offset for xmt loop
+                    stb       $00E7               ;timer keeps getting reset to this convenient value
+                    lda       sciTRCS             ;read SCI control/status
+                    bita      #$20                ;test for xmt reg empty
+                    beq       .LFA4F              ;branch ahead if still full
+                    lda       $00,x               ;xmt bfr ptr = 00E9/EA, get char
+                    sta       sciTxData           ;transmit char
+                    inx                           ;increment bfr ptr
+                    stx       $00E9               ;restore it
+                    cpx       $00ED               ;compare it with 00ED/EE
                     bne       .LFA4F
                     clrb
 
-.LFA4F              stb       $00E5               ; clears 00E5
-                    cli                           ; clear interrupt mask
-                    rts                           ; and return
+.LFA4F              stb       $00E5               ;clears 00E5
+                    cli                           ;clear interrupt mask
+                    rts                           ;and return
 
 ; ------------------------------------------------------------------------------
 ; Preset serial port read quantities
 ; ------------------------------------------------------------------------------
 ; .LFA53
 
-                    dw        $0050               ; 80 bytes
-                    dw        $0064               ; 100
-                    dw        $0190               ; 400
-                    dw        $0200               ; 512
+                    dw        $0050               ;80 bytes
+                    dw        $0064               ;100
+                    dw        $0190               ;400
+                    dw        $0200               ;512

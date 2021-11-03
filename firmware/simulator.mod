@@ -94,58 +94,58 @@
 ; > 3: 9 + 5 + 5 + 34     + 6 = 59
 
 ; ------------------------------------------------------------------------------
-simulation2         lda       $2072               ; [4] check the value that turns sim on/off
-                    cmpa      #$55                ; [2] $55 turns it on
-                    bne       .return             ; [3] return if not $55
+simulation2         lda       $2072               ;[4] check the value that turns sim on/off
+                    cmpa      #$55                ;[2] $55 turns it on
+                    bne       .return             ;[3] return if not $55
 
-                    cmpb      #$02                ; [2]
-                    bcs       .lessThan2          ; [3] branch if channel 0 or 1
+                    cmpb      #$02                ;[2]
+                    bcs       .lessThan2          ;[3] branch if channel 0 or 1
 
-                    cmpb      #$03                ; [2]
-                    bcc       .greaterThan3       ; [3] branch if channel 3 or greater
+                    cmpb      #$03                ;[2]
+                    bcc       .greaterThan3       ;[3] branch if channel 3 or greater
 
-                    beq       .throttlePot        ; [3] branch if channel 3
+                    beq       .throttlePot        ;[3] branch if channel 3
 
 ; ---------------------------------------
 ; fall through to channel 2
-.airFlow            lda       $2063               ; [4] MAF so use 2-byte value at $2063/64
-                    sta       $00C9               ; [3]
-                    lda       $2062               ; [4]
-                    sta       $00C8               ; [3]
-                    rts                           ; [5]
+.airFlow            lda       $2063               ;[4] MAF so use 2-byte value at $2063/64
+                    sta       $00C9               ;[3]
+                    lda       $2062               ;[4]
+                    sta       $00C8               ;[3]
+                    rts                           ;[5]
 
 ; ---------------------------------------
 
-.lessThan2          pshx                          ; [4] channel is zero or 1
-                    ldx       #$2060              ; [5] use $2060 or $2061
-                    abx                           ; [3]
-                    lda       $00,x               ; [4]
-                    sta       $00C9               ; [3]
-                    clra                          ; [2]
-                    sta       $00C8               ; [3]
-                    pulx                          ; [5]
-                    rts                           ; [5]
+.lessThan2          pshx                          ;[4] channel is zero or 1
+                    ldx       #$2060              ;[5] use $2060 or $2061
+                    abx                           ;[3]
+                    lda       $00,x               ;[4]
+                    sta       $00C9               ;[3]
+                    clra                          ;[2]
+                    sta       $00C8               ;[3]
+                    pulx                          ;[5]
+                    rts                           ;[5]
 
 ; ---------------------------------------
 
-.greaterThan3       pshx                          ; [4] channel is > 3 so memory location
-                    ldx       #$2062              ; [5] is offset by 2 additional bytes
-                    abx                           ; [3]
-                    lda       $00,x               ; [4]
-                    sta       $00C9               ; [3]
-                    clra                          ; [2]
-                    sta       $00C8               ; [3]
-                    pulx                          ; [5]
-                    rts                           ; [5]
+.greaterThan3       pshx                          ;[4] channel is > 3 so memory location
+                    ldx       #$2062              ;[5] is offset by 2 additional bytes
+                    abx                           ;[3]
+                    lda       $00,x               ;[4]
+                    sta       $00C9               ;[3]
+                    clra                          ;[2]
+                    sta       $00C8               ;[3]
+                    pulx                          ;[5]
+                    rts                           ;[5]
 
 ; ---------------------------------------
 
-.throttlePot        lda       $2065               ; [4] TPS so use 2-byte value at $2065/66
-                    sta       $00C9               ; [3]
-                    lda       $2064               ; [4]
-                    sta       $00C8               ; [3]
+.throttlePot        lda       $2065               ;[4] TPS so use 2-byte value at $2065/66
+                    sta       $00C9               ;[3]
+                    lda       $2064               ;[4]
+                    sta       $00C8               ;[3]
 
-.return             rts                           ; [5]
+.return             rts                           ;[5]
 
 ; ------------------------------------------------------------------------------
 
@@ -167,56 +167,56 @@ simulation2         lda       $2072               ; [4] check the value that tur
 ; > 3: 9 + 5 + 5 + 3 + 35 + 6 = 63
 
 ; ------------------------------------------------------------------------------
-simulation          lda       $2072               ; [4] check the value that turns sim on/off
-                    cmpa      #$55                ; [2] $55 turns it on
-                    bne       .return             ; [3] return if not $55
+simulation          lda       $2072               ;[4] check the value that turns sim on/off
+                    cmpa      #$55                ;[2] $55 turns it on
+                    bne       .return             ;[3] return if not $55
 
-                    cmpb      #$02                ; [2] channel 2 is MAF
-                    beq       .airFlow            ; [3]
+                    cmpb      #$02                ;[2] channel 2 is MAF
+                    beq       .airFlow            ;[3]
 
-                    cmpb      #$03                ; [2] channel 3 is throttle pot
-                    beq       .throttlePot        ; [3]
+                    cmpb      #$03                ;[2] channel 3 is throttle pot
+                    beq       .throttlePot        ;[3]
 
-                    bcc       .greaterThan3       ; [3] branch if channel > 3
-
-; ---------------------------------------
-
-.lessThan2          pshx                          ; [4] channel is zero or 1
-                    ldx       #$2060              ; [5] use $2060 or $2061
-                    abx                           ; [3]
-                    lda       $00,x               ; [4]
-                    sta       $00C9               ; [3]
-                    clr       $00C8               ; [6] (extended, no direct available)
-                    pulx                          ; [5]
-                    rts                           ; [5]
+                    bcc       .greaterThan3       ;[3] branch if channel > 3
 
 ; ---------------------------------------
 
-.greaterThan3       pshx                          ; [4] channel is > 3 so memory location
-                    ldx       #$2062              ; [5] is offset by 2 additional bytes
-                    abx                           ; [3]
-                    lda       $00,x               ; [4]
-                    sta       $00C9               ; [3]
-                    clr       $00C8               ; [6] (extended, no direct available)
-                    pulx                          ; [5]
-                    rts                           ; [5]
+.lessThan2          pshx                          ;[4] channel is zero or 1
+                    ldx       #$2060              ;[5] use $2060 or $2061
+                    abx                           ;[3]
+                    lda       $00,x               ;[4]
+                    sta       $00C9               ;[3]
+                    clr       $00C8               ;[6] (extended, no direct available)
+                    pulx                          ;[5]
+                    rts                           ;[5]
 
 ; ---------------------------------------
 
-.airFlow            lda       $2063               ; [4] MAF so use 2-byte value at $2063/64
-                    sta       $00C9               ; [3]
-                    lda       $2062               ; [4]
-                    sta       $00C8               ; [3]
-                    rts                           ; [5]
+.greaterThan3       pshx                          ;[4] channel is > 3 so memory location
+                    ldx       #$2062              ;[5] is offset by 2 additional bytes
+                    abx                           ;[3]
+                    lda       $00,x               ;[4]
+                    sta       $00C9               ;[3]
+                    clr       $00C8               ;[6] (extended, no direct available)
+                    pulx                          ;[5]
+                    rts                           ;[5]
 
 ; ---------------------------------------
 
-.throttlePot        lda       $2065               ; [4] TPS so use 2-byte value at $2065/66
-                    sta       $00C9               ; [3]
-                    lda       $2064               ; [4]
-                    sta       $00C8               ; [3]
+.airFlow            lda       $2063               ;[4] MAF so use 2-byte value at $2063/64
+                    sta       $00C9               ;[3]
+                    lda       $2062               ;[4]
+                    sta       $00C8               ;[3]
+                    rts                           ;[5]
 
-.return             rts                           ; [5]
+; ---------------------------------------
+
+.throttlePot        lda       $2065               ;[4] TPS so use 2-byte value at $2065/66
+                    sta       $00C9               ;[3]
+                    lda       $2064               ;[4]
+                    sta       $00C8               ;[3]
+
+.return             rts                           ;[5]
 
 ; ------------------------------------------------------------------------------
 
@@ -233,28 +233,28 @@ simulation          lda       $2072               ; [4] check the value that tur
 ; currently doing a toggle (50%)
 
 ; ------------------------------------------------------------------------------
-o2Simulation        ldb       $2072               ; [4]
-                    cmpb      #$55                ; [2]
-                    bne       .return             ; [3]
+o2Simulation        ldb       $2072               ;[4]
+                    cmpb      #$55                ;[2]
+                    bne       .return             ;[3]
 
-                    tst       $0088               ; [6] which bank? (0 = left, 1 = right)
-                    bpl       .left               ; [3] branch if left
+                    tst       $0088               ;[6] which bank? (0 = left, 1 = right)
+                    bpl       .left               ;[3] branch if left
 
-.right              lda       $00A2               ; [3] <-- Right Bank
-                    eora      #$80                ; [2] toggle bit 7
-                    sta       $00A2               ; [3]
-                    bpl       .low                ; [3]
+.right              lda       $00A2               ;[3] <-- Right Bank
+                    eora      #$80                ;[2] toggle bit 7
+                    sta       $00A2               ;[3]
+                    bpl       .low                ;[3]
 
-.high               ldb       #$FF                ; [2]
-                    rts                           ; [5]
+.high               ldb       #$FF                ;[2]
+                    rts                           ;[5]
 
-.low                clrb                          ; [2]
-                    rts                           ; [5]
+.low                clrb                          ;[2]
+                    rts                           ;[5]
 
-.left               lda       $00A3               ; [3] <-- Left Bank
-                    eora      #$80                ; [2] toggle bit 7
-                    sta       $00A3               ; [3]
-                    bpl       .low                ; [3]
-                    bra       .high               ; [3]
+.left               lda       $00A3               ;[3] <-- Left Bank
+                    eora      #$80                ;[2] toggle bit 7
+                    sta       $00A3               ;[3]
+                    bpl       .low                ;[3]
+                    bra       .high               ;[3]
 
 ; ------------------------------------------------------------------------------

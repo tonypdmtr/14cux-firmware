@@ -12,19 +12,19 @@
 
 ; ------------------------------------------------------------------------------
 
-adcVectors          dw        adcRoutine0         ; Inertia switch
-                    dw        adcRoutine1         ; Heated screen sense
-                    dw        adcRoutine2         ; Air flow sensor (main signal)
-                    dw        adcRoutine3         ; Throttle pot
-                    dw        adcRoutine4         ; Coolant temp thermistor
-                    dw        adcRoutine5         ; Auto neutral switch
-                    dw        adcRoutine6         ; Air cond load input
-                    dw        adcRoutine7         ; Road speed transducer
-                    dw        adcRoutine8         ; Main relay voltage
-                    dw        adcRoutine9         ; Air flow sensor (trim setting)
-                    dw        adcRoutine10        ; Tune resistor
-                    dw        adcRoutine11        ; Fuel temp thermistor
-                    dw        o2sense             ; Right O2 sensor
-                    dw        adcRoutine13        ; O2 Reference Voltage
-                    dw        adcRoutine14        ; Diagnostic plug
-                    dw        o2sense             ; Left O2 sensor
+adcVectors          dw        adcRoutine0         ;Inertia switch
+                    dw        adcRoutine1         ;Heated screen sense
+                    dw        adcRoutine2         ;Air flow sensor (main signal)
+                    dw        adcRoutine3         ;Throttle pot
+                    dw        adcRoutine4         ;Coolant temp thermistor
+                    dw        adcRoutine5         ;Auto neutral switch
+                    dw        adcRoutine6         ;Air cond load input
+                    dw        adcRoutine7         ;Road speed transducer
+                    dw        adcRoutine8         ;Main relay voltage
+                    dw        adcRoutine9         ;Air flow sensor (trim setting)
+                    dw        adcRoutine10        ;Tune resistor
+                    dw        adcRoutine11        ;Fuel temp thermistor
+                    dw        o2sense             ;Right O2 sensor
+                    dw        adcRoutine13        ;O2 Reference Voltage
+                    dw        adcRoutine14        ;Diagnostic plug
+                    dw        o2sense             ;Left O2 sensor

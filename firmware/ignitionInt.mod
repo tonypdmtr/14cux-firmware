@@ -63,39 +63,39 @@
 ; ------------------------------------------------------------------------------
 
           #ifdef USE_4004_BIT4_FOR_ICI
-inputCapInt         lda       i2cPort             ; [4] profiling code
-                    ora       #$10                ; [2] 4004.4 high
-                    sta       i2cPort             ; [4]
+inputCapInt         lda       i2cPort             ;[4] profiling code
+                    ora       #$10                ;[2] 4004.4 high
+                    sta       i2cPort             ;[4]
 
-                    ldb       bits_2059           ; bits_2059.5 controls 1-time startup code
+                    ldb       bits_2059           ;bits_2059.5 controls 1-time startup code
           #else
-inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time startup code
+inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time startup code
           #endif
-                    bitb      #$20                ; test bits_2059.5
+                    bitb      #$20                ;test bits_2059.5
                     bne       .LDB73
 ;*** Start: 1-time startup code ***
-                    lda       iciStartupCounter   ; this is the only area this var is used
-                    inca                          ; counter usually just counts from 0 to 1
-                    cmpa      #$08                ; compare with 8
-                    bcc       .LDB6E              ; branch ahead if counter > 8
+                    lda       iciStartupCounter   ;this is the only area this var is used
+                    inca                          ;counter usually just counts from 0 to 1
+                    cmpa      #$08                ;compare with 8
+                    bcc       .LDB6E              ;branch ahead if counter > 8
                     sta       iciStartupCounter
-                    bitb      #$40                ; test bits_2059.6 (here to LDB63 executes once)
-                    bne       .LDB63              ; branch to LDB63 (reset) if bit is set
-                    ldd       altCounterHigh      ; reading alternate avoids clearing TOF
-                    std       iciStartupValue     ; this is only written here and written once
+                    bitb      #$40                ;test bits_2059.6 (here to LDB63 executes once)
+                    bne       .LDB63              ;branch to LDB63 (reset) if bit is set
+                    ldd       altCounterHigh      ;reading alternate avoids clearing TOF
+                    std       iciStartupValue     ;this is only written here and written once
                     lda       bits_2059
-                    ora       #$40                ; set bits_2059.6
+                    ora       #$40                ;set bits_2059.6
                     sta       bits_2059
                     bra       .LDB73
 
 ; this jumps back to reset
-.LDB63              lds       #$00FF              ; reset stack pointer
-                    lda       timerCSR            ; resets timer?
-                    ldd       icrHigh             ; input capture reg (clears or resets)
-                    cli                           ; clear interrupt mask
-                    jmp       iciReentry          ; go to re-entry point
+.LDB63              lds       #$00FF              ;reset stack pointer
+                    lda       timerCSR            ;resets timer?
+                    ldd       icrHigh             ;input capture reg (clears or resets)
+                    cli                           ;clear interrupt mask
+                    jmp       iciReentry          ;go to re-entry point
 
-.LDB6E              orb       #$20                ; set bits_2059.5
+.LDB6E              orb       #$20                ;set bits_2059.5
                     stb       bits_2059           ;*** End: 1-time startup code ***
 
 ; -----------------------------------------------------------
@@ -109,9 +109,9 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Defender Only (R3365)
 ; -----------------------------------------------------------
 
-.LDB73              lda       ignPeriod           ; load ignition period MSB
-                    cmpa      #$08                ; about 3662 RPM
-                    bcc       .LDB73A             ; branch ahead if LT 3662 RPM
+.LDB73              lda       ignPeriod           ;load ignition period MSB
+                    cmpa      #$08                ;about 3662 RPM
+                    bcc       .LDB73A             ;branch ahead if LT 3662 RPM
 
                     lda       #$27
                     sta       AdcControlReg1
@@ -119,18 +119,18 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     sta       AdcDataLow
                     jsr       LFA46
 
-.LDB73A             ldb       $0086               ; set X0086.3
+.LDB73A             ldb       $0086               ;set X0086.3
           #else
 
-.LDB73              ldb       $0086               ; set X0086.3
+.LDB73              ldb       $0086               ;set X0086.3
           #endif
-                    orb       #$08                ; (X0086.3 indicates memory test complete)
+                    orb       #$08                ;(X0086.3 indicates memory test complete)
                     stb       $0086
                     ldb       $008B
-                    bitb      #$02                ; test X008B.1 (unused)
+                    bitb      #$02                ;test X008B.1 (unused)
                     bne       .reassertMap5
 
-                    orb       #$02                ; set X008B.1 (unused)
+                    orb       #$02                ;set X008B.1 (unused)
                     stb       $008B
 
 ; -----------------------------------------------------------
@@ -156,22 +156,22 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; nothing
           #else
 
-.LDAB7              ldb       dtc12Delay          ; a counter
-                    cmpb      #$03                ; compare with 3
-                    bcc       .LDB95              ; branch when counter reaches 3
+.LDAB7              ldb       dtc12Delay          ;a counter
+                    cmpb      #$03                ;compare with 3
+                    bcc       .LDB95              ;branch when counter reaches 3
 
-                    cmpb      #$02                ; compare with 2
-                    bne       .LDAD1              ; branch to increment when counter is 0 or 1
+                    cmpb      #$02                ;compare with 2
+                    bne       .LDAD1              ;branch to increment when counter is 0 or 1
 
-                    lda       neutralSwitchVal    ; counter is 2, load neutral switch value
-                    cmpa      #$B3                ; compare with $B3
-                    bcs       .LDAD1              ; branch to increment if value < $B3 (not in drive)
+                    lda       neutralSwitchVal    ;counter is 2, load neutral switch value
+                    cmpa      #$B3                ;compare with $B3
+                    bcs       .LDAD1              ;branch to increment if value < $B3 (not in drive)
 
                     lda       bits_201F
-                    ora       #$20                ; set bits_201F.5
+                    ora       #$20                ;set bits_201F.5
                     sta       bits_201F
-.LDAD1              incb                          ; increment the counter
-                    stb       dtc12Delay          ; and store it
+.LDAD1              incb                          ;increment the counter
+                    stb       dtc12Delay          ;and store it
           #endif
 
 ; -----------------------------------------------------------
@@ -180,28 +180,28 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Below 4883 RPM, TPS is always measured
 ; Above 4883 RPM, MAF and TPS alternate
 ; -----------------------------------------------------------
-.LDB95              ldb       bits_201F           ; bits value
-                    lda       ignPeriod           ; load ignition period MSB
+.LDB95              ldb       bits_201F           ;bits value
+                    lda       ignPeriod           ;load ignition period MSB
           #ifdef BUILD_R3365
-                    cmpa      #$07                ; compare with $07
+                    cmpa      #$07                ;compare with $07
           #else
-                    cmpa      #$06                ; compare with $06
+                    cmpa      #$06                ;compare with $06
           #endif
-                    bcc       .LDBAA              ; branch to set TP if eng spd < 4883 RPM
+                    bcc       .LDBAA              ;branch to set TP if eng spd < 4883 RPM
 
                     lda       bits_008C
-                    bita      #$01                ; test bits_008C.0 (this bit is toggled)
-                    bne       .LDBAA              ; branch ahead to TP if bits_008C.0 is set
+                    bita      #$01                ;test bits_008C.0 (this bit is toggled)
+                    bne       .LDBAA              ;branch ahead to TP if bits_008C.0 is set
 
-                    lda       #$02                ; ADC Value for 10-bit air flow (MAF)
-                    orb       #$40                ; set bits_201F.6 (MAF being measured)
+                    lda       #$02                ;ADC Value for 10-bit air flow (MAF)
+                    orb       #$40                ;set bits_201F.6 (MAF being measured)
                     bra       .LDBAE
 
-.LDBAA              lda       #$03                ; ADC Value for 10-bit throttle pot (TPS)
-                    andb      #$BF                ; clr bits_201F.6 (TPS being measured)
+.LDBAA              lda       #$03                ;ADC Value for 10-bit throttle pot (TPS)
+                    andb      #$BF                ;clr bits_201F.6 (TPS being measured)
 
-.LDBAE              sta       AdcControlReg1      ; store ADC channel and trigger measurement
-                    stb       bits_201F           ; store bits_201F, bit 6 = 1 (MAF) or 0 (TPS)
+.LDBAE              sta       AdcControlReg1      ;store ADC channel and trigger measurement
+                    stb       bits_201F           ;store bits_201F, bit 6 = 1 (MAF) or 0 (TPS)
 
 ; ------------------------------------------------------------------------------
 ; Measure and save engine ignition period
@@ -218,180 +218,180 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; to be used in the next interrupt.
 
 ; ------------------------------------------------------------------------------
-                    lda       timerCSR            ; reading timerCSR and then icrHigh resets ICF1
-                    lds       #$00FF              ; why is stack being reset again?
-                    ldd       icrHigh             ; read 16-bit input capture register & reset ICF1
-                    std       $00C8               ; store counter snapshot at 00C8/C9
-                    std       $00CA               ; also store at 00CA/CB (later use by code below at DC52)
+                    lda       timerCSR            ;reading timerCSR and then icrHigh resets ICF1
+                    lds       #$00FF              ;why is stack being reset again?
+                    ldd       icrHigh             ;read 16-bit input capture register & reset ICF1
+                    std       $00C8               ;store counter snapshot at 00C8/C9
+                    std       $00CA               ;also store at 00CA/CB (later use by code below at DC52)
                     ldb       timerCSR
-                    andb      #$20                ; isolate timerCSR bit 5 (Timer Overflow Flag)
-                    beq       .LDBDD              ; branch ahead if TOF is clear
+                    andb      #$20                ;isolate timerCSR bit 5 (Timer Overflow Flag)
+                    beq       .LDBDD              ;branch ahead if TOF is clear
 
-                    inc       timerOverflow2      ; <-- overflow happened, increment road speed counter
-                    bne       .LDBCD              ; branch ahead if it hasn't wrapped
-                    dec       timerOverflow2      ; otherwise, clip it at $FF
+                    inc       timerOverflow2      ;<-- overflow happened, increment road speed counter
+                    bne       .LDBCD              ;branch ahead if it hasn't wrapped
+                    dec       timerOverflow2      ;otherwise, clip it at $FF
 
 ; does this check for another, more recent overflow??
-.LDBCD              ldd       counterHigh         ; load current counter value (also resets the TOF)
-                    subd      $00C8               ; subtract ICR snapshot value
-                    bcc       .LDBD7              ; branch overflow did not recently happen
+.LDBCD              ldd       counterHigh         ;load current counter value (also resets the TOF)
+                    subd      $00C8               ;subtract ICR snapshot value
+                    bcc       .LDBD7              ;branch overflow did not recently happen
 
-                    ldb       #$01                ; overflow happened, load $01 to store at timerOverflow1
-                    bra       .LDBDD              ; branch ahead to load timerOverflow1 into A
+                    ldb       #$01                ;overflow happened, load $01 to store at timerOverflow1
+                    bra       .LDBDD              ;branch ahead to load timerOverflow1 into A
 
 ; <-- overflow did not recently happen
-.LDBD7              clrb                          ; clear B to conditionally write to timerOverflow1
-                    lda       timerOverflow1      ; load timerOverflow1
-                    inca                          ; increment the value
-                    bne       .LDBDF              ; if non-zero, branch ahead to zero timerOverflow1
+.LDBD7              clrb                          ;clear B to conditionally write to timerOverflow1
+                    lda       timerOverflow1      ;load timerOverflow1
+                    inca                          ;increment the value
+                    bne       .LDBDF              ;if non-zero, branch ahead to zero timerOverflow1
 
 ; code branches here if TOF is clear
-.LDBDD              lda       timerOverflow1      ; load timerOverflow1
+.LDBDD              lda       timerOverflow1      ;load timerOverflow1
 
-.LDBDF              stb       timerOverflow1      ; store B in timerOverflow1 for later use (usually zero or one)
+.LDBDF              stb       timerOverflow1      ;store B in timerOverflow1 for later use (usually zero or one)
 
-                    ldb       $00C8               ; a = timerOverflow1, b = high byte of 16-bit capture reg
-                    lsrd                          ; logical shift right (div by 2)
-                    ror       $00C9               ; rotate 00C9 right (carry shifts in from 'lsrd' op)
-                    stb       $00C8               ; store the upper 16 bits back in X00C8
-                    cmpa      #$01                ; compare A with $01
-                    bcs       .LDBFA              ; branch ahead if A was zero (X00C8/C9 is the result)
+                    ldb       $00C8               ;a = timerOverflow1, b = high byte of 16-bit capture reg
+                    lsrd                          ;logical shift right (div by 2)
+                    ror       $00C9               ;rotate 00C9 right (carry shifts in from 'lsrd' op)
+                    stb       $00C8               ;store the upper 16 bits back in X00C8
+                    cmpa      #$01                ;compare A with $01
+                    bcs       .LDBFA              ;branch ahead if A was zero (X00C8/C9 is the result)
 
-                    bne       .LDBF5              ; branch if not zero
-                    ldd       $00C8               ; load X00C8/C9
-                    subd      sparkPeriodTimer    ; subtract 'sparkPeriodTimer' (last timer value divided by 2)
-                    bcs       .LDBFE              ; if carry set, branch to store ignition period
+                    bne       .LDBF5              ;branch if not zero
+                    ldd       $00C8               ;load X00C8/C9
+                    subd      sparkPeriodTimer    ;subtract 'sparkPeriodTimer' (last timer value divided by 2)
+                    bcs       .LDBFE              ;if carry set, branch to store ignition period
 
-.LDBF5              ldd       #$FFFF              ; else, clip it at $FFFF
+.LDBF5              ldd       #$FFFF              ;else, clip it at $FFFF
                     bra       .LDBFE
 
-.LDBFA              ldd       $00C8               ; when here, X00C8/C9 is the count divided by 2
-                    subd      sparkPeriodTimer    ; 'sparkPeriodTimer' is last ICR snapshot divided by 2 (0 to 32K)
+.LDBFA              ldd       $00C8               ;when here, X00C8/C9 is the count divided by 2
+                    subd      sparkPeriodTimer    ;'sparkPeriodTimer' is last ICR snapshot divided by 2 (0 to 32K)
 
-.LDBFE              std       ignPeriod           ; store ignition period
+.LDBFE              std       ignPeriod           ;store ignition period
 
 ; ------------------------------------------------------------------------------
 ; Check bit that is set (below) when engine starts
 ; ------------------------------------------------------------------------------
-                    lda       $0085               ; bits value
-                    bita      #$40                ; test X0085.6 (engine started flag)
-                    bne       .LDC52              ; branch down if engine already running
+                    lda       $0085               ;bits value
+                    bita      #$40                ;test X0085.6 (engine started flag)
+                    bne       .LDC52              ;branch down if engine already running
 ; ------------------------------------------------------------------------------
 ; Engine NOT Running (Code from here to LDC52 stops executing once eng starts)
 ; ------------------------------------------------------------------------------
-                    lda       ignPeriodFiltered   ; load filtered ignition period
-                    cmpa      #ignPeriodEngStart-1  ; $39 (514 RPM) or $4D (380 RPM for cold weather chip)
-                    bcc       .LDC4A              ; branch if RPM is less than this
+                    lda       ignPeriodFiltered   ;load filtered ignition period
+                    cmpa      #ignPeriodEngStart-1  ;$39 (514 RPM) or $4D (380 RPM for cold weather chip)
+                    bcc       .LDC4A              ;branch if RPM is less than this
 
-                    lda       startupCodeDelay    ; a counter used for a small code execution delay
-                    cmpa      #startupDelayCount  ; usually $02 but $04 for cold weather chip
-                    bcs       .LDC4F              ; branch ahead if 'startupCodeDelay' is LT 04
+                    lda       startupCodeDelay    ;a counter used for a small code execution delay
+                    cmpa      #startupDelayCount  ;usually $02 but $04 for cold weather chip
+                    bcs       .LDC4F              ;branch ahead if 'startupCodeDelay' is LT 04
 
 ; -----------------------------------------
-                    lda       $0085               ; this executes once only after 'startupCodeDelay' reaches compare count
-                    ora       #$40                ; set 0085.6 (set bit to control 1-time code)
+                    lda       $0085               ;this executes once only after 'startupCodeDelay' reaches compare count
+                    ora       #$40                ;set 0085.6 (set bit to control 1-time code)
                     sta       $0085
-                    jsr       initRAMFromExt      ; this subroutine checks for differences between the battery-backed RAM
+                    jsr       initRAMFromExt      ;this subroutine checks for differences between the battery-backed RAM
 ; and it's mirror in external memory, if diffs, code re-syncs memory
           #ifdef BUILD_R3360_AND_LATER
 ; nothing
           #else
-                    lda       #$FA                ; for older code, reset 1 Hz startup down-counter to 250 seconds
+                    lda       #$FA                ;for older code, reset 1 Hz startup down-counter to 250 seconds
             #ifdef BUILD_R3383
                     sta       startupDownCount
             #else
-                    sta       startupDownCount1Hz  ; (newer code sets this elsewhere and to a much lower number)
+                    sta       startupDownCount1Hz  ;(newer code sets this elsewhere and to a much lower number)
             #endif
           #endif
-                    lda       fuelMapLock         ; load the fuel map lock value from the data section
-                    bne       .checkMAFFault      ; branch ahead if locked
+                    lda       fuelMapLock         ;load the fuel map lock value from the data section
+                    bne       .checkMAFFault      ;branch ahead if locked
 
-                    lda       bits_008C           ; if here, fuel map is unlocked
-                    bita      #$40                ; test bits_008C.6 (indicates data corrupted or ram fail)
-                    beq       .checkMAFFault      ; branch ahead if no failure
+                    lda       bits_008C           ;if here, fuel map is unlocked
+                    bita      #$40                ;test bits_008C.6 (indicates data corrupted or ram fail)
+                    beq       .checkMAFFault      ;branch ahead if no failure
 
-                    lda       fuelMapNumber       ; battery-backed RAM failure so load fuel map number
-                    sta       fuelMapNumberBackup  ; and store it in the battery-backed RAM location (X0050)
+                    lda       fuelMapNumber       ;battery-backed RAM failure so load fuel map number
+                    sta       fuelMapNumberBackup  ;and store it in the battery-backed RAM location (X0050)
 
-.checkMAFFault      ldd       mafDirectHi         ; load the MAF high value
-                    subd      #$0066              ; subtract $0066 (500 mV)
-                    bcc       .LDC38              ; branch ahead if > 500 mV
+.checkMAFFault      ldd       mafDirectHi         ;load the MAF high value
+                    subd      #$0066              ;subtract $0066 (500 mV)
+                    bcc       .LDC38              ;branch ahead if > 500 mV
 
                     lda       $0087
-                    ora       #$02                ; set X0087.1 (indicates MAF fault)
+                    ora       #$02                ;set X0087.1 (indicates MAF fault)
                     sta       $0087
 
-.LDC38              ldb       coolantTempCount    ; load ECT sensor count
-                    cmpb      $200F               ; from 3rd last value in FM data struct (about 78 to 85 C))
+.LDC38              ldb       coolantTempCount    ;load ECT sensor count
+                    cmpb      $200F               ;from 3rd last value in FM data struct (about 78 to 85 C))
 
           #ifdef BUILD_R3360_AND_LATER
-                    bcc       .LDC48              ; branch ahead if cooler (later code)
+                    bcc       .LDC48              ;branch ahead if cooler (later code)
           #else
-                    bcc       .LDB8D              ; branch ahead if cooler (TVR)
+                    bcc       .LDB8D              ;branch ahead if cooler (TVR)
           #endif
-                    ldb       $C1FF               ; data value is $03
-                    stb       startupTimerEven    ; init right bank startup timer
-                    stb       startupTimerOdd     ; init left bank startup timer
+                    ldb       $C1FF               ;data value is $03
+                    stb       startupTimerEven    ;init right bank startup timer
+                    stb       startupTimerOdd     ;init left bank startup timer
 
           #ifdef BUILD_R3360_AND_LATER
 ; nothing for later code
           #else
-.LDB8D              ldb       bits_201F           ; bits value
-                    bitb      #$20                ; test bits_201F.5
-                    beq       .LDC52              ; branch ahead if zero
+.LDB8D              ldb       bits_201F           ;bits value
+                    bitb      #$20                ;test bits_201F.5
+                    beq       .LDC52              ;branch ahead if zero
 
                     ldb       faultBits_4C
-                    orb       #$80                ; set neutral switch fault code 69
+                    orb       #$80                ;set neutral switch fault code 69
                     stb       faultBits_4C
           #endif
-.LDC48              bra       .LDC52              ; branch to next section
+.LDC48              bra       .LDC52              ;branch to next section
 
 ; -----------------------------------------
 ; code jumps here if eng speed is LT 514 (380 for cold chip)
-.LDC4A              clr       startupCodeDelay    ; code delay counter mentioned above
-                    bra       .LDC52              ; branch to next section
+.LDC4A              clr       startupCodeDelay    ;code delay counter mentioned above
+                    bra       .LDC52              ;branch to next section
 
 ; -----------------------------------------
 
-.LDC4F              inc       startupCodeDelay    ; increment the counter
+.LDC4F              inc       startupCodeDelay    ;increment the counter
 
 ; -----------------------------------------
 ; Engine running condition code
 ; -----------------------------------------
-.LDC52              ldd       $00CA               ; still the 16-bit ICR snapshot value (see LDBBD area)
-                    lsrd                          ; divide by 2
-                    std       sparkPeriodTimer    ; store timer (0-32K range) for use on next call (above)
+.LDC52              ldd       $00CA               ;still the 16-bit ICR snapshot value (see LDBBD area)
+                    lsrd                          ;divide by 2
+                    std       sparkPeriodTimer    ;store timer (0-32K range) for use on next call (above)
 
                     lda       $0088
-                    bita      #$01                ; test X0088.0
-                    bne       .checkForHiRPM      ; branch if bit is set
+                    bita      #$01                ;test X0088.0
+                    bne       .checkForHiRPM      ;branch if bit is set
 
 ; -----------------------------------------
 ; Stepper motor adjustment
 ; -----------------------------------------
                     ldb       $0087
-                    bitb      #$40                ; test X0087.6 bit is set when eng RPM > (1200 + ECT delta)
-                    beq       .checkForHiRPM      ; branch if idle is OK
+                    bitb      #$40                ;test X0087.6 bit is set when eng RPM > (1200 + ECT delta)
+                    beq       .checkForHiRPM      ;branch if idle is OK
 
-                    ldb       iacMotorStepCount   ; this is absolute value of pending IACV adjustment
-                    bne       .checkForHiRPM      ; branch ahead to skip this section if value not zero
+                    ldb       iacMotorStepCount   ;this is absolute value of pending IACV adjustment
+                    bne       .checkForHiRPM      ;branch ahead to skip this section if value not zero
 ; (meaning that an adjustment is already pending)
 
-                    ora       #$01                ; set X0088.0
+                    ora       #$01                ;set X0088.0
                     sta       $0088
-                    ldd       throttlePot         ; load 10-bit TPS value
-                    subd      #$0070              ; this is the default value (547 mV))
-                    bcs       .checkForHiRPM      ; branch ahead if TPS value is less than 547 mV
+                    ldd       throttlePot         ;load 10-bit TPS value
+                    subd      #$0070              ;this is the default value (547 mV))
+                    bcs       .checkForHiRPM      ;branch ahead if TPS value is less than 547 mV
 
-                    ldb       $C15D               ; data value is $20 or $1D
-                    stb       iacMotorStepCount   ; set stepper motor to close by 32 (or 29) counts
+                    ldb       $C15D               ;data value is $20 or $1D
+                    stb       iacMotorStepCount   ;set stepper motor to close by 32 (or 29) counts
                     lda       $008A
-                    ora       #$01                ; set X008A.0 (stepper mtr direction bit, 1 = close)
+                    ora       #$01                ;set X008A.0 (stepper mtr direction bit, 1 = close)
                     sta       $008A
 
-.checkForHiRPM      lda       ignPeriod           ; load MSB of ignition period
-                    cmpa      #$07                ; $0700 = 4185 RPM
-                    bcs       .LDCB0              ; branch ahead if RPM > 4185
+.checkForHiRPM      lda       ignPeriod           ;load MSB of ignition period
+                    cmpa      #$07                ;$0700 = 4185 RPM
+                    bcs       .LDCB0              ;branch ahead if RPM > 4185
 
 ; ---------------------------------------------------
 ; This subracts 1 from a purge valve timer variable
@@ -400,17 +400,17 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; This section skipped if RPM > 4185
 ; ---------------------------------------------------
                     lda       bits_008C
-                    bita      #$01                ; test bits_008C.0 (toggled bit)
-                    bne       .LDC97              ; branch ahead if bit is 1
+                    bita      #$01                ;test bits_008C.0 (toggled bit)
+                    bne       .LDC97              ;branch ahead if bit is 1
 
-                    tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bmi       .LDC97              ; branch ahead if 0088.7 is 1
+                    tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bmi       .LDC97              ;branch ahead if 0088.7 is 1
 
                     ldd       purgeValveTimer2
-                    beq       .LDC97              ; branch ahead if zero
+                    beq       .LDC97              ;branch ahead if zero
 
-                    subd      #$0001              ; otherwise, subtract 1
-                    std       purgeValveTimer2    ; and store it
+                    subd      #$0001              ;otherwise, subtract 1
+                    std       purgeValveTimer2    ;and store it
 
 ; ---------------------------------------------------
 ; Condition bit X00DC.0 (related to short term trim)
@@ -418,49 +418,49 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; This section skipped if RPM > 4185
 ; ---------------------------------------------------
 .LDC97              lda       $008B
-                    anda      #$01                ; isolate X008B.0 (road speed > 4 KPH)
-                    beq       .LDCAA              ; branch ahead if road speed is < 4 KPH
+                    anda      #$01                ;isolate X008B.0 (road speed > 4 KPH)
+                    beq       .LDCAA              ;branch ahead if road speed is < 4 KPH
 
-                    ldd       throttlePot         ; load TPS value
-                    subd      #$019A              ; subtract 410 (about 40% or 2.0 volts)
-                    bcc       .LDCAA              ; branch ahead if TPS > 40%
+                    ldd       throttlePot         ;load TPS value
+                    subd      #$019A              ;subtract 410 (about 40% or 2.0 volts)
+                    bcc       .LDCAA              ;branch ahead if TPS > 40%
 
                     lda       $00DC
-                    ora       #$01                ; set X00DC.0 (VSS > 4 and TPS < 40%)
+                    ora       #$01                ;set X00DC.0 (VSS > 4 and TPS < 40%)
                     bra       .LDCAE
 
 .LDCAA              lda       $00DC
-                    anda      #$FE                ; clr X00DC.0 (VSS < 4 or TPS > 40%)
+                    anda      #$FE                ;clr X00DC.0 (VSS < 4 or TPS > 40%)
 
 .LDCAE              sta       $00DC
 
 ; ---------------------------------------------------
 ; A/C compressor control
 ; ---------------------------------------------------
-.LDCB0              ldb       $00E2               ; bits
-                    lda       ignPeriodFiltered   ; load filtered ignition period (MSB only)
-                    suba      #$12                ; subtract $12
-                    bcc       .LDCBC              ; branch ahead if RPM < 1628)
+.LDCB0              ldb       $00E2               ;bits
+                    lda       ignPeriodFiltered   ;load filtered ignition period (MSB only)
+                    suba      #$12                ;subtract $12
+                    bcc       .LDCBC              ;branch ahead if RPM < 1628)
 
-                    orb       #$80                ; set X00E2.7 (when RPM > 1628)
+                    orb       #$80                ;set X00E2.7 (when RPM > 1628)
                     bra       .LDCBE
 
-.LDCBC              andb      #$7F                ; clr X00E2.7 (when RPM < 1628)
+.LDCBC              andb      #$7F                ;clr X00E2.7 (when RPM < 1628)
 
 .LDCBE              stb       $00E2
-                    tstb                          ; test X00E2.7 which was just set/clrd
-                    bpl       .LDCD2              ; if 0, branch ahead to next section (RPM < 1628)
+                    tstb                          ;test X00E2.7 which was just set/clrd
+                    bpl       .LDCD2              ;if 0, branch ahead to next section (RPM < 1628)
 
-                    lda       port2data           ; if here, RPM > 1628
-                    tst       bits_008C           ; test bits_008C.7 (A/C control bit)
-                    bmi       .LDCCE              ; if high, branch ahead to set P22 high
+                    lda       port2data           ;if here, RPM > 1628
+                    tst       bits_008C           ;test bits_008C.7 (A/C control bit)
+                    bmi       .LDCCE              ;if high, branch ahead to set P22 high
 
-                    anda      #$FB                ; P22 low (A/C compressor)
+                    anda      #$FB                ;P22 low (A/C compressor)
                     bra       .LDCD0
 
-.LDCCE              ora       #$04                ; P22 high (A/C compressor)
+.LDCCE              ora       #$04                ;P22 high (A/C compressor)
 
-.LDCD0              sta       port2data           ; write to port
+.LDCD0              sta       port2data           ;write to port
 
 ; -------------------------------------------------------------------------------
 ; Obsolete Code
@@ -481,18 +481,18 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; HO2S simulation adds 36 plus 6 (jsr) for a total of 42.
 ; -------------------------------------------------------------------------------
 
-.LDCD2              ldd       throttlePot         ; [4] load 10-bit TPS value
-                    subd      #$00B9              ; [4] subtract $B9 (about 18% throttle)
-                    bcs       .LDCE3              ; [3] branch if < 18% to drive X4004.7 low
+.LDCD2              ldd       throttlePot         ;[4] load 10-bit TPS value
+                    subd      #$00B9              ;[4] subtract $B9 (about 18% throttle)
+                    bcs       .LDCE3              ;[3] branch if < 18% to drive X4004.7 low
 
-                    lda       i2cPort             ; [4] TPS > 18%
-                    ora       #$80                ; [2] drive X4004.7 high
-                    sta       i2cPort             ; [4]
-                    bra       .LDCEB              ; [3] and branch to next section
+                    lda       i2cPort             ;[4] TPS > 18%
+                    ora       #$80                ;[2] drive X4004.7 high
+                    sta       i2cPort             ;[4]
+                    bra       .LDCEB              ;[3] and branch to next section
 
-.LDCE3              lda       i2cPort             ; [4] TPS < 18%
-                    anda      #$7F                ; [2] drive X4004.7 low
-                    sta       i2cPort             ; [4]
+.LDCE3              lda       i2cPort             ;[4] TPS < 18%
+                    anda      #$7F                ;[2] drive X4004.7 low
+                    sta       i2cPort             ;[4]
 
 ; ------------------------------------------------------------------------------
 ; Read ADC Result (TPS or MAF)
@@ -502,17 +502,17 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; The jmp at the end of this section skips the calculation of TPS Direction
 ; & Rate and the 24-bit TPS related value.
 ; ------------------------------------------------------------------------------
-.LDCEB              clr       $00CE               ; to be used much later in linearizeMAF
+.LDCEB              clr       $00CE               ;to be used much later in linearizeMAF
                     lda       $0086
-                    ora       #$02                ; set X0086.1 (MAF initialized bit?)
+                    ora       #$02                ;set X0086.1 (MAF initialized bit?)
                     sta       $0086
                     lda       bits_008C
-                    bita      #$01                ; test bits_008C.0 (0 = MAF, 1 = TPS)
-                    bne       .LDD10              ; if 1, branch to read TPS at LDD10
+                    bita      #$01                ;test bits_008C.0 (0 = MAF, 1 = TPS)
+                    bne       .LDD10              ;if 1, branch to read TPS at LDD10
 
                     lda       bits_201F
-                    bita      #$40                ; test bits_201F.6 (air flow/throttle pot)
-                    beq       .LDD0D              ; if 0, conflicting bits, branch to jump to O2 test
+                    bita      #$40                ;test bits_201F.6 (air flow/throttle pot)
+                    beq       .LDD0D              ;if 0, conflicting bits, branch to jump to O2 test
 ; TODO: this needs to be understood better
 
 ; ----------------------------------------------------------
@@ -520,52 +520,52 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Simulation adds 9 clocks when OFF and 20 clocks when ON
 ; ----------------------------------------------------------
           #ifdef SIMULATION_MODE
-                    lda       $2072               ; [4] load simulation control byte
-                    cmpa      #SIM_CONTROL_BYTE   ; [2] compare it with SIM_CONTROL_BYTE
-                    bne       .skip_sim           ; [3] branch if simulation is off
+                    lda       $2072               ;[4] load simulation control byte
+                    cmpa      #SIM_CONTROL_BYTE   ;[2] compare it with SIM_CONTROL_BYTE
+                    bne       .skip_sim           ;[3] branch if simulation is off
 
-                    lda       $2062               ; [4] MAF Simulation Bytes
-                    ldb       $2063               ; [4]
-                    bra       .sim                ; [3]
+                    lda       $2062               ;[4] MAF Simulation Bytes
+                    ldb       $2063               ;[4]
+                    bra       .sim                ;[3]
           #endif
-.skip_sim           lda       AdcStsDataHigh      ; read 10-bit MAF (triggered earlier)
+.skip_sim           lda       AdcStsDataHigh      ;read 10-bit MAF (triggered earlier)
                     ldb       AdcDataLow
 
-.sim                anda      #$03                ; mask 10-bit value
-                    std       mafDirectLo         ; store it as both high and low
+.sim                anda      #$03                ;mask 10-bit value
+                    std       mafDirectLo         ;store it as both high and low
                     std       mafDirectHi
           #ifdef BUILD_R3365
-.LDD0D              jmp       .LDE70A             ; jump ahead to O2 test
+.LDD0D              jmp       .LDE70A             ;jump ahead to O2 test
           #else
-.LDD0D              jmp       .LDE79              ; jump way down to O2 test
+.LDD0D              jmp       .LDE79              ;jump way down to O2 test
           #endif
 ; ----------------------------------------------------------
 ; TPS Simulation
 ; ----------------------------------------------------------
           #ifdef SIMULATION_MODE
-.LDD10              lda       $2072               ; [4] load simulation control byte
-                    cmpa      #SIM_CONTROL_BYTE   ; [2] compare it with SIM_CONTROL_BYTE
-                    bne       .skip_sim2          ; [3] branch if simulation is off
+.LDD10              lda       $2072               ;[4] load simulation control byte
+                    cmpa      #SIM_CONTROL_BYTE   ;[2] compare it with SIM_CONTROL_BYTE
+                    bne       .skip_sim2          ;[3] branch if simulation is off
 
-                    lda       $2064               ; [4] TPS Simulation Bytes
-                    ldb       $2065               ; [4]
-                    bra       .sim2               ; [3]
+                    lda       $2064               ;[4] TPS Simulation Bytes
+                    ldb       $2065               ;[4]
+                    bra       .sim2               ;[3]
 
-.skip_sim2          lda       AdcStsDataHigh      ; read 10-bit TPS (triggered earlier)
+.skip_sim2          lda       AdcStsDataHigh      ;read 10-bit TPS (triggered earlier)
           #else
-.LDD10              lda       AdcStsDataHigh      ; read 10-bit TPS (triggered earlier)
+.LDD10              lda       AdcStsDataHigh      ;read 10-bit TPS (triggered earlier)
           #endif
                     ldb       AdcDataLow
 
-.sim2               anda      #$03                ; mask 10-bit value
-                    jsr       TpFaultCheck        ; TP fault check routine, rtns TPS val, tests X0085.7
-                    bpl       .LDD22              ; branch if X0085.7 is 0 (0 = engine running)
+.sim2               anda      #$03                ;mask 10-bit value
+                    jsr       TpFaultCheck        ;TP fault check routine, rtns TPS val, tests X0085.7
+                    bpl       .LDD22              ;branch if X0085.7 is 0 (0 = engine running)
 
-                    std       throttlePot24bit    ; (eng cranking) 24-bit value (store TP * 256)
+                    std       throttlePot24bit    ;(eng cranking) 24-bit value (store TP * 256)
           #ifdef BUILD_R3365
-                    jmp       .LDE70A             ; (eng cranking) jump ahead to O2 test
+                    jmp       .LDE70A             ;(eng cranking) jump ahead to O2 test
           #else
-                    jmp       .LDE79              ; (eng cranking) jump ahead to O2 test
+                    jmp       .LDE79              ;(eng cranking) jump ahead to O2 test
           #endif
 ; ------------------------------------------------------------------------------
 ; Set or Clear X0087.0 which control Open/Closed Loop
@@ -574,42 +574,42 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; running. X0087.0 is set or cleared here. This bit is used for open/closed
 ; loop control. (bit is set when TPS > 40% and ECT cooler than 122 F)
 ; ------------------------------------------------------------------------------
-.LDD22              subd      #410                ; subtract 410 dec from TPS (40% or 2.0 volts)
-                    bcs       .LDD33              ; branch ahead to clr bit if TPS < 2.0 volts
+.LDD22              subd      #410                ;subtract 410 dec from TPS (40% or 2.0 volts)
+                    bcs       .LDD33              ;branch ahead to clr bit if TPS < 2.0 volts
 
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      #$51                ; compare with $51
-                    bcs       .LDD33              ; branch ahead if ECT hotter than 50 C (122 F)
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      #$51                ;compare with $51
+                    bcs       .LDD33              ;branch ahead if ECT hotter than 50 C (122 F)
 
                     lda       $0087
-                    ora       #$01                ; set X0087.0 (to force open loop)
+                    ora       #$01                ;set X0087.0 (to force open loop)
                     bra       .LDD37
 
-.LDD33              lda       $0087               ; if here, conditions are OK for closed loop
-                    anda      #$FE                ; clr X0087.0 (to allow closed loop)
+.LDD33              lda       $0087               ;if here, conditions are OK for closed loop
+                    anda      #$FE                ;clr X0087.0 (to allow closed loop)
 
-.LDD37              sta       $0087               ; store it
+.LDD37              sta       $0087               ;store it
 
 ; -------------------------------------------------------------------------------
 ; Set or Clear X00E2.3 based on TPS (30%) and ECT (50 C)
 
 ; But it looks like it's never used so we can delete this.
 ; -------------------------------------------------------------------------------
-                    ldd       throttlePot         ; load 10-bit TPS value
-                    subd      #307                ; subtract 307 dec from TPS (30% or 1.5 Volts)
-                    lda       $00E2               ; LDA does not affect carry
-                    bcc       .LDD4C              ; branch ahead to clr X00E2.3 if TPS > 1.5 Volts
+                    ldd       throttlePot         ;load 10-bit TPS value
+                    subd      #307                ;subtract 307 dec from TPS (30% or 1.5 Volts)
+                    lda       $00E2               ;LDA does not affect carry
+                    bcc       .LDD4C              ;branch ahead to clr X00E2.3 if TPS > 1.5 Volts
 
-                    ldb       coolantTempCount    ; load ECT sensor count
-                    cmpb      #$51                ; compare with $51
-                    bcc       .LDD4C              ; branch ahead to clr X00E2.3 if colder than 50 C (122 F)
+                    ldb       coolantTempCount    ;load ECT sensor count
+                    cmpb      #$51                ;compare with $51
+                    bcc       .LDD4C              ;branch ahead to clr X00E2.3 if colder than 50 C (122 F)
 
-                    ora       #$08                ; set X00E2.3 (TPS < 1.5V and ECT hotter than 50 C)
+                    ora       #$08                ;set X00E2.3 (TPS < 1.5V and ECT hotter than 50 C)
                     bra       .LDD4E
 
-.LDD4C              anda      #$F7                ; clr X00E2.3 (TPS > 1.5V or ECT colder than 50 C)
+.LDD4C              anda      #$F7                ;clr X00E2.3 (TPS > 1.5V or ECT colder than 50 C)
 
-.LDD4E              sta       $00E2               ; store it
+.LDD4E              sta       $00E2               ;store it
 
 ; -------------------------------------------------------------------------------
 ; Throttle Pot Calculation
@@ -617,19 +617,19 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; When RPM < 4185, continue to next section (TPS Direction & Rate), else
 ; call a TPS related routine, set the 24-bit value = (TP * 256) and jump down
 ; -------------------------------------------------------------------------------
-                    lda       ignPeriod           ; load ignition period (MSB only)
+                    lda       ignPeriod           ;load ignition period (MSB only)
           #ifdef BUILD_R3365
-                    cmpa      #$08                ; compare with $08
+                    cmpa      #$08                ;compare with $08
           #else
-                    cmpa      #$07                ; compare with $07
+                    cmpa      #$07                ;compare with $07
           #endif
-                    bcc       .LDD60              ; branch ahead if < 4185 RPM
+                    bcc       .LDD60              ;branch ahead if < 4185 RPM
 
                     jsr       LF423
-                    ldd       throttlePot         ; load TPS value
-                    std       throttlePot24bit    ; store TPS as upper 16 of 24-bit value
+                    ldd       throttlePot         ;load TPS value
+                    std       throttlePot24bit    ;store TPS as upper 16 of 24-bit value
 
-.LDD5D              jmp       .LDE70              ; jump to end of next section (RPM GT 4185)
+.LDD5D              jmp       .LDE70              ;jump to end of next section (RPM GT 4185)
 
 ; -------------------------------------------------------------------------------
 ; Calculate Throttle Direction and Rate
@@ -639,38 +639,38 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; The data table used here is the 6 row x 10 column table.
 ; -------------------------------------------------------------------------------
-.LDD60              ldx       #$C0F8              ; point to start of data table
-                    ldb       fuelMapNumber       ; load fuel map number
-                    beq       .LDD6E              ; branch ahead to use $C0F8 if fuel map 0
+.LDD60              ldx       #$C0F8              ;point to start of data table
+                    ldb       fuelMapNumber       ;load fuel map number
+                    beq       .LDD6E              ;branch ahead to use $C0F8 if fuel map 0
 
-                    ldb       #$82                ; else, need to add offset to base map ptr
-                    ldx       fuelMapPtr          ; load index with fuel map pointer
-                    abx                           ; add $82 to find the table
+                    ldb       #$82                ;else, need to add offset to base map ptr
+                    ldx       fuelMapPtr          ;load index with fuel map pointer
+                    abx                           ;add $82 to find the table
 
-.LDD6E              lda       coolantTempCount    ; load ECT sensor count
-                    ldb       #$0A                ; number of columns in table
-                    jsr       indexIntoTable      ; this indexes to the correct temperature bracket
+.LDD6E              lda       coolantTempCount    ;load ECT sensor count
+                    ldb       #$0A                ;number of columns in table
+                    jsr       indexIntoTable      ;this indexes to the correct temperature bracket
 
-                    ldd       throttlePot         ; load the TPS value
-                    subd      savedTpsValue       ; subtract last TPS value (saved last time through)
-                    bcs       .LDD83              ; branch ahead if savedTpsValue > TPS (throttle closing)
+                    ldd       throttlePot         ;load the TPS value
+                    subd      savedTpsValue       ;subtract last TPS value (saved last time through)
+                    bcs       .LDD83              ;branch ahead if savedTpsValue > TPS (throttle closing)
 
-                    cmpb      #$02                ; TPS reading was greater so subtract 2 from positive remainder
-                    bcc       .LDD8F              ; branch ahead if TPS > (savedTpsValue plus 2) (throttle opening)
+                    cmpb      #$02                ;TPS reading was greater so subtract 2 from positive remainder
+                    bcc       .LDD8F              ;branch ahead if TPS > (savedTpsValue plus 2) (throttle opening)
 ; ---------------------
 ; Throttle is steady
 ; ---------------------
-.LDD7F              ldd       savedTpsValue       ; load last saved value
-                    bra       .LDD99              ; branch to common code with last saved value
+.LDD7F              ldd       savedTpsValue       ;load last saved value
+                    bra       .LDD99              ;branch to common code with last saved value
 
 ; ---------------------
 ; Throttle is closing
 ; ---------------------
-.LDD83              cmpb      #$FD                ; TPS < savedTpsValue, compare negative value with -3
-                    bcc       .LDD7F              ; if cc, value was more positive so branch up to steady throttle
+.LDD83              cmpb      #$FD                ;TPS < savedTpsValue, compare negative value with -3
+                    bcc       .LDD7F              ;if cc, value was more positive so branch up to steady throttle
 
-                    lda       $008B               ; if here, throttle is really closing
-                    ora       #$20                ; set X008B.5 (this is the throttle_closing bit)
+                    lda       $008B               ;if here, throttle is really closing
+                    ora       #$20                ;set X008B.5 (this is the throttle_closing bit)
                     sta       $008B
                     bra       .LDD95
 
@@ -678,114 +678,114 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Throttle is opening
 ; ---------------------
 .LDD8F              lda       $00D3
-                    ora       #$40                ; set X00D3.6 (this is the throttle_opening bit)
+                    ora       #$40                ;set X00D3.6 (this is the throttle_opening bit)
                     sta       $00D3
 ; throttle opening or closing gets to here (not steady condition)
-.LDD95              ldd       throttlePot         ; save current TPS value...
-                    std       savedTpsValue       ; for next time through
+.LDD95              ldd       throttlePot         ;save current TPS value...
+                    std       savedTpsValue       ;for next time through
 
 ; ------------------------------------------
 ; All 3 condition above end up here.
 ; This section takes the absolute value of
 ; the TPS delta and limits it to $FF.
 ; ------------------------------------------
-.LDD99              subd      throttlePot24bit    ; subtract top 16 bits of 24-bit TPS value from current TPS value
-                    std       $00CC               ; store signed throttle delta (pos or neg) in X00CC/CD
-                    bpl       .LDDA2              ; skip absolute value conversion if positive
-                    jsr       absoluteValAB       ; absolute value
-.LDDA2              tsta                          ; test upper byte for zero
-                    beq       .LDDA7              ; branch ahead if zero
+.LDD99              subd      throttlePot24bit    ;subtract top 16 bits of 24-bit TPS value from current TPS value
+                    std       $00CC               ;store signed throttle delta (pos or neg) in X00CC/CD
+                    bpl       .LDDA2              ;skip absolute value conversion if positive
+                    jsr       absoluteValAB       ;absolute value
+.LDDA2              tsta                          ;test upper byte for zero
+                    beq       .LDDA7              ;branch ahead if zero
 
-                    ldb       #$FF                ; else load max value into B
+                    ldb       #$FF                ;else load max value into B
 
-.LDDA7              stb       $00C8               ; X00C8 is now the absolute value of TP delta ($FF max)
-                    cmpb      #$05                ; compare with 5
-                    bcc       .LDDB3              ; branch ahead if delta > 5
+.LDDA7              stb       $00C8               ;X00C8 is now the absolute value of TP delta ($FF max)
+                    cmpb      #$05                ;compare with 5
+                    bcc       .LDDB3              ;branch ahead if delta > 5
 
                     lda       $008A
-                    ora       #$80                ; set X008A.0
+                    ora       #$80                ;set X008A.0
                     sta       $008A
 
-.LDDB3              lda       $00CC               ; load signed throttle delta (MSB)
-                    bpl       .LDDEF              ; branch ahead if delta is positive (TPs > upper 16 of throttlePot24bit)
+.LDDB3              lda       $00CC               ;load signed throttle delta (MSB)
+                    bpl       .LDDEF              ;branch ahead if delta is positive (TPs > upper 16 of throttlePot24bit)
 ; -----------------------------------------
 ; Throttle Delta is Negative (closing)
 ; -----------------------------------------
-                    lda       $008B               ; B holds abs of throttle delta ($FF max)
-                    bita      #$01                ; test X008B.0 (road speed > 4 KPH)
-                    bne       .LDDC3              ; branch ahead if road speed > 4 KPH
+                    lda       $008B               ;B holds abs of throttle delta ($FF max)
+                    bita      #$01                ;test X008B.0 (road speed > 4 KPH)
+                    bne       .LDDC3              ;branch ahead if road speed > 4 KPH
 
                     lda       $00D3
-                    bita      #$40                ; test X00D3.6 (throttle_opening bit)
-                    beq       .LDD5D              ; if 0, throttle is steady so branch up to jump instruction
+                    bita      #$40                ;test X00D3.6 (throttle_opening bit)
+                    beq       .LDD5D              ;if 0, throttle is steady so branch up to jump instruction
 ; to jump way down and reset TPS D&R to 1024
 
 ; if here, throttle delta is negative & road speed > 4 KPH
-.LDDC3              lda       $2011               ; this value comes from last byte in fuel map data struct (usually $64)
-                    mul                           ; B is absolute value of TP delta (multiply A * B)
-                    cmpa      $14,x               ; compare upper byte of result with value from 3rd row of table
-                    bcs       .LDDD4              ; branch ahead if A result of (100 * B) is less than value from 3rd row
+.LDDC3              lda       $2011               ;this value comes from last byte in fuel map data struct (usually $64)
+                    mul                           ;B is absolute value of TP delta (multiply A * B)
+                    cmpa      $14,x               ;compare upper byte of result with value from 3rd row of table
+                    bcs       .LDDD4              ;branch ahead if A result of (100 * B) is less than value from 3rd row
 
-                    lda       $14,x               ; otherwise get value from table again to limit the result
+                    lda       $14,x               ;otherwise get value from table again to limit the result
                     ldb       $00D3
-                    andb      #$BF                ; clear X00D3.6 (throttle_opening bit)
+                    andb      #$BF                ;clear X00D3.6 (throttle_opening bit)
                     stb       $00D3
-                    clrb                          ; set the low byte of this 16-bit value to zero
+                    clrb                          ;set the low byte of this 16-bit value to zero
 
-.LDDD4              std       $00CA               ; store the 16-bit result in X00CA/CB
-                    subd      $C1E7               ; data value is $0200 (subtract this from 16-bit value in AB)
-                    bcs       .LDDE1              ; branch ahead if AB was less than $200
+.LDDD4              std       $00CA               ;store the 16-bit result in X00CA/CB
+                    subd      $C1E7               ;data value is $0200 (subtract this from 16-bit value in AB)
+                    bcs       .LDDE1              ;branch ahead if AB was less than $200
 
-                    ldd       mafDirectLo         ; resynchronize MAF high and low readings
+                    ldd       mafDirectLo         ;resynchronize MAF high and low readings
                     std       mafDirectHi
-                    bra       .LDDE7              ; and branch to avoid setting X008A.7
+                    bra       .LDDE7              ;and branch to avoid setting X008A.7
 
 .LDDE1              lda       $008A
-                    ora       #$80                ; set X008A.7 (this bit may indicate a large delta in TPS)
+                    ora       #$80                ;set X008A.7 (this bit may indicate a large delta in TPS)
                     sta       $008A
 
-.LDDE7              ldd       $00CA               ; load the previously stored, 16-bit result (still a negative number)
-                    lsrd                          ; logical shift right double
-                    jsr       absoluteValAB       ; convert to absolute value
-                    bra       .LDE0F              ; branch down to common code
+.LDDE7              ldd       $00CA               ;load the previously stored, 16-bit result (still a negative number)
+                    lsrd                          ;logical shift right double
+                    jsr       absoluteValAB       ;convert to absolute value
+                    bra       .LDE0F              ;branch down to common code
 
 ; -----------------------------------------
 ; Throttle Delta is Positive (opening)
 ; -----------------------------------------
 ; B holds abs of throttle delta ($FF max)
-.LDDEF              lda       $1E,x               ; get 4th row value from table
-                    mul                           ; multiply delta by this value (16-bit result in AB)
-                    cmpa      $0A,x               ; compare with 2nd row value for limiting reasons
-                    bcs       .LDDF9              ; if upper byte A is < table value we're OK so branch ahead
+.LDDEF              lda       $1E,x               ;get 4th row value from table
+                    mul                           ;multiply delta by this value (16-bit result in AB)
+                    cmpa      $0A,x               ;compare with 2nd row value for limiting reasons
+                    bcs       .LDDF9              ;if upper byte A is < table value we're OK so branch ahead
 
-                    lda       $0A,x               ; limit the value, read the upper byte again
-                    clrb                          ; and zero the lower byte
+                    lda       $0A,x               ;limit the value, read the upper byte again
+                    clrb                          ;and zero the lower byte
 
-.LDDF9              std       $00CA               ; store the 16-bit result in X00CA/CB
-                    subd      $C135               ; data value is $0400 (subtract this from 16-bit value in AB)
-                    bcs       .LDE06              ; branch ahead if AB was less than $0400
+.LDDF9              std       $00CA               ;store the 16-bit result in X00CA/CB
+                    subd      $C135               ;data value is $0400 (subtract this from 16-bit value in AB)
+                    bcs       .LDE06              ;branch ahead if AB was less than $0400
 
-                    ldd       mafDirectHi         ; resynchronize MAF high and low readings
+                    ldd       mafDirectHi         ;resynchronize MAF high and low readings
                     std       mafDirectLo
-                    bra       .LDE0C              ; and branch to avoid setting X008A.7
+                    bra       .LDE0C              ;and branch to avoid setting X008A.7
 
 .LDE06              lda       $008A
-                    ora       #$80                ; set X008A.7 (this bit may indicate a large delta in TPS)
+                    ora       #$80                ;set X008A.7 (this bit may indicate a large delta in TPS)
                     sta       $008A
 
-.LDE0C              ldd       $00CA               ; load the previously stored, 16-bit result (a positive number)
-                    lsrd                          ; logical shift right double
+.LDE0C              ldd       $00CA               ;load the previously stored, 16-bit result (a positive number)
+                    lsrd                          ;logical shift right double
 ; -----------------------------------------
 ; Back to common throttle code
 ; -----------------------------------------
 ; the next 4 lines are a 16-bit divide by 4
-.LDE0F              asra                          ; arithmetic shift right (into carry)
-                    rorb                          ; rotate right (carry->B->carry)
-                    asra                          ; arithmetic shift right (into carry)
-                    rorb                          ; rotate right (carry->B->carry)
+.LDE0F              asra                          ;arithmetic shift right (into carry)
+                    rorb                          ;rotate right (carry->B->carry)
+                    asra                          ;arithmetic shift right (into carry)
+                    rorb                          ;rotate right (carry->B->carry)
 
-                    addd      #$0400              ; AB is now a pos or neg value to be added to the 1024 base value
-                    std       tpsDirectionAndRate  ; store TPS Dir & Rate (1024 +/-)
+                    addd      #$0400              ;AB is now a pos or neg value to be added to the 1024 base value
+                    std       tpsDirectionAndRate  ;store TPS Dir & Rate (1024 +/-)
 
 ; -------------------------------------------------------------------------------
 ; Calculate 24-bit Throttle Pot Value
@@ -793,97 +793,97 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; throttlePot24bit is a 24-bit value that looks very much like the throttle pot
 ; value but scaled up by 256
 ; -------------------------------------------------------------------------------
-                    ldb       $00CC               ; still the MSB of the signed throttle delta
-                    bpl       .LDE1F              ; branch if plus (throttle opening)
+                    ldb       $00CC               ;still the MSB of the signed throttle delta
+                    bpl       .LDE1F              ;branch if plus (throttle opening)
 
-                    ldb       #$0A                ; load number of columns in table
-                    abx                           ; add row to table index
+                    ldb       #$0A                ;load number of columns in table
+                    abx                           ;add row to table index
 
-.LDE1F              ldb       $00C8               ; X00C8 is abs of TP delta
-                    lda       $28,x               ; get value from 5th or 6th table row
-                    mul                           ; mpy TP delta abs by table value
-                    std       $00C8               ; store result in X00C8/C9
-                    ldd       tp24_Byte2          ; load bottom 16 bits of 24-bit TP value
-                    tst       $00CC               ; check if TPS delta is pos or neg
-                    bpl       .LDE37              ; branch if positive
+.LDE1F              ldb       $00C8               ;X00C8 is abs of TP delta
+                    lda       $28,x               ;get value from 5th or 6th table row
+                    mul                           ;mpy TP delta abs by table value
+                    std       $00C8               ;store result in X00C8/C9
+                    ldd       tp24_Byte2          ;load bottom 16 bits of 24-bit TP value
+                    tst       $00CC               ;check if TPS delta is pos or neg
+                    bpl       .LDE37              ;branch if positive
 
 ; <-- TP delta is negative
-                    subd      $00C8               ; subtract the just calculated value
-                    std       tp24_Byte2          ; store the bottom 16 bits
-                    lda       throttlePot24bit    ; load the top byte of 24-bit value
-                    sbca      #$00                ; subtract carry from top byte
+                    subd      $00C8               ;subtract the just calculated value
+                    std       tp24_Byte2          ;store the bottom 16 bits
+                    lda       throttlePot24bit    ;load the top byte of 24-bit value
+                    sbca      #$00                ;subtract carry from top byte
                     bra       .LDE3F
 
 ; <-- TP delta is positive
-.LDE37              addd      $00C8               ; add the just calculated value
-                    std       tp24_Byte2          ; store the bottom 16 bits
-                    lda       throttlePot24bit    ; load the top byte of 24-bit value
-                    adca      #$00                ; add carry to top byte
+.LDE37              addd      $00C8               ;add the just calculated value
+                    std       tp24_Byte2          ;store the bottom 16 bits
+                    lda       throttlePot24bit    ;load the top byte of 24-bit value
+                    adca      #$00                ;add carry to top byte
 
-.LDE3F              sta       throttlePot24bit    ; store the top byte of 24-bit value
-                    lda       $0085               ; bits value
-                    ldb       $008A               ; test X008A.7 (large_difference bit)
-                    bpl       .LDE4B              ; branch if 0 to clear X0085.3
+.LDE3F              sta       throttlePot24bit    ;store the top byte of 24-bit value
+                    lda       $0085               ;bits value
+                    ldb       $008A               ;test X008A.7 (large_difference bit)
+                    bpl       .LDE4B              ;branch if 0 to clear X0085.3
 
-                    ora       #$08                ; set X0085.3
+                    ora       #$08                ;set X0085.3
                     bra       .LDE4D
 
-.LDE4B              anda      #$F7                ; clr X0085.3
+.LDE4B              anda      #$F7                ;clr X0085.3
 
-.LDE4D              sta       $0085               ; store bits value
+.LDE4D              sta       $0085               ;store bits value
 ; -------------------------------------------------------------------------------
 ; Do stuff based on eng RPM and TP direction
 ; -------------------------------------------------------------------------------
-                    lda       ignPeriod           ; load ignition period MSB
-                    cmpa      #$09                ; compare with $09
-                    bcc       .LDE62              ; branch ahead if engine speed < 3255 RPM
-                    ldd       tpsDirectionAndRate  ; load TPS Direction & Rate (value is 1024 +/-)
-                    subd      #$0400              ; subtract 1024
+                    lda       ignPeriod           ;load ignition period MSB
+                    cmpa      #$09                ;compare with $09
+                    bcc       .LDE62              ;branch ahead if engine speed < 3255 RPM
+                    ldd       tpsDirectionAndRate  ;load TPS Direction & Rate (value is 1024 +/-)
+                    subd      #$0400              ;subtract 1024
           #ifdef BUILD_R3365
                     bcc       .LDE70A
           #else
-                    bcc       .LDE79              ; branch if > 1024 (opening)
+                    bcc       .LDE79              ;branch if > 1024 (opening)
           #endif
-                    bra       .LDE70              ; else branch down (closing)
+                    bra       .LDE70              ;else branch down (closing)
 
 ; -------------
 ; Unused code
 ; -------------
                     ldd       throttlePot
-                    std       throttlePot24bit    ; store as upper 2 bytes of 24-bit value
+                    std       throttlePot24bit    ;store as upper 2 bytes of 24-bit value
 
 ; --------------------------------------------------------
 ; branches here if eng speed < 3255 RPM
-.LDE62              ldd       throttlePot         ; load 10-bit TPS value
-                    subd      #$0267              ; subtract 615 (60% or 3.0 volts)
+.LDE62              ldd       throttlePot         ;load 10-bit TPS value
+                    subd      #$0267              ;subtract 615 (60% or 3.0 volts)
 
           #ifdef BUILD_R3365
                     bcs       .LDE70A
           #else
-                    bcs       .LDE79              ; branch TPS D&R > 1024 (throttle opening)
+                    bcs       .LDE79              ;branch TPS D&R > 1024 (throttle opening)
           #endif
-                    ldd       tpsDirectionAndRate  ; load TPS Direction & Rate (1024 +/-)
-                    subd      #$0400              ; subtract 1024
+                    ldd       tpsDirectionAndRate  ;load TPS Direction & Rate (1024 +/-)
+                    subd      #$0400              ;subtract 1024
           #ifdef BUILD_R3365
                     bcc       .LDE70A
           #else
-                    bcc       .LDE79              ; branch TPS D&R > 1024 (throttle opening)
+                    bcc       .LDE79              ;branch TPS D&R > 1024 (throttle opening)
           #endif
 ; --------------------------------------------------------
 .LDE70              ldd       #$0400
-                    std       tpsDirectionAndRate  ; reset TPS D&R to 1024
-                    ldd       throttlePot         ; load TPS value
-                    std       throttlePot24bit    ; store as top 16 bits of 24-bit value
+                    std       tpsDirectionAndRate  ;reset TPS D&R to 1024
+                    ldd       throttlePot         ;load TPS value
+                    std       throttlePot24bit    ;store as top 16 bits of 24-bit value
 
           #ifdef BUILD_R3365
 ; -----------------------------------------------------------
 ; Defender Only (R3365)
 ; -----------------------------------------------------------
 
-.LDE70A             lda       ignPeriod           ; load ignition period MSB
-                    cmpa      #$08                ; about 3662 RPM
-                    bcc       .LDE79              ; branch ahead if LT 3662 RPM
-                    lda       #$27                ; dhb
+.LDE70A             lda       ignPeriod           ;load ignition period MSB
+                    cmpa      #$08                ;about 3662 RPM
+                    bcc       .LDE79              ;branch ahead if LT 3662 RPM
+                    lda       #$27                ;dhb
                     sta       AdcControlReg1
                     lda       #$C8
                     sta       AdcDataLow
@@ -892,15 +892,15 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; ---------------------------------------------------------------------------------------------
 ; Trigger ADC Conversion on O2 Sensor
 ; ---------------------------------------------------------------------------------------------
-.LDE79              lda       #$8C                ; load ADC control value for even (right) O2 sensor
-                    tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bpl       .LDE82              ; branch ahead if 0 (even)
-                    lda       #$8F                ; load ADC control value for odd (left) O2 sensor
+.LDE79              lda       #$8C                ;load ADC control value for even (right) O2 sensor
+                    tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bpl       .LDE82              ;branch ahead if 0 (even)
+                    lda       #$8F                ;load ADC control value for odd (left) O2 sensor
 
-.LDE82              sta       AdcControlReg1      ; start ADC conversion
-                    ldd       mafDirectHi         ; load MAF high
-                    addd      mafDirectLo         ; add MAF low
-                    std       $00C8               ; X00C8/C9 = MAF sum
+.LDE82              sta       AdcControlReg1      ;start ADC conversion
+                    ldd       mafDirectHi         ;load MAF high
+                    addd      mafDirectLo         ;add MAF low
+                    std       $00C8               ;X00C8/C9 = MAF sum
 
 ; ------------------------------------------------------------------------------
 ; Test for TPS or MAF Failure (Fault Codes 12, 18 & 19)
@@ -924,90 +924,90 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; ------------------------------------------------------------------------------
 
                     lda       bits_008C
-                    bita      #$02                ; test bits_008C.1 (timeout bit)
-                    beq       .linearizeMaf       ; branch to skip test if still zero
+                    bita      #$02                ;test bits_008C.1 (timeout bit)
+                    beq       .linearizeMaf       ;branch to skip test if still zero
 
-                    ldd       ignPeriod           ; load 16-bit ignition period
-                    subd      #$0753              ; test for 4000 RPM
-                    bcs       .linearizeMaf       ; skip to skip test if RPM > 4000
+                    ldd       ignPeriod           ;load 16-bit ignition period
+                    subd      #$0753              ;test for 4000 RPM
+                    bcs       .linearizeMaf       ;skip to skip test if RPM > 4000
 
-                    ldd       $00C8               ; X00C8/C9 is sum of 2 air flow values
-                    subd      #$0599              ; equivalent to 70% (3.5 volt average)
-                    bcc       .LDEB7              ; branch ahead if airflow > 70%
+                    ldd       $00C8               ;X00C8/C9 is sum of 2 air flow values
+                    subd      #$0599              ;equivalent to 70% (3.5 volt average)
+                    bcc       .LDEB7              ;branch ahead if airflow > 70%
 
           #ifdef BUILD_R3360_AND_LATER
-                    clr       tpsFaultDelayCount  ; fail delay counter (not in TVR code)
+                    clr       tpsFaultDelayCount  ;fail delay counter (not in TVR code)
           #endif
-                    ldd       $00C8               ; reload air flow sum
-                    subd      #409                ; subtract 409 dec or 1.0 volt average
-                    bcc       .LDED2              ; branch ahead if airflow > 1.0 volt average
+                    ldd       $00C8               ;reload air flow sum
+                    subd      #409                ;subtract 409 dec or 1.0 volt average
+                    bcc       .LDED2              ;branch ahead if airflow > 1.0 volt average
 
-                    ldd       throttlePot         ; load 10-bit TPS value
-                    subd      #dtc18_tpsMaximum   ; 1.5 Volts in older code, 4.0 Volts in later code
-                    bcs       .LDED2              ; branch ahead if TPS is less than this
+                    ldd       throttlePot         ;load 10-bit TPS value
+                    subd      #dtc18_tpsMaximum   ;1.5 Volts in older code, 4.0 Volts in later code
+                    bcs       .LDED2              ;branch ahead if TPS is less than this
 
-                    lda       #$01                ; <-- Set Fault Code 18
-                    jsr       setTempTPFaults     ; (TPS > 4.0 Volts and MAF < 1.0 volt)
-                    bra       .LDED2              ; branch ahead
+                    lda       #$01                ;<-- Set Fault Code 18
+                    jsr       setTempTPFaults     ;(TPS > 4.0 Volts and MAF < 1.0 volt)
+                    bra       .LDED2              ;branch ahead
 
-.LDEB7              ldd       throttlePot         ; load TPS value
-                    subd      #205                ; subtract 205 dec or 1.0 volt
+.LDEB7              ldd       throttlePot         ;load TPS value
+                    subd      #205                ;subtract 205 dec or 1.0 volt
           #ifdef BUILD_R3360_AND_LATER
-                    bcc       .LDECF              ; branch ahead if TPS > 1.0 volt
+                    bcc       .LDECF              ;branch ahead if TPS > 1.0 volt
           #else
-                    bcc       .LDED2              ; branch ahead if TPS > 1.0 volt
+                    bcc       .LDED2              ;branch ahead if TPS > 1.0 volt
           #endif
           #ifdef BUILD_R3360_AND_LATER
                     lda       tpsFaultDelayCount
-                    inca                          ; increment fail delay counter
+                    inca                          ;increment fail delay counter
                     sta       tpsFaultDelayCount
-                    cmpa      #$20                ; compare with $20
-                    bcs       .LDED2              ; don't set failure until counter reaches $20
+                    cmpa      #$20                ;compare with $20
+                    bcs       .LDED2              ;don't set failure until counter reaches $20
 
                     lda       faultBits_4A
-                    ora       #$40                ; <-- Set Fault Code 19
-                    sta       faultBits_4A        ; (TPS low with MAF high)
+                    ora       #$40                ;<-- Set Fault Code 19
+                    sta       faultBits_4A        ;(TPS low with MAF high)
 
-.LDECF              clr       tpsFaultDelayCount  ; clear the fault delay counter
+.LDECF              clr       tpsFaultDelayCount  ;clear the fault delay counter
           #else
-                    lda       #$02                ; pass $02 to subroutine
-                    jsr       setTempTPFaults     ; (older code only)
+                    lda       #$02                ;pass $02 to subroutine
+                    jsr       setTempTPFaults     ;(older code only)
           #endif
-.LDED2              lda       ignPeriod           ; load ignition period (MSB only)
-                    cmpa      #ignPeriodEngStart  ; test for 500 RPM (375 for cold weather chip)
-                    bcc       .linearizeMaf       ; skip to next section if RPM lower than this
+.LDED2              lda       ignPeriod           ;load ignition period (MSB only)
+                    cmpa      #ignPeriodEngStart  ;test for 500 RPM (375 for cold weather chip)
+                    bcc       .linearizeMaf       ;skip to next section if RPM lower than this
 
-                    ldd       $00C8               ; reload air flow sum
-                    subd      #80                 ; subtract 80 decimal (about 195 mV)
+                    ldd       $00C8               ;reload air flow sum
+                    subd      #80                 ;subtract 80 decimal (about 195 mV)
           #ifdef BUILD_R3360_AND_LATER
-                    bcs       .LDEEA              ; branch to increment fault delay counter if less than 195 mV
+                    bcs       .LDEEA              ;branch to increment fault delay counter if less than 195 mV
           #else
-                    bcs       .LDE2A              ; branch to increment fault delay counter if less than 195 mV
+                    bcs       .LDE2A              ;branch to increment fault delay counter if less than 195 mV
           #endif
-                    subd      #$07A0              ; subtract 1952 from MAF sum (this totals 4.96 mV)
-                    bcs       .linearizeMaf       ; skip to next section if MAF < 4.96 mV
+                    subd      #$07A0              ;subtract 1952 from MAF sum (this totals 4.96 mV)
+                    bcs       .linearizeMaf       ;skip to next section if MAF < 4.96 mV
 
-                    lda       ignPeriod           ; load ignition period (MSB only)
-                    cmpa      #$1E                ; compare with 977 RPM
-                    bcs       .linearizeMaf       ; skip to next section if RPM > 976
+                    lda       ignPeriod           ;load ignition period (MSB only)
+                    cmpa      #$1E                ;compare with 977 RPM
+                    bcs       .linearizeMaf       ;skip to next section if RPM > 976
           #ifdef BUILD_R3360_AND_LATER
-.LDEEA              lda       dtc12Delay          ; load counter
-                    inca                          ; increment the counter
-                    sta       dtc12Delay          ; store it
-                    cmpa      #$20                ; compare it with $20
-                    bcs       .calcFilteredPW     ; if less, branch down to skip linearizeMaf
+.LDEEA              lda       dtc12Delay          ;load counter
+                    inca                          ;increment the counter
+                    sta       dtc12Delay          ;store it
+                    cmpa      #$20                ;compare it with $20
+                    bcs       .calcFilteredPW     ;if less, branch down to skip linearizeMaf
 
                     lda       faultBits_49
-                    ora       #$40                ; <-- Set Fault Code 12 (MAF Sensor Fault)
+                    ora       #$40                ;<-- Set Fault Code 12 (MAF Sensor Fault)
                     sta       faultBits_49
                     lda       $0087
-                    ora       #$02                ; set X0087.1 (prevents closed loop)
+                    ora       #$02                ;set X0087.1 (prevents closed loop)
                     sta       $0087
-                    bra       .calcFilteredPW     ; branch down to skip linearizeMaf
+                    bra       .calcFilteredPW     ;branch down to skip linearizeMaf
           #else
-.LDE2A              lda       #$FF                ; pass $FF to fault subroutine
+.LDE2A              lda       #$FF                ;pass $FF to fault subroutine
                     jsr       setTempTPFaults
-                    bra       .calcFilteredPW     ; branch down to skip linearizeMaf
+                    bra       .calcFilteredPW     ;branch down to skip linearizeMaf
           #endif
 ; ------------------------------------------------------------------------------
 ; MAF Sensor Linearization
@@ -1037,15 +1037,15 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; ------------------------------------------------------------------------------
           #ifdef BUILD_R3360_AND_LATER
-.linearizeMaf       clr       dtc12Delay          ; clear fault delay counter (newer code))
-                    ldd       $00C8               ; reload MAF sum
+.linearizeMaf       clr       dtc12Delay          ;clear fault delay counter (newer code))
+                    ldd       $00C8               ;reload MAF sum
           #else
-.linearizeMaf       ldd       $00C8               ; reload MAF sum
+.linearizeMaf       ldd       $00C8               ;reload MAF sum
           #endif
-                    asld:3                        ; 8x
-                    addd      $C1C3               ; data value is $225D (8797 dec)
+                    asld:3                        ;8x
+                    addd      $C1C3               ;data value is $225D (8797 dec)
 
-.linMafLoop         sta       $00C8               ; squaring function starts here
+.linMafLoop         sta       $00C8               ;squaring function starts here
                     mul
                     sta       $00C9
                     lda       $00C8
@@ -1054,20 +1054,20 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     addb      $00C9
                     adca      #0
                     addb      $00C9
-                    adca      #0                  ; squaring function ends here
+                    adca      #0                  ;squaring function ends here
 
-                    com       $00CE               ; previously cleared at code address LDCEB
-                    beq       .LDF30              ; 1's comp forced branch out here on 2nd pass
+                    com       $00CE               ;previously cleared at code address LDCEB
+                    beq       .LDF30              ;1's comp forced branch out here on 2nd pass
                     asld
-                    subd      $C1C5               ; data value is $09C0 (2496 dec)
+                    subd      $C1C5               ;data value is $09C0 (2496 dec)
                     bcc       .LDF2D
-                    ldd       #$0000              ; if negative, limit to zero
+                    ldd       #$0000              ;if negative, limit to zero
 
 .LDF2D              asld
-                    bra       .linMafLoop         ; end loop
+                    bra       .linMafLoop         ;end loop
 
-.LDF30              std       $00CA               ; store it here for 16-bit mpy
-                    std       mafLinear           ; also store it in normal location
+.LDF30              std       $00CA               ;store it here for 16-bit mpy
+                    std       mafLinear           ;also store it in normal location
 
 ; ---------------------------------------------------------------------------------------------------
 ; Calculate Filtered Ignition Period
@@ -1077,24 +1077,24 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; shifting these bits back in. Normally there is no rollover since we need to be below 500 RPM for
 ; this to happen.
 ; ---------------------------------------------------------------------------------------------------
-.calcFilteredPW     ldd       #$0003              ; load double value $0003
-                    std       $00CC               ; X00CC = $00, X00CD = $03
-                    ldd       ignPeriod           ; load 16-bit ignition period (instantaneous)
+.calcFilteredPW     ldd       #$0003              ;load double value $0003
+                    std       $00CC               ;X00CC = $00, X00CD = $03
+                    ldd       ignPeriod           ;load 16-bit ignition period (instantaneous)
 
 ; start 3X loop *
-.LDF3C              addd      ignPeriodFiltered   ; add 16-bit ignition period (filtered)
-                    bcc       .LDF43              ; branch ahead if sum did not roll over
-                    inc       $00CC               ; increment X00CC when rollover happened
-.LDF43              dec       $00CD               ; decrement loop counter
-                    bne       .LDF3C              ; end 3X loop *
+.LDF3C              addd      ignPeriodFiltered   ;add 16-bit ignition period (filtered)
+                    bcc       .LDF43              ;branch ahead if sum did not roll over
+                    inc       $00CC               ;increment X00CC when rollover happened
+.LDF43              dec       $00CD               ;decrement loop counter
+                    bne       .LDF3C              ;end 3X loop *
 
-                    lsr       $00CC               ; lsb into carry
-                    rora                          ; carry into msb, lsb into carry
-                    rorb                          ; carry into msb
-                    lsr       $00CC               ; lsb into carry
-                    rora                          ; carry into msb, lsb into carry
-                    rorb                          ; lsb into carry
-                    std       ignPeriodFiltered   ; store filtered ignition period
+                    lsr       $00CC               ;lsb into carry
+                    rora                          ;carry into msb, lsb into carry
+                    rorb                          ;carry into msb
+                    lsr       $00CC               ;lsb into carry
+                    rora                          ;carry into msb, lsb into carry
+                    rorb                          ;lsb into carry
+                    std       ignPeriodFiltered   ;store filtered ignition period
 
 ; ---------------------------------------------------------------------------------------------------
 ;*** Calculate Fuel Map Load Value (Row Index) ***
@@ -1108,24 +1108,24 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; of the 8 row fuel map table.
 
 ; ---------------------------------------------------------------------------------------------------
-                    ldd       ignPeriod           ; load 16-bit ignition period (instantaneous)
-                    jsr       mpy16               ; call 16-bit mpy routine, mpy ignPeriod by mafLinear
-                    subd      $C1C7               ; data value is $001E (subtract this)
-                    bcc       .LDF61              ; branch ahead if value is still positive
-                    clra                          ; else, clear A
-                    bra       .LDF6F              ; and branch
+                    ldd       ignPeriod           ;load 16-bit ignition period (instantaneous)
+                    jsr       mpy16               ;call 16-bit mpy routine, mpy ignPeriod by mafLinear
+                    subd      $C1C7               ;data value is $001E (subtract this)
+                    bcc       .LDF61              ;branch ahead if value is still positive
+                    clra                          ;else, clear A
+                    bra       .LDF6F              ;and branch
 
-.LDF61              lsrd                          ; logical shift right double
-                    tsta                          ; test A for zero
-                    bne       .LDF6D              ; branch ahead to load $70
-                    lda       $200A               ; X200A gets initialized from fuel map byte offset $10A
+.LDF61              lsrd                          ;logical shift right double
+                    tsta                          ;test A for zero
+                    bne       .LDF6D              ;branch ahead to load $70
+                    lda       $200A               ;X200A gets initialized from fuel map byte offset $10A
                     mul
-                    cmpa      #$70                ; compare A with $70
-                    bcs       .LDF6F              ; if A <= $70, branch to store as fuel map row index
+                    cmpa      #$70                ;compare A with $70
+                    bcs       .LDF6F              ;if A <= $70, branch to store as fuel map row index
 
-.LDF6D              lda       #$70                ; else store $70
+.LDF6D              lda       #$70                ;else store $70
 
-.LDF6F              sta       fuelMapLoadIdx      ; store value as 'fuelMapLoadIdx'
+.LDF6F              sta       fuelMapLoadIdx      ;store value as 'fuelMapLoadIdx'
 
 ; ---------------------------------------------------------------------------------------------------
 ; Check for Neutral Switch Fault
@@ -1150,41 +1150,41 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; ---------------------------------------------------------------------------------------------------
                     ldb       bits_2004
-                    bitb      #$02                ; test bits_2004.1 (bit is set for manual gearbox)
-                    bne       .LDFA3              ; if set, branch to clear counter and return
+                    bitb      #$02                ;test bits_2004.1 (bit is set for manual gearbox)
+                    bne       .LDFA3              ;if set, branch to clear counter and return
 
-                    ldb       ignPeriod           ; ignition period (MSB)
-                    cmpb      #dtc69_rpmMinimum   ; compare wuth $0E (2093 RPM) later: $10 (1831 RPM)
-                    bcs       .LDFA3              ; branch to clr counter and return if RPM is higher
+                    ldb       ignPeriod           ;ignition period (MSB)
+                    cmpb      #dtc69_rpmMinimum   ;compare wuth $0E (2093 RPM) later: $10 (1831 RPM)
+                    bcs       .LDFA3              ;branch to clr counter and return if RPM is higher
 
-                    cmpb      #$13                ; compare with $13 (1541 RPM)
-                    bcc       .LDFA3              ; branch to clr counter and return if RPM is lower
+                    cmpb      #$13                ;compare with $13 (1541 RPM)
+                    bcc       .LDFA3              ;branch to clr counter and return if RPM is lower
           #ifdef BUILD_R3360_AND_LATER
                     ldb       neutralSwitchVal
-                    cmpb      #$B3                ; this value or higher indicates automatic in drive
-                    bcc       .LDFA3              ; branch to clr counter and return if drive indicated
+                    cmpb      #$B3                ;this value or higher indicates automatic in drive
+                    bcc       .LDFA3              ;branch to clr counter and return if drive indicated
           #else
                     ldb       $008A
-                    bitb      #$20                ; test X008A.5, if set, drive is indicated
-                    bne       .LDFA3              ; if set, branch to clr counter and return
+                    bitb      #$20                ;test X008A.5, if set, drive is indicated
+                    bne       .LDFA3              ;if set, branch to clr counter and return
           #endif
-                    cmpa      #$60                ; compare fuel map load index with $60
-                    bcs       .LDFA3              ; branch to clr counter and rtn if load index < $60
+                    cmpa      #$60                ;compare fuel map load index with $60
+                    bcs       .LDFA3              ;branch to clr counter and rtn if load index < $60
 
-                    ldd       neutralSwitchDelay  ; this is the 16-bit neutral fault delay counter
-                    addd      #$0001              ; add 1
-                    std       neutralSwitchDelay  ; store it
-                    subd      #500                ; subtract 500 decimal
-                    bcs       .LDFA8              ; branch to next section if counter < 500
+                    ldd       neutralSwitchDelay  ;this is the 16-bit neutral fault delay counter
+                    addd      #$0001              ;add 1
+                    std       neutralSwitchDelay  ;store it
+                    subd      #500                ;subtract 500 decimal
+                    bcs       .LDFA8              ;branch to next section if counter < 500
 
                     lda       faultBits_4C
-                    ora       #$80                ; <-- Set Fault Code 69 (Neutral Switch Fault)
+                    ora       #$80                ;<-- Set Fault Code 69 (Neutral Switch Fault)
                     sta       faultBits_4C
                     bra       .LDFA8
 
 .LDFA3              clra
                     clrb
-                    std       neutralSwitchDelay  ; reset counter to zero
+                    std       neutralSwitchDelay  ;reset counter to zero
 
 ; ---------------------------------------------------------------------------------------------------
 ; This section of code is still a mystery
@@ -1194,39 +1194,39 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; 'bankCounterEven' and 'bankCounterOdd' are referenced only here
 ; ---------------------------------------------------------------------------------------------------
-.LDFA8              lda       misfireCounterEven  ; load right bank value
-                    bne       .LDFB2              ; branch if not zero
+.LDFA8              lda       misfireCounterEven  ;load right bank value
+                    bne       .LDFB2              ;branch if not zero
 
-                    ldd       #$0000              ; reset 'bankCounterEven' to zero
+                    ldd       #$0000              ;reset 'bankCounterEven' to zero
                     std       bankCounterEven
 
-.LDFB2              lda       misfireCounterOdd   ; load left bank value
-                    bne       .LDFBC              ; branch if not zero
+.LDFB2              lda       misfireCounterOdd   ;load left bank value
+                    bne       .LDFBC              ;branch if not zero
 
-                    ldd       #$0000              ; reset 'bankCounterOdd' to zero
+                    ldd       #$0000              ;reset 'bankCounterOdd' to zero
                     std       bankCounterOdd
 
-.LDFBC              ldd       bankCounterOdd      ; load 16-bit value
-                    addd      #$0001              ; add 1
-                    std       bankCounterOdd      ; store it
-                    ldd       bankCounterEven     ; load 16-bit value
-                    addd      #$0001              ; add 1
-                    std       bankCounterEven     ; store it
+.LDFBC              ldd       bankCounterOdd      ;load 16-bit value
+                    addd      #$0001              ;add 1
+                    std       bankCounterOdd      ;store it
+                    ldd       bankCounterEven     ;load 16-bit value
+                    addd      #$0001              ;add 1
+                    std       bankCounterEven     ;store it
 
 ; data value at XC25D is $0258 (600 decimal)
-                    subd      $C25D               ; subtract 600 from bankCounterEven
-                    bcs       .LDFD6              ; branch if value is less than 600
+                    subd      $C25D               ;subtract 600 from bankCounterEven
+                    bcs       .LDFD6              ;branch if value is less than 600
 
-                    clr       misfireCounterEven  ; else reset counter
+                    clr       misfireCounterEven  ;else reset counter
 
 .LDFD6              ldd       bankCounterOdd
-                    subd      $C25D               ; subtract 600
+                    subd      $C25D               ;subtract 600
           #ifdef BUILD_TVR_CODE
-                    bcs       .LDF0B              ; if value < 600, branch to next section (TVR)
+                    bcs       .LDF0B              ;if value < 600, branch to next section (TVR)
           #else
-                    bcs       .LDFE1              ; if value < 600, branch to next section
+                    bcs       .LDFE1              ;if value < 600, branch to next section
           #endif
-                    clr       misfireCounterOdd   ; else reset counter
+                    clr       misfireCounterOdd   ;else reset counter
 
           #ifdef BUILD_TVR_CODE
 ; nothing
@@ -1249,49 +1249,49 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Bit is cleared if any 1 condition is not met
 
 ; ---------------------------------------------------------------------------------------------------
-.LDFE1              ldb       bits_205B           ; bits value
-                    lda       $008B               ; slao a bits value
-                    bita      #$01                ; test X008B.0 (road speed > 4 KPH)
-                    beq       .LDFFA              ; branch ahead if road speed < 4 KPH
+.LDFE1              ldb       bits_205B           ;bits value
+                    lda       $008B               ;slao a bits value
+                    bita      #$01                ;test X008B.0 (road speed > 4 KPH)
+                    beq       .LDFFA              ;branch ahead if road speed < 4 KPH
 
-                    tst       $0086               ; test X0086.7
-                    bpl       .LDFFA              ; branch ahead if X0086.7 is zero
+                    tst       $0086               ;test X0086.7
+                    bpl       .LDFFA              ;branch ahead if X0086.7 is zero
 
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C170               ; data value is $27 (83 degrees C)
-                    bcs       .LDFFA              ; branch ahead if ECT is hotter than this
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C170               ;data value is $27 (83 degrees C)
+                    bcs       .LDFFA              ;branch ahead if ECT is hotter than this
 
-                    orb       #$04                ; set bits_205B.2 (prevents closed loop)
-                    bra       .LDFFC              ; branch
+                    orb       #$04                ;set bits_205B.2 (prevents closed loop)
+                    bra       .LDFFC              ;branch
 
-.LDFFA              andb      #$FB                ; clr bits_205B.2 (allows closed loop)
+.LDFFA              andb      #$FB                ;clr bits_205B.2 (allows closed loop)
 
-.LDFFC              stb       bits_205B           ; store bits value
+.LDFFC              stb       bits_205B           ;store bits value
 
 ; ---------------------------------------
             #ifndef BUILD_R3383
-                    ldb       bits_205B           ; reload to set CCR
-                    tst       $0086               ; test X0086.7
-                    bpl       .LE01E              ; branch ahead if X0086.7 is zero
+                    ldb       bits_205B           ;reload to set CCR
+                    tst       $0086               ;test X0086.7
+                    bpl       .LE01E              ;branch ahead if X0086.7 is zero
 
-                    lda       $008A               ; load bits value
-                    bita      #$20                ; test X008A.5 (neutral switch)
-                    bne       .LE01E              ; branch if 1 (automatic in drive)
+                    lda       $008A               ;load bits value
+                    bita      #$20                ;test X008A.5 (neutral switch)
+                    bne       .LE01E              ;branch if 1 (automatic in drive)
 
                     lda       $008B
-                    bita      #$01                ; test X008B.0 (road speed > 4 KPH)
-                    bne       .LE01E              ; branch if road speed is > 4 KPH
+                    bita      #$01                ;test X008B.0 (road speed > 4 KPH)
+                    bne       .LE01E              ;branch if road speed is > 4 KPH
 
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C7E0               ; data value is $65 (40 degrees C)
-                    bcs       .LE01E              ; branch ahead if ECT is hotter than this
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C7E0               ;data value is $65 (40 degrees C)
+                    bcs       .LE01E              ;branch ahead if ECT is hotter than this
 
-                    orb       #$20                ; set bits_205B.5 (prevents closed loop)
+                    orb       #$20                ;set bits_205B.5 (prevents closed loop)
                     bra       .LE020
 
-.LE01E              andb      #$DF                ; clr bits_205B.5 (allows closed loop)
+.LE01E              andb      #$DF                ;clr bits_205B.5 (allows closed loop)
 
-.LE020              stb       bits_205B           ; store bits value
+.LE020              stb       bits_205B           ;store bits value
             #endif
           #endif
 
@@ -1307,35 +1307,35 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; ---------------------------------------------------------------------------------------------------
 .LDF0B              clrd
-                    std       $00CE               ; clear X00CE/CF to $0000
-                    lda       bits_0089           ; bits value
-                    anda      #$BF                ; clr bits_0089.6
-                    bita      #$10                ; test bits_0089.4 (right bank bit)
-                    beq       .LE031              ; branch ahead if bits_0089.4 is zero
+                    std       $00CE               ;clear X00CE/CF to $0000
+                    lda       bits_0089           ;bits value
+                    anda      #$BF                ;clr bits_0089.6
+                    bita      #$10                ;test bits_0089.4 (right bank bit)
+                    beq       .LE031              ;branch ahead if bits_0089.4 is zero
 
-                    ora       #$40                ; set bits_0089.6
+                    ora       #$40                ;set bits_0089.6
 
-.LE031              sta       bits_0089           ; store bits value
+.LE031              sta       bits_0089           ;store bits value
 
-                    lda       $00BE               ; load even (right) bank value
-                    sta       $00BD               ; store it in X00BD (working value)
-                    ldd       shortLambdaTrimR    ; load right side short term trim value
-                    tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bpl       .LE050              ; if 0 (even or right), branch ahead to go with these values
+                    lda       $00BE               ;load even (right) bank value
+                    sta       $00BD               ;store it in X00BD (working value)
+                    ldd       shortLambdaTrimR    ;load right side short term trim value
+                    tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bpl       .LE050              ;if 0 (even or right), branch ahead to go with these values
 
-                    lda       bits_0089           ; else, prepare for left bank
-                    anda      #$BF                ; clr bits_0089.6
-                    bita      #$20                ; test bits_0089.5 (left bank bit)
-                    beq       .LE048              ; branch ahead if bits_0089.5 is zero
+                    lda       bits_0089           ;else, prepare for left bank
+                    anda      #$BF                ;clr bits_0089.6
+                    bita      #$20                ;test bits_0089.5 (left bank bit)
+                    beq       .LE048              ;branch ahead if bits_0089.5 is zero
 
-                    ora       #$40                ; set bits_0089.6
+                    ora       #$40                ;set bits_0089.6
 
-.LE048              sta       bits_0089           ; store bits value
-                    lda       $00BF               ; load odd (left) bank value
-                    sta       $00BD               ; store it in X00BD (working value)
-                    ldd       shortLambdaTrimL    ; load left side short term trim value
+.LE048              sta       bits_0089           ;store bits value
+                    lda       $00BF               ;load odd (left) bank value
+                    sta       $00BD               ;store it in X00BD (working value)
+                    ldd       shortLambdaTrimL    ;load left side short term trim value
 
-.LE050              std       $00C8               ; this will be either right or left short term trim
+.LE050              std       $00C8               ;this will be either right or left short term trim
 
 ; ---------------------------------------------------------------------------------------------------
 ; Read HO2 Sensor Measurement from ADC
@@ -1349,15 +1349,15 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; LE0C6 which causes a lot of code to be bypassed.
 
 ; ---------------------------------------------------------------------------------------------------
-                    ldb       AdcDataLow          ; read 8-bit HO2 sensor voltage here
+                    ldb       AdcDataLow          ;read 8-bit HO2 sensor voltage here
           #ifdef    SIMULATION_MODE
-                    jsr       o2Simulation        ; for simulation
+                    jsr       o2Simulation        ;for simulation
           #endif
           #ifdef    BUILD_R3365
 ; -----------------------------------------------------------
 ; Defender Only (R3365) (SIMULATION WON'T WORK WITH R3365)
 ; -----------------------------------------------------------
-                    stb       lambdaReading       ; the current HO2 sensor reading
+                    stb       lambdaReading       ;the current HO2 sensor reading
 
                     lda       #$27
                     sta       AdcControlReg1
@@ -1368,68 +1368,68 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     ldb       lambdaReading
           #else
                     stb       lambdaReading
-                    jsr       rdSpdCompTest       ; road speed test, reloads lambdaReading in B before returning
+                    jsr       rdSpdCompTest       ;road speed test, reloads lambdaReading in B before returning
           #endif
 ; -----------------------------------------------------------
 
-                    lda       fuelMapNumber       ; load fuel map number
-                    beq       .LE064              ; branch if fuel map number is zero
+                    lda       fuelMapNumber       ;load fuel map number
+                    beq       .LE064              ;branch if fuel map number is zero
 
                     cmpa      #$04
-                    bcs       .LE0C6              ; branch if fuel map number is less than 4
+                    bcs       .LE0C6              ;branch if fuel map number is less than 4
 
 ; ------------------------------------
 ; Closed loop maps only (0, 4 and 5)
 ; ------------------------------------
-.LE064              lda       closedLoopDelay     ; counts down from $10 to zero (at about 1 Hz)
-                    bne       .LE0C6              ; if not zero, branch to same place as open loop maps
+.LE064              lda       closedLoopDelay     ;counts down from $10 to zero (at about 1 Hz)
+                    bne       .LE0C6              ;if not zero, branch to same place as open loop maps
 
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $200F               ; from 3rd last byte in fuel map (will be $23 to $2C)
-                    bcs       .LE07B              ; if hotter than this, branch ahead to continue closed loop
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $200F               ;from 3rd last byte in fuel map (will be $23 to $2C)
+                    bcs       .LE07B              ;if hotter than this, branch ahead to continue closed loop
 
-                    cmpa      $C1F8               ; this data value varies a lot (can be $CE or $7A)
-                    bcc       .LE0C6              ; if engine is cooler than this, branch to the same place as
+                    cmpa      $C1F8               ;this data value varies a lot (can be $CE or $7A)
+                    bcc       .LE0C6              ;if engine is cooler than this, branch to the same place as
 ; open maps ($CE = -5 deg C, $7A = 30 deg C)
 
                     lda       $0086
-                    bita      #$04                ; test X0086.2 (1 allows closed loop, 0 forces open loop)
-                    beq       .LE0C6              ; if zero, branch down like an open loop map
+                    bita      #$04                ;test X0086.2 (1 allows closed loop, 0 forces open loop)
+                    beq       .LE0C6              ;if zero, branch down like an open loop map
 
-.LE07B              lda       ignPeriod           ; load ignition period (MSB only)
-                    cmpa      #$07                ; compare upper byte of eng speed
-                    bcs       .LE0F0              ; if RPM > 4185, branch ahead to bypass misfire test
+.LE07B              lda       ignPeriod           ;load ignition period (MSB only)
+                    cmpa      #$07                ;compare upper byte of eng speed
+                    bcs       .LE0F0              ;if RPM > 4185, branch ahead to bypass misfire test
 
                     lda       bits_008C
-                    bita      #$08                ; test bits_008C.3 (stayed zero for both RTs)
-                    beq       .LE0F0              ; if bits_008C.3 is zero, branch ahead to bypass misfire test
+                    bita      #$08                ;test bits_008C.3 (stayed zero for both RTs)
+                    beq       .LE0F0              ;if bits_008C.3 is zero, branch ahead to bypass misfire test
 
-                    lda       fuelMapLoadIdx      ; load fuel map row index
-                    cmpa      #$50                ; compare it with $50
-                    bcs       .LE0F0              ; if map load index < $50, branch ahead to bypass misfire test
+                    lda       fuelMapLoadIdx      ;load fuel map row index
+                    cmpa      #$50                ;compare it with $50
+                    bcs       .LE0F0              ;if map load index < $50, branch ahead to bypass misfire test
 
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C17E               ; from default coolant temp table, value usually $23 (87 deg C)
-                    bcc       .LE0F0              ; if cooler than this, branch ahead to bypass misfire test
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C17E               ;from default coolant temp table, value usually $23 (87 deg C)
+                    bcc       .LE0F0              ;if cooler than this, branch ahead to bypass misfire test
           #ifdef    BUILD_R3360_AND_LATER
-                    lda       faultBits_49        ; (newer code only)
-                    bita      #$46                ; test bits 6,2,1 (MAF fault 12 and O2 faults 44 & 45)
-                    bne       .LE0F0              ; if any fault bits, branch ahead to bypass misfire test
+                    lda       faultBits_49        ;(newer code only)
+                    bita      #$46                ;test bits 6,2,1 (MAF fault 12 and O2 faults 44 & 45)
+                    bne       .LE0F0              ;if any fault bits, branch ahead to bypass misfire test
           #endif
-                    pshb                          ; <-- HO2 reading is pushed here
-                    ldd       tpsDirectionAndRate  ; load Throttle Direction & Rate value (1024 +/-)
-                    subd      $C25F               ; data value is $03F6 or $03E6 (1014 or 998 decimal)
-                    pulb                          ; <-- HO2 reading is pulled here (CCR not affected)
+                    pshb                          ;<-- HO2 reading is pushed here
+                    ldd       tpsDirectionAndRate  ;load Throttle Direction & Rate value (1024 +/-)
+                    subd      $C25F               ;data value is $03F6 or $03E6 (1014 or 998 decimal)
+                    pulb                          ;<-- HO2 reading is pulled here (CCR not affected)
           #ifdef BUILD_TVR_CODE
-                    bcs       .LE10C              ; if throttle closing, branch to next section
+                    bcs       .LE10C              ;if throttle closing, branch to next section
           #else ifdef BUILD_R3383
-                    bcs       .LE10C              ; if throttle closing, branch to next section
+                    bcs       .LE10C              ;if throttle closing, branch to next section
           #else
-                    bcs       .LE0F0              ; if throttle closing, branch ahead to bypass misfire test
+                    bcs       .LE0F0              ;if throttle closing, branch ahead to bypass misfire test
           #endif
-                    lda       o2ReferenceSense    ; make rich/lean decision here for misfire test
-                    cba                           ; compare accums, A (reference value) minus B (HO2 reading)
-                    bcs       .LE0FB              ; branch if HO2 reading greater then reference value (rich)
+                    lda       o2ReferenceSense    ;make rich/lean decision here for misfire test
+                    cba                           ;compare accums, A (reference value) minus B (HO2 reading)
+                    bcs       .LE0FB              ;branch if HO2 reading greater then reference value (rich)
 ; Wikipedia: lean mixture causes low voltage (excess oxygen)
 ; rich mixture causes high voltage (depleted O2)
 
@@ -1438,57 +1438,57 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; Check for misfire fault (40 & 50) here. A misfire results in excess (unused) oxygen.
 ; ---------------------------------------------------------------------------------------------------
-                    tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bmi       .LE0C9              ; branch ahead if bit is 1 (odd or left bank)
+                    tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bmi       .LE0C9              ;branch ahead if bit is 1 (odd or left bank)
 ; ------------------
 ; Even (Right) Bank
 ; ------------------
-                    lda       $00DD               ; load X00DD
-                    bita      #$20                ; test X00DD.5
-                    bne       .LE10C              ; branch to next section if bit is already set
+                    lda       $00DD               ;load X00DD
+                    bita      #$20                ;test X00DD.5
+                    bne       .LE10C              ;branch to next section if bit is already set
 
-                    ora       #$20                ; set X00DD.5
-                    sta       $00DD               ; store bit value
-                    lda       misfireCounterEven  ; load misfire counter
-                    inca                          ; increment counter
-                    cmpa      $C1EE               ; data value is $0C (compare with counter value in A)
-                    bcc       .LE0E2              ; branch ahead if value < $0C (to set Misfire A fault bit)
+                    ora       #$20                ;set X00DD.5
+                    sta       $00DD               ;store bit value
+                    lda       misfireCounterEven  ;load misfire counter
+                    inca                          ;increment counter
+                    cmpa      $C1EE               ;data value is $0C (compare with counter value in A)
+                    bcc       .LE0E2              ;branch ahead if value < $0C (to set Misfire A fault bit)
 
-                    sta       misfireCounterEven  ; store misfire counter
-                    sta       copyOfX00E0         ; also stored here but never used
-                    bra       .LE10C              ; branch to next section
+                    sta       misfireCounterEven  ;store misfire counter
+                    sta       copyOfX00E0         ;also stored here but never used
+                    bra       .LE10C              ;branch to next section
 
 ; -----------------------------------------
-.LE0C6              jmp       .LE523              ; jump label for skipping closed loop
+.LE0C6              jmp       .LE523              ;jump label for skipping closed loop
 
 ; -----------------------------------------
 
 ; ------------------
 ; Odd (Left) Bank
 ; ------------------
-.LE0C9              lda       $00DD               ; load X00DD
-                    bita      #$40                ; test X00DD.6
-                    bne       .LE10C              ; branch to next section if bit is already set
+.LE0C9              lda       $00DD               ;load X00DD
+                    bita      #$40                ;test X00DD.6
+                    bne       .LE10C              ;branch to next section if bit is already set
 
-                    ora       #$40                ; set X00DD.6
-                    sta       $00DD               ; store bits value
-                    lda       misfireCounterOdd   ; load misfire counter
-                    inca                          ; increment counter
-                    cmpa      $C1EE               ; data value is $0C (compare with counter value in A)
-                    bcc       .LE0E8              ; branch ahead if value < $0C (to set Misfire B fault bit)
+                    ora       #$40                ;set X00DD.6
+                    sta       $00DD               ;store bits value
+                    lda       misfireCounterOdd   ;load misfire counter
+                    inca                          ;increment counter
+                    cmpa      $C1EE               ;data value is $0C (compare with counter value in A)
+                    bcc       .LE0E8              ;branch ahead if value < $0C (to set Misfire B fault bit)
 
-                    sta       misfireCounterOdd   ; store misfire counter
-                    sta       copyOfX00E1         ; also stored here but never used
-                    bra       .LE10C              ; branch to next section
+                    sta       misfireCounterOdd   ;store misfire counter
+                    sta       copyOfX00E1         ;also stored here but never used
+                    bra       .LE10C              ;branch to next section
 
 ; -----------------------------------------
 
 .LE0E2              lda       faultBits_49
-                    ora       #$10                ; <-- Set Fault Code 40 (Misfire A Fault) RIGHT SIDE!!
+                    ora       #$10                ;<-- Set Fault Code 40 (Misfire A Fault) RIGHT SIDE!!
                     bra       .LE0EC
 
 .LE0E8              lda       faultBits_49
-                    ora       #$20                ; <-- Set Fault Code 50 (Misfire B Fault) LEFT SIDE!!
+                    ora       #$20                ;<-- Set Fault Code 50 (Misfire B Fault) LEFT SIDE!!
 
 .LE0EC              sta       faultBits_49
 
@@ -1496,36 +1496,36 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; newer code does not use fault code 25
           #else
                     lda       faultBits_49
-                    ora       #$08                ; <-- set Fault Code 25 (general misfire)
+                    ora       #$08                ;<-- set Fault Code 25 (general misfire)
                     sta       faultBits_49
           #endif
-                    bra       .LE10C              ; branch to next section
+                    bra       .LE10C              ;branch to next section
 
 ; -----------------------------------------
 ; code can branch here from above to bypass misfire test
-.LE0F0              clra                          ; clear A
-                    sta       misfireCounterEven  ; reset even bank misfire counter to zero
-                    sta       misfireCounterOdd   ; reset odd bank misfire counter to zero
-                    lda       $00DD               ; load bits value
-                    ora       #$60                ; set bits X00DD.6 and X00DD.5
-                    bra       .LE10A              ; branch ahead to store value and continue
+.LE0F0              clra                          ;clear A
+                    sta       misfireCounterEven  ;reset even bank misfire counter to zero
+                    sta       misfireCounterOdd   ;reset odd bank misfire counter to zero
+                    lda       $00DD               ;load bits value
+                    ora       #$60                ;set bits X00DD.6 and X00DD.5
+                    bra       .LE10A              ;branch ahead to store value and continue
 
 ; -------------------------------------------------------------------------------
 
 ; Rich Condition -- (O2 voltage is high, depleted oxygen)
 
 ; -------------------------------------------------------------------------------
-.LE0FB              tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bmi       .LE106              ; branch ahead if bit 7 is 1 (left bank)
+.LE0FB              tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bmi       .LE106              ;branch ahead if bit 7 is 1 (left bank)
 
-                    lda       $00DD               ; Right Bank
-                    anda      #$DF                ; clrar X00DD.5
-                    bra       .LE10A              ; branch to store and continue
+                    lda       $00DD               ;Right Bank
+                    anda      #$DF                ;clrar X00DD.5
+                    bra       .LE10A              ;branch to store and continue
 
-.LE106              lda       $00DD               ; Left Bank
-                    anda      #$BF                ; clear X00DD.6
+.LE106              lda       $00DD               ;Left Bank
+                    anda      #$BF                ;clear X00DD.6
 
-.LE10A              sta       $00DD               ; store bits value
+.LE10A              sta       $00DD               ;store bits value
 
 ; -----------------------------------------------------------------------------------------------------------------
 ; Make Open/Closed Loop Decision Here
@@ -1567,67 +1567,67 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; 0xC099  Default is zero, set to non-zero to force open loop
 
 ; -----------------------------------------------------------------------------------------------------------------
-.LE10C              lda       $0087               ; bits value
-                    anda      #$BB                ; clr X0087.6 (RPM < 1200+) and X0087.2 (not written back to X0087)
-                    ora       $C099               ; this value normally zero (set no bits)
-                    bne       .LE15D              ; if non-zero, branch to jmp to LE523 (skip closed loop)
+.LE10C              lda       $0087               ;bits value
+                    anda      #$BB                ;clr X0087.6 (RPM < 1200+) and X0087.2 (not written back to X0087)
+                    ora       $C099               ;this value normally zero (set no bits)
+                    bne       .LE15D              ;if non-zero, branch to jmp to LE523 (skip closed loop)
 
           #ifndef BUILD_TVR_CODE
-                    lda       bits_205B           ; bits value
-                    bita      #$04                ; test bits_205B.2
-                    bne       .LE15D              ; if set, branch to jmp to LE523 (skip closed loop)
+                    lda       bits_205B           ;bits value
+                    bita      #$04                ;test bits_205B.2
+                    bne       .LE15D              ;if set, branch to jmp to LE523 (skip closed loop)
             #ifndef    BUILD_R3383
-                    bita      #$20                ; test bits_205B.5
-                    bne       .LE15D              ; if set, branch to jmp to LE523 (skip closed loop)
+                    bita      #$20                ;test bits_205B.5
+                    bne       .LE15D              ;if set, branch to jmp to LE523 (skip closed loop)
             #endif
           #endif
-                    lda       $0085               ; bits value (X0085.7 indicates low eng RPM)
-                    ora       bits_0089           ; or with bits value (tests bits_0089.7)
-                    bmi       .LE15D              ; if either bit 7 is set, branch to jmp to LE523 (skip closed loop)
+                    lda       $0085               ;bits value (X0085.7 indicates low eng RPM)
+                    ora       bits_0089           ;or with bits value (tests bits_0089.7)
+                    bmi       .LE15D              ;if either bit 7 is set, branch to jmp to LE523 (skip closed loop)
 
-                    lda       bits_008C           ; bits value
-                    bita      #$08                ; test bits_008C.3
-                    bne       .LE15D              ; if set, branch to jmp to LE523 (skip closed loop)
+                    lda       bits_008C           ;bits value
+                    bita      #$08                ;test bits_008C.3
+                    bne       .LE15D              ;if set, branch to jmp to LE523 (skip closed loop)
 
-                    lda       $008A               ; bits value
-                    bita      #$40                ; test X008A.6 (set at startup, cleared after timeout)
-                    bne       .LE15D              ; if set, branch to jmp to LE523 (skip closed loop)
+                    lda       $008A               ;bits value
+                    bita      #$40                ;test X008A.6 (set at startup, cleared after timeout)
+                    bne       .LE15D              ;if set, branch to jmp to LE523 (skip closed loop)
 
-                    lda       $00D3               ; bits value
-                    tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bmi       .LE13D              ; branch ahead if bit 7 is 1 (left bank)
+                    lda       $00D3               ;bits value
+                    tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bmi       .LE13D              ;branch ahead if bit 7 is 1 (left bank)
 
-                    bita      #$01                ; Right Bank, test X00D3.0 (right bank O2 sensor fault)
+                    bita      #$01                ;Right Bank, test X00D3.0 (right bank O2 sensor fault)
                     bra       .LE13F
 
-.LE13D              bita      #$02                ; Left Bank, test X00D3.1 (left bank O2 sensor fault)
+.LE13D              bita      #$02                ;Left Bank, test X00D3.1 (left bank O2 sensor fault)
 
-.LE13F              bne       .LE15D              ; if either fault bit set, branch to skip closed loop
+.LE13F              bne       .LE15D              ;if either fault bit set, branch to skip closed loop
 
                     lda       bits_008D
-                    bita      #$11                ; test bits_008D.4 and bits_008D.0
-                    bne       .LE160              ; if either bit set, branch to continue closed loop
+                    bita      #$11                ;test bits_008D.4 and bits_008D.0
+                    bne       .LE160              ;if either bit set, branch to continue closed loop
 
-                    lda       $0088               ; test bank indicator bit
-                    bmi       .LE151              ; branch ahead if bit 7 is 1 (left bank)
+                    lda       $0088               ;test bank indicator bit
+                    bmi       .LE151              ;branch ahead if bit 7 is 1 (left bank)
 
-                    bita      #$40                ; Right Bank, test X0088.6 (a right bank bit)
-                    bne       .LE157              ; if bit set, branch->jmp->E5EA
-                    bra       .LE160              ; branch to continue closed loop
+                    bita      #$40                ;Right Bank, test X0088.6 (a right bank bit)
+                    bne       .LE157              ;if bit set, branch->jmp->E5EA
+                    bra       .LE160              ;branch to continue closed loop
 
-.LE151              bita      #$20                ; Left Bank, test X0088.5 (left bank bit)
-                    bne       .LE157              ; if bit set, branch->jmp->E5EA
-                    bra       .LE160              ; branch to continue closed loop
-
-; -----------------------------------------
-
-.LE157              jmp       .LE5EA              ; jumps down further than closed loop (skips purge valve)
+.LE151              bita      #$20                ;Left Bank, test X0088.5 (left bank bit)
+                    bne       .LE157              ;if bit set, branch->jmp->E5EA
+                    bra       .LE160              ;branch to continue closed loop
 
 ; -----------------------------------------
-                    jsr       LF3A3               ; <-- non-accessed code
+
+.LE157              jmp       .LE5EA              ;jumps down further than closed loop (skips purge valve)
+
+; -----------------------------------------
+                    jsr       LF3A3               ;<-- non-accessed code
 ; -----------------------------------------
 
-.LE15D              jmp       .LE523              ; jumps to same point as open loop maps
+.LE15D              jmp       .LE523              ;jumps to same point as open loop maps
 
 ; ------------------------------------------------------------------------------
 ; Start of Closed Loop Code
@@ -1636,59 +1636,59 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; B accumulator holds the HO2 sensor reading (same bank)
 
 ; ------------------------------------------------------------------------------
-.LE160              pshb                          ; push HO2 sensor reading
-                    lda       startupTimerEven    ; right bank startup timer (init to 3, decrements at 1 Hz)
-                    bne       .LE181              ; branch to jump if timer is not zero
+.LE160              pshb                          ;push HO2 sensor reading
+                    lda       startupTimerEven    ;right bank startup timer (init to 3, decrements at 1 Hz)
+                    bne       .LE181              ;branch to jump if timer is not zero
 
-                    lda       startupTimerOdd     ; left bank startup timer (init to 3, decrements at 1 Hz)
-                    bne       .LE181              ; branch to jump if timer is not zero
+                    lda       startupTimerOdd     ;left bank startup timer (init to 3, decrements at 1 Hz)
+                    bne       .LE181              ;branch to jump if timer is not zero
 
-                    ldx       #$008E              ; X008E = even (right), X008F = odd (left)
-                    lda       bits_0089           ; bits value
-                    anda      #$07                ; mask low 3 bits
-                    beq       .LE184              ; branch only if all 3 are zeros
+                    ldx       #$008E              ;X008E = even (right), X008F = odd (left)
+                    lda       bits_0089           ;bits value
+                    anda      #$07                ;mask low 3 bits
+                    beq       .LE184              ;branch only if all 3 are zeros
 
-                    bita      #$03                ; test bits 1 and 0 only
-                    bne       .LE181              ; branch to jump if either bit is set
+                    bita      #$03                ;test bits 1 and 0 only
+                    bne       .LE181              ;branch to jump if either bit is set
 
-                    lda       bits_0089           ; bits value
-                    anda      #$F8                ; clear low 3 bits
-                    sta       bits_0089           ; store it
+                    lda       bits_0089           ;bits value
+                    anda      #$F8                ;clear low 3 bits
+                    sta       bits_0089           ;store it
 
-.LE17E              jmp       .LE21A              ; jump down to 'jsr' before rich/lean code
-
-; -----------------------------------------
-.LE181              jmp       .LE21D              ; jump down to rich/lean code
+.LE17E              jmp       .LE21A              ;jump down to 'jsr' before rich/lean code
 
 ; -----------------------------------------
-.LE184              ldd       mafDirectHi         ; load MAF high
-                    addd      mafDirectLo         ; add MAF low
-                    subd      $C1AF               ; subtract $043D (1085d) from air flow sum (2.65V avg)
-                    bcs       .LE17E              ; bra->jmp->LE21A if air flow sum is less than this value
+.LE181              jmp       .LE21D              ;jump down to rich/lean code
 
-                    subd      $C1B2               ; air flow is higher so subtract an additional $0100
-                    bcc       .LE17E              ; bra->jmp->LE21A if air flow is higher (3.28V avg)
+; -----------------------------------------
+.LE184              ldd       mafDirectHi         ;load MAF high
+                    addd      mafDirectLo         ;add MAF low
+                    subd      $C1AF               ;subtract $043D (1085d) from air flow sum (2.65V avg)
+                    bcs       .LE17E              ;bra->jmp->LE21A if air flow sum is less than this value
+
+                    subd      $C1B2               ;air flow is higher so subtract an additional $0100
+                    bcc       .LE17E              ;bra->jmp->LE21A if air flow is higher (3.28V avg)
 
 ; if here, MAF avg is between 2.65V and 3.28V
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C17E               ; inside coolant temp table (value is $23 or 87 deg C)
-                    bcc       .LE17E              ; bra->jmp->LE21A if temperature cooler than 87 C
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C17E               ;inside coolant temp table (value is $23 or 87 deg C)
+                    bcc       .LE17E              ;bra->jmp->LE21A if temperature cooler than 87 C
 
-                    ldd       $0094               ; this loads right counter in A and left counter in B
-                    tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bpl       .LE1AB              ; branch if 0 (even or right bank)
+                    ldd       $0094               ;this loads right counter in A and left counter in B
+                    tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bpl       .LE1AB              ;branch if 0 (even or right bank)
 
-                    inx                           ; Odd (Left) Bank, incr X from 'iciValueEven_8E' to 'iciValueOdd_8F'
-                    lda       $00AB               ; load MSB of 16-bit left bank value
-                    cmpb      $C1B1               ; compare value $15 with value from X0095
-                    bcc       .LE1B2              ; branch ahead if X0095 is > $15
+                    inx                           ;Odd (Left) Bank, incr X from 'iciValueEven_8E' to 'iciValueOdd_8F'
+                    lda       $00AB               ;load MSB of 16-bit left bank value
+                    cmpb      $C1B1               ;compare value $15 with value from X0095
+                    bcc       .LE1B2              ;branch ahead if X0095 is > $15
 
-.LE1A8              jmp       .LE21D              ; jump ahead (when X0094 or X0095 is < $15)
+.LE1A8              jmp       .LE21D              ;jump ahead (when X0094 or X0095 is < $15)
 
-.LE1AB              cmpa      $C1B1               ; Even (Right) Bank, compare value $15 with value from X0094
-                    bcs       .LE1A8              ; bra->jmp->LE21D if X0094 is LT $15
+.LE1AB              cmpa      $C1B1               ;Even (Right) Bank, compare value $15 with value from X0094
+                    bcs       .LE1A8              ;bra->jmp->LE21D if X0094 is LT $15
 
-                    lda       $00A9               ; load MSB of 16-bit right bank value
+                    lda       $00A9               ;load MSB of 16-bit right bank value
 
 ; ------------------------------------------------------------------------------
 ; This code is executed when X0094 (right) or X0095 (left) is greater than $15
@@ -1699,82 +1699,82 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; This is fault condition code and not normally executed.
 ; ------------------------------------------------------------------------------
-.LE1B2              ldb       $02,x               ; X is X008E or X008F so loading X0090 or X0091
-                    stb       $00CA               ; store it in temporary location
-                    ldb       $00,x               ; load X008E or X008F
-                    pshx                          ; push the index value
-                    pshb                          ; push B (value from X008E or X008F)
-                    ldb       #$08                ; table at XC196 is 8 columns wide
-                    ldx       #$C196              ; address of 3-row data table
-                    jsr       indexIntoTable      ; index into table
-                    lda       $08,x               ; load value from 2nd row of table
-                    ldb       $10,x               ; load value from 3rd row of table (all zeros)
-                    bne       .LE1D0              ; all zeros so never branches
+.LE1B2              ldb       $02,x               ;X is X008E or X008F so loading X0090 or X0091
+                    stb       $00CA               ;store it in temporary location
+                    ldb       $00,x               ;load X008E or X008F
+                    pshx                          ;push the index value
+                    pshb                          ;push B (value from X008E or X008F)
+                    ldb       #$08                ;table at XC196 is 8 columns wide
+                    ldx       #$C196              ;address of 3-row data table
+                    jsr       indexIntoTable      ;index into table
+                    lda       $08,x               ;load value from 2nd row of table
+                    ldb       $10,x               ;load value from 3rd row of table (all zeros)
+                    bne       .LE1D0              ;all zeros so never branches
 
-                    ldb       $00CA               ; value from X0090 or X0091
-                    mul                           ; multiply this value by 2nd row value
-                    sta       $00CA               ; save MSB only
-                    pulb                          ; pull the value from X008E thru X0091
-                    bra       .LE1D3              ; branch
+                    ldb       $00CA               ;value from X0090 or X0091
+                    mul                           ;multiply this value by 2nd row value
+                    sta       $00CA               ;save MSB only
+                    pulb                          ;pull the value from X008E thru X0091
+                    bra       .LE1D3              ;branch
 
 ; this option not normally used
-.LE1D0              pulb                          ; pull the value from X008E thru X0091
-                    mul                           ; multiply B by 2nd row value
-                    tab                           ; transfer MSB of result into B
+.LE1D0              pulb                          ;pull the value from X008E thru X0091
+                    mul                           ;multiply B by 2nd row value
+                    tab                           ;transfer MSB of result into B
 
-.LE1D3              clra                          ; clear A
-                    subb      $00CA               ; subtract value in X00CA
-                    pulx                          ; pull the pointer to X008E through X0091
-                    bcc       .LE1EE              ; branch ahead if X00CA was less than B
+.LE1D3              clra                          ;clear A
+                    subb      $00CA               ;subtract value in X00CA
+                    pulx                          ;pull the pointer to X008E through X0091
+                    bcc       .LE1EE              ;branch ahead if X00CA was less than B
 
-                    lda       #$FF                ; it's a negative number
-                    jsr       absoluteValAB       ; convert to absolute value (A should now be zero)
+                    lda       #$FF                ;it's a negative number
+                    jsr       absoluteValAB       ;convert to absolute value (A should now be zero)
 
-                    cmpb      $C1AE               ; data value is $01
-                    bcs       .LE1FC              ; branch if B < $01
+                    cmpb      $C1AE               ;data value is $01
+                    bcs       .LE1FC              ;branch if B < $01
 
-                    ldb       $04,x               ; value from X0092 or X0093 (are these signed numbers?)
-                    cmpb      #$05                ; compare with 5
-                    beq       .LE1FC              ; branch ahead if value is exactly 5
+                    ldb       $04,x               ;value from X0092 or X0093 (are these signed numbers?)
+                    cmpb      #$05                ;compare with 5
+                    beq       .LE1FC              ;branch ahead if value is exactly 5
 
-                    incb                          ; if not, increment and
-                    stb       $04,x               ; store the value
-                    bra       .LE1FC              ; and branch
+                    incb                          ;if not, increment and
+                    stb       $04,x               ;store the value
+                    bra       .LE1FC              ;and branch
 
-.LE1EE              cmpb      $C1AE               ; compare X0092 or X0093 with value of $01
-                    bcs       .LE1FC              ; branch ahead if it was less than 1
+.LE1EE              cmpb      $C1AE               ;compare X0092 or X0093 with value of $01
+                    bcs       .LE1FC              ;branch ahead if it was less than 1
 
-                    ldb       $04,x               ; value from X0092 or X0093
-                    cmpb      #$FB                ; compare with minus 5 (signed number)
-                    beq       .LE1FC              ; branch ahead if value is minus 5
+                    ldb       $04,x               ;value from X0092 or X0093
+                    cmpb      #$FB                ;compare with minus 5 (signed number)
+                    beq       .LE1FC              ;branch ahead if value is minus 5
 
-                    decb                          ; if not, decrement and
-                    stb       $04,x               ; store the value
+                    decb                          ;if not, decrement and
+                    stb       $04,x               ;store the value
 
-.LE1FC              addb      #$05                ; add 5
-                    cmpb      #$0A                ; compare with 10
-                    bls       .LE205              ; branch if lower or same
+.LE1FC              addb      #$05                ;add 5
+                    cmpb      #$0A                ;compare with 10
+                    bls       .LE205              ;branch if lower or same
 
-                    clrb                          ; clear B
-                    stb       $04,x               ; clear the value at X0092 or X0093
+                    clrb                          ;clear B
+                    stb       $04,x               ;clear the value at X0092 or X0093
 
-.LE205              clra                          ; clear A
-                    tab                           ; transfer A to B
-                    sta       $00,x               ; clear X008E or X008F
-                    sta       $02,x               ; clear X0090 or X0091
-                    sta       $06,x               ; clear X0094 or X0095
-                    tst       $0088               ; test 0088.7 (bank indicator)
-                    bpl       .LE216              ; branch ahead if bit is 0 (right bank)
+.LE205              clra                          ;clear A
+                    tab                           ;transfer A to B
+                    sta       $00,x               ;clear X008E or X008F
+                    sta       $02,x               ;clear X0090 or X0091
+                    sta       $06,x               ;clear X0094 or X0095
+                    tst       $0088               ;test 0088.7 (bank indicator)
+                    bpl       .LE216              ;branch ahead if bit is 0 (right bank)
 
-                    std       $00AB               ; Righ Bank: clear X00AB/AC
-                    bra       .LE21D              ; branch to next section
+                    std       $00AB               ;Righ Bank: clear X00AB/AC
+                    bra       .LE21D              ;branch to next section
 
-.LE216              std       $00A9               ; Right Bank: clear X00A9/AA
-                    bra       .LE21D              ; branch to next section
+.LE216              std       $00A9               ;Right Bank: clear X00A9/AA
+                    bra       .LE21D              ;branch to next section
 
 ; ------------------------------------------------------------------------------
 
-.LE21A              jsr       LF3C0               ; code can jump here from above (this routine clears some vars)
+.LE21A              jsr       LF3C0               ;code can jump here from above (this routine clears some vars)
 
 ; ---------------------------------------------------------------------------------------------------
 ; Determine if Rich or Lean
@@ -1786,231 +1786,231 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; rich mixture causes high voltage (depleted O2)
 
 ; ---------------------------------------------------------------------------------------------------
-.LE21D              pulb                          ; pull the HO2 reading reading
-                    lda       $00BD               ; this is working value from X00BE (right) or X00BF (rt)
-                    bne       .LE23A              ; branch if value is not zero
+.LE21D              pulb                          ;pull the HO2 reading reading
+                    lda       $00BD               ;this is working value from X00BE (right) or X00BF (rt)
+                    bne       .LE23A              ;branch if value is not zero
 
-                    lda       o2ReferenceSense    ; load the HO2 threshold value
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE22E              ; branch ahead if bit is 1 (left bank)
+                    lda       o2ReferenceSense    ;load the HO2 threshold value
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE22E              ;branch ahead if bit is 1 (left bank)
 
-                    adda      $201B               ; Right: add X201B to HO2 reference value
+                    adda      $201B               ;Right: add X201B to HO2 reference value
                     bra       .LE231
 
-.LE22E              adda      $201C               ; Left: add X201C to HO2 reference value
+.LE22E              adda      $201C               ;Left: add X201C to HO2 reference value
 
-.LE231              cba                           ; A (ref plus X201B or X201C) minus B (HO2 reading)
-                    bcs       .LE243              ; branch if HO2 reading is higher than reference value
+.LE231              cba                           ;A (ref plus X201B or X201C) minus B (HO2 reading)
+                    bcs       .LE243              ;branch if HO2 reading is higher than reference value
 
-                    suba      $C098               ; Lean: data value is zero, subtract from reference
-                    cba                           ; result still positive, since value is zero
-                    bcc       .LE25A              ; branch to jmp to lean_condition code
+                    suba      $C098               ;Lean: data value is zero, subtract from reference
+                    cba                           ;result still positive, since value is zero
+                    bcc       .LE25A              ;branch to jmp to lean_condition code
 
-.LE23A              lda       bits_0089           ; code jumps here if X00BD value is non-zero
-                    bita      #$40                ; test bits_0089.6
-                    beq       .LE2B0              ; if zero, branch to jump to LE459 (into lean code)
+.LE23A              lda       bits_0089           ;code jumps here if X00BD value is non-zero
+                    bita      #$40                ;test bits_0089.6
+                    beq       .LE2B0              ;if zero, branch to jump to LE459 (into lean code)
 
-.LE240              jmp       .LE2EF              ; jump down (into rich_condition code)
+.LE240              jmp       .LE2EF              ;jump down (into rich_condition code)
 
 ; --------------------------------------------------
-.LE243              adda      $C098               ; Rich: data value is zero (A = ref + 201x + XC098)
-                    cba                           ; A - B again (same result, carry set, so continue))
+.LE243              adda      $C098               ;Rich: data value is zero (A = ref + 201x + XC098)
+                    cba                           ;A - B again (same result, carry set, so continue))
                     bcc       .LE23A
 
 ; ------------------------------------------------------------------------------
 ; Rich Condition (Depleted Oxygen, High Voltage)
 ; ------------------------------------------------------------------------------
-                    lda       $00D2               ; bits value (all bits are bank specific)
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE25D              ; branch ahead if 1 (left bank)
+                    lda       $00D2               ;bits value (all bits are bank specific)
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE25D              ;branch ahead if 1 (left bank)
 ; --------------
 ; Right Bank
 ; --------------
-                    bita      #$04                ; test X00D2.2
-                    beq       .LE267              ; if zero, branch to common bank code below
+                    bita      #$04                ;test X00D2.2
+                    beq       .LE267              ;if zero, branch to common bank code below
 
-                    ora       #$40                ; set X00D2.6
-                    anda      #$FB                ; clr X00D2.2
-                    bra       .LE265              ; branch to store X00D2 and enter common code
+                    ora       #$40                ;set X00D2.6
+                    anda      #$FB                ;clr X00D2.2
+                    bra       .LE265              ;branch to store X00D2 and enter common code
 
 ; ------------------------------------------
 
-.LE25A              jmp       .LE3B3              ; jump down to lean_condition code (label is used above)
+.LE25A              jmp       .LE3B3              ;jump down to lean_condition code (label is used above)
 
 ; --------------
 ; Left Bank
 ; --------------
-.LE25D              bita      #$08                ; test X00D2.3
-                    beq       .LE267              ; if zero, branch to common bank code below
+.LE25D              bita      #$08                ;test X00D2.3
+                    beq       .LE267              ;if zero, branch to common bank code below
 
-                    ora       #$80                ; set X00D2.7
-                    anda      #$F7                ; clr X00D2.3
+                    ora       #$80                ;set X00D2.7
+                    anda      #$F7                ;clr X00D2.3
 
 ; --------------
 ; Common Code
 ; --------------
-.LE265              sta       $00D2               ; store X00D2 bits value
+.LE265              sta       $00D2               ;store X00D2 bits value
 
-.LE267              lda       bits_0089           ; if bit 2 or bit 3 is zero
-                    bita      #$40                ; test bits_0089.6
-                    bne       .LE240              ; if bit 6 is 1, branch to above jump
+.LE267              lda       bits_0089           ;if bit 2 or bit 3 is zero
+                    bita      #$40                ;test bits_0089.6
+                    bne       .LE240              ;if bit 6 is 1, branch to above jump
 
-                    ora       #$40                ; set bits_0089.6
-                    sta       bits_0089           ; store it
-                    anda      #$07                ; mask low 3 bits
-                    bne       .LE278              ; branch ahead if bit 2, 1 or 0 set
+                    ora       #$40                ;set bits_0089.6
+                    sta       bits_0089           ;store it
+                    anda      #$07                ;mask low 3 bits
+                    bne       .LE278              ;branch ahead if bit 2, 1 or 0 set
 
-                    jsr       LF1D4               ; this subroutine uses MAF readings
+                    jsr       LF1D4               ;this subroutine uses MAF readings
 
-.LE278              jsr       LF416               ; this subroutine manipulates bits in X00E2
-                    lda       $C097               ; data value is $04
-                    sta       $00BD               ; working value for X00BE or X00BF
+.LE278              jsr       LF416               ;this subroutine manipulates bits in X00E2
+                    lda       $C097               ;data value is $04
+                    sta       $00BD               ;working value for X00BE or X00BF
                     lda       bits_2004
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE28C              ; branch ahead if 1 (left bank)
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE28C              ;branch ahead if 1 (left bank)
 
-                    ora       #$04                ; Right: set bits_2004.2
+                    ora       #$04                ;Right: set bits_2004.2
                     bra       .LE28E
 
-.LE28C              ora       #$08                ; Left: set bits_2004.3
+.LE28C              ora       #$08                ;Left: set bits_2004.3
 
-.LE28E              sta       bits_2004           ; store
-                    lda       bits_0089           ; load bits value
-                    anda      #$02                ; test bits_0089.1
-                    beq       .LE29B              ; branch ahead if bit is zero
+.LE28E              sta       bits_2004           ;store
+                    lda       bits_0089           ;load bits value
+                    anda      #$02                ;test bits_0089.1
+                    beq       .LE29B              ;branch ahead if bit is zero
 
-                    ldd       $0090               ; lean condition code uses 0x008E here
-                    bra       .LE29C              ; branch
+                    ldd       $0090               ;lean condition code uses 0x008E here
+                    bra       .LE29C              ;branch
 
-.LE29B              tab                           ; transfer A to B
+.LE29B              tab                           ;transfer A to B
 
-.LE29C              psha                          ; push A to stack
-                    lda       bits_205B           ; load bits value
-                    tst       $0088               ; test bank indicator bit
-                    bpl       .LE2B3              ; branch ahead if 0 (right bank)
+.LE29C              psha                          ;push A to stack
+                    lda       bits_205B           ;load bits value
+                    tst       $0088               ;test bank indicator bit
+                    bpl       .LE2B3              ;branch ahead if 0 (right bank)
 ; --------------
 ; Left Bank
 ; --------------
-                    bita      #$02                ; test bits_205B.1
-                    beq       .LE2C9              ; branch is bit is zero
+                    bita      #$02                ;test bits_205B.1
+                    beq       .LE2C9              ;branch is bit is zero
 
-                    anda      #$FD                ; clear bits_205B.1
-                    sta       bits_205B           ; store it
-                    bra       .LE2BC              ; branch
+                    anda      #$FD                ;clear bits_205B.1
+                    sta       bits_205B           ;store it
+                    bra       .LE2BC              ;branch
 
 ; ---------------------------------------
-.LE2B0              jmp       .LE459              ; jump down into lean_condition code (used above)
+.LE2B0              jmp       .LE459              ;jump down into lean_condition code (used above)
 
 ; ---------------------------------------
 
 ; --------------
 ; Right Bank
 ; --------------
-.LE2B3              bita      #$01                ; test bits_205B.0
-                    beq       .LE2C9              ; branch if bit is zero
+.LE2B3              bita      #$01                ;test bits_205B.0
+                    beq       .LE2C9              ;branch if bit is zero
 
-                    anda      #$FE                ; clear bits_205B.0
-                    sta       bits_205B           ; store it
+                    anda      #$FE                ;clear bits_205B.0
+                    sta       bits_205B           ;store it
 
 ; --------------
 ; Common Code
 ; --------------
-.LE2BC              clr       $00CE               ; clear X00CE to zero
-                    lda       $C096               ; data value is $40
-                    sta       $00CF               ; store it in X00CF (used later)
-                    pula                          ; pull A from stack (MSB of X0090)
-                    addd      $00CE               ; add X00CE
-                    bra       .LE2E1              ; branch
+.LE2BC              clr       $00CE               ;clear X00CE to zero
+                    lda       $C096               ;data value is $40
+                    sta       $00CF               ;store it in X00CF (used later)
+                    pula                          ;pull A from stack (MSB of X0090)
+                    addd      $00CE               ;add X00CE
+                    bra       .LE2E1              ;branch
 
-.LE2C9              pula                          ; pull A from stack (MSB of X0090)
-                    tst       $0086               ; test X0086.7
-                    bpl       .LE2DC              ; branch ahead if X0086.7 is zero
+.LE2C9              pula                          ;pull A from stack (MSB of X0090)
+                    tst       $0086               ;test X0086.7
+                    bpl       .LE2DC              ;branch ahead if X0086.7 is zero
 
-                    psha                          ; push A
-                    lda       $008B               ; load X008B
-                    anda      #$01                ; mask X008B.0 (road speed > 4 KPH)
-                    pula                          ; pull A
-                    bne       .LE2DC              ; branch if road speed > 4 KPH
+                    psha                          ;push A
+                    lda       $008B               ;load X008B
+                    anda      #$01                ;mask X008B.0 (road speed > 4 KPH)
+                    pula                          ;pull A
+                    bne       .LE2DC              ;branch if road speed > 4 KPH
 
-                    ldx       #$C7D3              ; lean code below uses XC7D1 (both are 4000 decimal)
-                    bra       .LE2DF              ; branch
+                    ldx       #$C7D3              ;lean code below uses XC7D1 (both are 4000 decimal)
+                    bra       .LE2DF              ;branch
 
-.LE2DC              ldx       #$C094              ; lean code below uses XC092 (both are 8000 decimal)
+.LE2DC              ldx       #$C094              ;lean code below uses XC092 (both are 8000 decimal)
 
-.LE2DF              addd      ,x                  ; add 8000 decimal
+.LE2DF              addd      ,x                  ;add 8000 decimal
 
-.LE2E1              std       $00CE               ; store this value in temporary location
-                    ldd       $00C8               ; still the short-term lambda trim value from earlier?
-                    subd      $00CE               ; subtract 16-bit
-                    bra       .LE33B              ; branch
-
-; --------------------------------------------------
-.unused2            jmp       .LE459              ; unused code
+.LE2E1              std       $00CE               ;store this value in temporary location
+                    ldd       $00C8               ;still the short-term lambda trim value from earlier?
+                    subd      $00CE               ;subtract 16-bit
+                    bra       .LE33B              ;branch
 
 ; --------------------------------------------------
-.unused3            jmp       .LE3B3              ; unused code
+.unused2            jmp       .LE459              ;unused code
 
 ; --------------------------------------------------
-.LE2EF              jsr       LF224               ; subroutine decrements value in X00BD if not zero
-                    lda       bits_0089           ; load bits value
-                    anda      #$07                ; mask bits_0089 bits 2:0
-                    bne       .LE2FE              ; branch ahead if any are set
+.unused3            jmp       .LE3B3              ;unused code
 
-                    ldx       #$0090              ; load index with address of X0090
-                    jsr       LF1AD               ; this subroutine uses the index
+; --------------------------------------------------
+.LE2EF              jsr       LF224               ;subroutine decrements value in X00BD if not zero
+                    lda       bits_0089           ;load bits value
+                    anda      #$07                ;mask bits_0089 bits 2:0
+                    bne       .LE2FE              ;branch ahead if any are set
 
-.LE2FE              ldb       bits_205B           ; load bits value
-                    tst       $0088               ; test bank indicator bit
-                    bpl       .LE30A              ; branch if 0 (right bank)
+                    ldx       #$0090              ;load index with address of X0090
+                    jsr       LF1AD               ;this subroutine uses the index
 
-                    andb      #$FD                ; Left: clear bits_205B.1
-                    bra       .LE30C              ; branch
+.LE2FE              ldb       bits_205B           ;load bits value
+                    tst       $0088               ;test bank indicator bit
+                    bpl       .LE30A              ;branch if 0 (right bank)
 
-.LE30A              andb      #$FE                ; Right: clear bits_205B.0
+                    andb      #$FD                ;Left: clear bits_205B.1
+                    bra       .LE30C              ;branch
 
-.LE30C              stb       bits_205B           ; store bits value
-                    tst       $0086               ; test X0086.7
-                    bpl       .LE31F              ; branch ahead if X0086.7 is zero
+.LE30A              andb      #$FE                ;Right: clear bits_205B.0
 
-                    ldb       $008B               ; load bits value
-                    andb      #$01                ; mask X008B.0 (road speed > 4 KPH)
-                    bne       .LE31F              ; branch ahead if road speed > 4 KPH
+.LE30C              stb       bits_205B           ;store bits value
+                    tst       $0086               ;test X0086.7
+                    bpl       .LE31F              ;branch ahead if X0086.7 is zero
 
-                    ldb       $C7D5               ; data value is probably $20 or $40
-                    bra       .LE322              ; branch
+                    ldb       $008B               ;load bits value
+                    andb      #$01                ;mask X008B.0 (road speed > 4 KPH)
+                    bne       .LE31F              ;branch ahead if road speed > 4 KPH
 
-.LE31F              ldb       $C096               ; data value is $40
+                    ldb       $C7D5               ;data value is probably $20 or $40
+                    bra       .LE322              ;branch
 
-.LE322              tst       $0088               ; test bank indicator bit
-                    bpl       .LE32B              ; branch ahead if 0 (right bank)
+.LE31F              ldb       $C096               ;data value is $40
 
-                    addb      $0093               ; Left: add contents of X0093 to B
-                    bra       .LE32D              ; branch
+.LE322              tst       $0088               ;test bank indicator bit
+                    bpl       .LE32B              ;branch ahead if 0 (right bank)
 
-.LE32B              addb      $0092               ; Right: add contents of X0092 to B
+                    addb      $0093               ;Left: add contents of X0093 to B
+                    bra       .LE32D              ;branch
 
-.LE32D              stb       $00CA               ; store B in X00CA (temporary location)
-                    ldd       $00C8               ; short term lambda trim (right or left)
-                    subb      $00CA               ; subtract B from upper byte of 16-bit value
-                    sbca      #$00                ; subtract with carry (A - M - C -> A)
-                    bcs       .LE33D              ; branch if carry/borrow is set
+.LE32B              addb      $0092               ;Right: add contents of X0092 to B
 
-                    subb      $00CA               ; subtract B from upper byte of 16-bit value
-                    sbca      #$00                ; subtract with carry (A - M - C -> A)
+.LE32D              stb       $00CA               ;store B in X00CA (temporary location)
+                    ldd       $00C8               ;short term lambda trim (right or left)
+                    subb      $00CA               ;subtract B from upper byte of 16-bit value
+                    sbca      #$00                ;subtract with carry (A - M - C -> A)
+                    bcs       .LE33D              ;branch if carry/borrow is set
 
-.LE33B              bcc       .LE3B0              ; if carry/borrow clear, branch to jump to LE50A (to set O2 fault)
+                    subb      $00CA               ;subtract B from upper byte of 16-bit value
+                    sbca      #$00                ;subtract with carry (A - M - C -> A)
 
-.LE33D              lda       bits_0089           ; load bits value
-                    bita      #$04                ; test bits_0089.2
-                    bne       .LE3A6              ; if set, branch down to set short-term lambda trim to $0000
+.LE33B              bcc       .LE3B0              ;if carry/borrow clear, branch to jump to LE50A (to set O2 fault)
 
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C17E               ; inside coolant temp table (value is $23 or 87 deg C)
-                    bcc       .LE3A6              ; if cooler, branch down to set short-term lambda trim to $0000
+.LE33D              lda       bits_0089           ;load bits value
+                    bita      #$04                ;test bits_0089.2
+                    bne       .LE3A6              ;if set, branch down to set short-term lambda trim to $0000
 
-                    lda       $00DC               ; load bits value
-                    bita      #$01                ; test X00DC.0 (set to 1 when road speed > 4 AND TPS < 40%)
-                    bne       .LE3A6              ; if set, branch down to set short-term lambda trim to $0000
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C17E               ;inside coolant temp table (value is $23 or 87 deg C)
+                    bcc       .LE3A6              ;if cooler, branch down to set short-term lambda trim to $0000
+
+                    lda       $00DC               ;load bits value
+                    bita      #$01                ;test X00DC.0 (set to 1 when road speed > 4 AND TPS < 40%)
+                    bne       .LE3A6              ;if set, branch down to set short-term lambda trim to $0000
 
 ; ---------------------------------------------------------------------
 ; This code executed only when Road Speed > 4 AND TPS < 40%
@@ -2018,350 +2018,350 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; X00D4 (right) or X00D5 (left) can be incremented and when rollover
 ; occurs, the corresponding nibble in X00D6 is incremented.
 ; ---------------------------------------------------------------------
-                    ldd       purgeValveTimer     ; load purve valve timer value
-                    beq       .LE359              ; skip subroutine if value is zero
-                    jsr       purgeValveBits      ; purge valve timer subroutine, sets or clrs carry before return
-                    bcs       .LE3A6              ; if carry set, branch down to set short-term lambda trim to $0000
+                    ldd       purgeValveTimer     ;load purve valve timer value
+                    beq       .LE359              ;skip subroutine if value is zero
+                    jsr       purgeValveBits      ;purge valve timer subroutine, sets or clrs carry before return
+                    bcs       .LE3A6              ;if carry set, branch down to set short-term lambda trim to $0000
 
-.LE359              lda       $00D2               ; load bits value
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE384              ; branch ahead if 1 (left bank)
+.LE359              lda       $00D2               ;load bits value
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE384              ;branch ahead if 1 (left bank)
 
 ; --------------
 ; Right Bank
 ; --------------
-                    ora       #$01                ; set X00D2.0
-                    sta       $00D2               ; store it
-                    ldb       $00D4               ; load right bank counter
-                    incb                          ; increment X00D4 counter
-                    bne       .LE374              ; branch ahead if counter not zero
+                    ora       #$01                ;set X00D2.0
+                    sta       $00D2               ;store it
+                    ldb       $00D4               ;load right bank counter
+                    incb                          ;increment X00D4 counter
+                    bne       .LE374              ;branch ahead if counter not zero
 
-                    ldb       $00D6               ; load dual nibble counter
-                    addb      #$01                ; add 1 to lower nibble
-                    bitb      #$02                ; test bit 2
-                    bne       .LE378              ; branch ahead if bit 2 is set
+                    ldb       $00D6               ;load dual nibble counter
+                    addb      #$01                ;add 1 to lower nibble
+                    bitb      #$02                ;test bit 2
+                    bne       .LE378              ;branch ahead if bit 2 is set
 
-                    stb       $00D6               ; store nibble counter
-                    clrb                          ; reset X00D4 counter to zero
+                    stb       $00D6               ;store nibble counter
+                    clrb                          ;reset X00D4 counter to zero
 
-.LE374              stb       $00D4               ; store byte counter
-                    bra       .LE3A6              ; branch down to set short-term lambda trim to $0000
+.LE374              stb       $00D4               ;store byte counter
+                    bra       .LE3A6              ;branch down to set short-term lambda trim to $0000
 
-.LE378              bita      #$10                ; test X00D2.4
-                    beq       .LE3AB              ; if zero, branch forward to set O2 fault bit
+.LE378              bita      #$10                ;test X00D2.4
+                    beq       .LE3AB              ;if zero, branch forward to set O2 fault bit
 
-                    lda       $00D3               ; load bits value
-                    ora       #$10                ; set X00D3.4 (right bank fault bit)
-                    sta       $00D3               ; store it
-                    bra       .LE3A6              ; branch down to set short-term lambda trim to $0000
+                    lda       $00D3               ;load bits value
+                    ora       #$10                ;set X00D3.4 (right bank fault bit)
+                    sta       $00D3               ;store it
+                    bra       .LE3A6              ;branch down to set short-term lambda trim to $0000
 
 ; --------------
 ; Left Bank
 ; --------------
-.LE384              ora       #$02                ; set X00D2.1
-                    sta       $00D2               ; store it
-                    ldb       $00D5               ; load left bank counter
-                    incb                          ; increment X00D5 counter
-                    bne       .LE398              ; branch ahead if counter not zero
+.LE384              ora       #$02                ;set X00D2.1
+                    sta       $00D2               ;store it
+                    ldb       $00D5               ;load left bank counter
+                    incb                          ;increment X00D5 counter
+                    bne       .LE398              ;branch ahead if counter not zero
 
-                    ldb       $00D6               ; load dual nibble counter
-                    addb      #$10                ; add 1 to upper nibble
-                    bitb      #$40                ; test bit 6
-                    bne       .LE39C              ; branch ahead if bit 6 is set
+                    ldb       $00D6               ;load dual nibble counter
+                    addb      #$10                ;add 1 to upper nibble
+                    bitb      #$40                ;test bit 6
+                    bne       .LE39C              ;branch ahead if bit 6 is set
 
-                    stb       $00D6               ; store nibble counter
-                    clrb                          ; reset X00D5 counter to zero
+                    stb       $00D6               ;store nibble counter
+                    clrb                          ;reset X00D5 counter to zero
 
-.LE398              stb       $00D5               ; store byte counter
-                    bra       .LE3A6              ; branch down to set short-term lambda trim to $0000
+.LE398              stb       $00D5               ;store byte counter
+                    bra       .LE3A6              ;branch down to set short-term lambda trim to $0000
 
-.LE39C              bita      #$20                ; test X00D2.5
-                    beq       .LE3AB              ; if zero, branch forward to set O2 fault bit
+.LE39C              bita      #$20                ;test X00D2.5
+                    beq       .LE3AB              ;if zero, branch forward to set O2 fault bit
 
-                    lda       $00D3               ; load bits value
-                    ora       #$20                ; set X00D3.5 (left bank fault bit)
-                    sta       $00D3               ; store it
+                    lda       $00D3               ;load bits value
+                    ora       #$20                ;set X00D3.5 (left bank fault bit)
+                    sta       $00D3               ;store it
 ; -----------------------------------------
-.LE3A6              clra                          ; clear A
-                    tab                           ; AB= $0000 (value will be written to short term trim location)
-                    jmp       .LE543              ; jump down to write short term trim
-
-; -----------------------------------------
-
-.LE3AB              jsr       LF3A3               ; <-- Set O2 Sensor Fault Bit (A or B, depending on bank bit)
-                    bra       .LE3A6              ; branch up to set short-term lambda trim to $0000
+.LE3A6              clra                          ;clear A
+                    tab                           ;AB= $0000 (value will be written to short term trim location)
+                    jmp       .LE543              ;jump down to write short term trim
 
 ; -----------------------------------------
 
-.LE3B0              jmp       .LE50A              ; jump ahead to next section after lean code
+.LE3AB              jsr       LF3A3               ;<-- Set O2 Sensor Fault Bit (A or B, depending on bank bit)
+                    bra       .LE3A6              ;branch up to set short-term lambda trim to $0000
+
+; -----------------------------------------
+
+.LE3B0              jmp       .LE50A              ;jump ahead to next section after lean code
 
 ; ------------------------------------------------------------------------------
 ; Lean Condition (Excess Oxygen, Low Voltage)
 ; ------------------------------------------------------------------------------
-.LE3B3              lda       $00D2               ; X00D2 holds bank related bits
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE3C4              ; branch ahead if 1 (left bank)
+.LE3B3              lda       $00D2               ;X00D2 holds bank related bits
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE3C4              ;branch ahead if 1 (left bank)
 
-                    bita      #$01                ; Right: test X00D2.0
-                    beq       .LE3CE              ; branch if bit is zero
+                    bita      #$01                ;Right: test X00D2.0
+                    beq       .LE3CE              ;branch if bit is zero
 
-                    ora       #$10                ; set X00D2.4
-                    anda      #$FE                ; clear X00D2.0
-                    bra       .LE3CC              ; branch
+                    ora       #$10                ;set X00D2.4
+                    anda      #$FE                ;clear X00D2.0
+                    bra       .LE3CC              ;branch
 
-.LE3C4              bita      #$02                ; Left: test X00D2.1
-                    beq       .LE3CE              ; branch if bit is zero
+.LE3C4              bita      #$02                ;Left: test X00D2.1
+                    beq       .LE3CE              ;branch if bit is zero
 
-                    ora       #$20                ; set X00D2.5
-                    anda      #$FD                ; clear X00D2.1
+                    ora       #$20                ;set X00D2.5
+                    anda      #$FD                ;clear X00D2.1
 
-.LE3CC              sta       $00D2               ; store X00D2
+.LE3CC              sta       $00D2               ;store X00D2
 
-.LE3CE              lda       bits_0089           ; load bits value
-                    bita      #$40                ; test bits_0089.6
-                    beq       .LE3F1              ; branch ahead if zero
+.LE3CE              lda       bits_0089           ;load bits value
+                    bita      #$40                ;test bits_0089.6
+                    beq       .LE3F1              ;branch ahead if zero
 
-                    anda      #$BF                ; clear bits_0089.6
-                    sta       bits_0089           ; store it
-                    anda      #$07                ; mask bits_0089 bits 2:0
-                    bne       .LE3DF              ; branch ahead if any are set
+                    anda      #$BF                ;clear bits_0089.6
+                    sta       bits_0089           ;store it
+                    anda      #$07                ;mask bits_0089 bits 2:0
+                    bne       .LE3DF              ;branch ahead if any are set
 
-                    jsr       LF1D4               ; this subroutine uses MAF readings
+                    jsr       LF1D4               ;this subroutine uses MAF readings
 
-.LE3DF              jsr       LF416               ; this subroutine manipulates bits in X00E2
-                    lda       $C097               ; data value is $04
-                    sta       $00BD               ; store in X00BD (working value for either X00BE or X00BF)
-                    lda       bits_0089           ; load bits value
-                    anda      #$01                ; mask bits_0089.0
-                    beq       .LE3F4              ; branch ahead if bit is zero
+.LE3DF              jsr       LF416               ;this subroutine manipulates bits in X00E2
+                    lda       $C097               ;data value is $04
+                    sta       $00BD               ;store in X00BD (working value for either X00BE or X00BF)
+                    lda       bits_0089           ;load bits value
+                    anda      #$01                ;mask bits_0089.0
+                    beq       .LE3F4              ;branch ahead if bit is zero
 
-                    ldd       $008E               ; load X008E/8F (rich condition uses 0x0090/91)
-                    bra       .LE3F5              ; branch
-
-; ---------------------------------------
-.LE3F1              jmp       .LE459              ; jump ahead in lean condition code
+                    ldd       $008E               ;load X008E/8F (rich condition uses 0x0090/91)
+                    bra       .LE3F5              ;branch
 
 ; ---------------------------------------
-
-.LE3F4              tab                           ; transfer A to B
-
-.LE3F5              psha                          ; push A to stack
-                    lda       bits_205B           ; load bits value
-                    tst       $0088               ; test bank indicator bit
-                    bpl       .LE409              ; branch ahead if 0 (right bank)
-
-                    bita      #$02                ; Left: test bits_205B.1
-                    beq       .LE41E              ; branch if bit is zero
-
-                    anda      #$FD                ; clr bits_205B.1
-                    sta       bits_205B           ; store it
-                    bra       .LE412              ; branch
+.LE3F1              jmp       .LE459              ;jump ahead in lean condition code
 
 ; ---------------------------------------
-.LE409              bita      #$01                ; Right: test bits_205B.0
-                    beq       .LE41E              ; branch if bit is zero
 
-                    anda      #$FE                ; clear bits_205B.0
-                    sta       bits_205B           ; store it
+.LE3F4              tab                           ;transfer A to B
 
-.LE412              clr       $00CE               ; clear X00CE
-                    lda       $0069               ; load X0069 (rich cond uses data value XC096)
-                    sta       $00CF               ; store A in temporary location to be used later
-                    pula                          ; pull A from stack
-                    addd      $00CE               ; add double value X00CE/CF
-                    bra       .LE436              ; branch
+.LE3F5              psha                          ;push A to stack
+                    lda       bits_205B           ;load bits value
+                    tst       $0088               ;test bank indicator bit
+                    bpl       .LE409              ;branch ahead if 0 (right bank)
 
-; ---------------------------------------
-.LE41E              pula                          ; pull A from stack
-                    tst       $0086               ; test X0086.7
-                    bpl       .LE431              ; branch ahead if X0086.7 is zero
+                    bita      #$02                ;Left: test bits_205B.1
+                    beq       .LE41E              ;branch if bit is zero
 
-                    psha                          ; push A to stack
-                    lda       $008B               ; load bits value
-                    anda      #$01                ; mask X008B.0 (road speed > 4 KPH)
-                    pula                          ; pull A from stack
-                    bne       .LE431              ; branch if road speed > 4 KPH
-
-                    ldx       #$C7D1              ; rich code above uses #$C7D3 (both are 4000 decimal)
-                    bra       .LE434              ; branch
+                    anda      #$FD                ;clr bits_205B.1
+                    sta       bits_205B           ;store it
+                    bra       .LE412              ;branch
 
 ; ---------------------------------------
-.LE431              ldx       #$C092              ; rich code above uses #$C094 (both are 8000 decimal)
+.LE409              bita      #$01                ;Right: test bits_205B.0
+                    beq       .LE41E              ;branch if bit is zero
 
-.LE434              addd      $00,x               ; add 8000
+                    anda      #$FE                ;clear bits_205B.0
+                    sta       bits_205B           ;store it
 
-.LE436              std       $00CE               ; store in X00CE/CF for later
+.LE412              clr       $00CE               ;clear X00CE
+                    lda       $0069               ;load X0069 (rich cond uses data value XC096)
+                    sta       $00CF               ;store A in temporary location to be used later
+                    pula                          ;pull A from stack
+                    addd      $00CE               ;add double value X00CE/CF
+                    bra       .LE436              ;branch
+
+; ---------------------------------------
+.LE41E              pula                          ;pull A from stack
+                    tst       $0086               ;test X0086.7
+                    bpl       .LE431              ;branch ahead if X0086.7 is zero
+
+                    psha                          ;push A to stack
+                    lda       $008B               ;load bits value
+                    anda      #$01                ;mask X008B.0 (road speed > 4 KPH)
+                    pula                          ;pull A from stack
+                    bne       .LE431              ;branch if road speed > 4 KPH
+
+                    ldx       #$C7D1              ;rich code above uses #$C7D3 (both are 4000 decimal)
+                    bra       .LE434              ;branch
+
+; ---------------------------------------
+.LE431              ldx       #$C092              ;rich code above uses #$C094 (both are 8000 decimal)
+
+.LE434              addd      $00,x               ;add 8000
+
+.LE436              std       $00CE               ;store in X00CE/CF for later
 
 ; ---------------------------------------
 ; Use 3 x 8 air flow table
 ; ---------------------------------------
-                    ldd       mafDirectHi         ; load MAF high (range 300 to 1023)
-                    addd      mafDirectLo         ; add MAF low (range now 600 to 2046)
-                    lsrd                          ; shift right 1 bit
-                    lsrd                          ; shift right 1 bit
-                    lsrd                          ; shift right 1 bit (now upper 8 of 10 bits are in B, range $48 to $FF)
-                    tba                           ; transfer B to A
-                    ldb       #$08                ; load B with 8 (number of columns in data table)
-                    ldx       #$C1CA              ; <-- MAF related data table (only place used)
-                    jsr       indexIntoTable      ; index into table using MAF value (A is preserved)
-                    suba      $00,x               ; subtract indexed 1st row value from shifted air flow sum (A)
-                    ldb       $10,x               ; load indexed 3rd row value
-                    mul                           ; and multiply 3rd row value and remainder
+                    ldd       mafDirectHi         ;load MAF high (range 300 to 1023)
+                    addd      mafDirectLo         ;add MAF low (range now 600 to 2046)
+                    lsrd                          ;shift right 1 bit
+                    lsrd                          ;shift right 1 bit
+                    lsrd                          ;shift right 1 bit (now upper 8 of 10 bits are in B, range $48 to $FF)
+                    tba                           ;transfer B to A
+                    ldb       #$08                ;load B with 8 (number of columns in data table)
+                    ldx       #$C1CA              ;<-- MAF related data table (only place used)
+                    jsr       indexIntoTable      ;index into table using MAF value (A is preserved)
+                    suba      $00,x               ;subtract indexed 1st row value from shifted air flow sum (A)
+                    ldb       $10,x               ;load indexed 3rd row value
+                    mul                           ;and multiply 3rd row value and remainder
                     asld
-                    asld                          ; 2 left shifts multiply by 4
-                    adda      $08,x               ; add the indexed 2nd row value
-                    sta       $0069               ; store MSB in X0069 (value can be reset elsewhere)
+                    asld                          ;2 left shifts multiply by 4
+                    adda      $08,x               ;add the indexed 2nd row value
+                    sta       $0069               ;store MSB in X0069 (value can be reset elsewhere)
 
-                    ldd       $00C8               ; short term trim value (16-bit value)
-                    addd      $00CE               ; add 16-bit value
-                    bra       .LE495              ; branch
-
-; ---------------------------------------
+                    ldd       $00C8               ;short term trim value (16-bit value)
+                    addd      $00CE               ;add 16-bit value
+                    bra       .LE495              ;branch
 
 ; ---------------------------------------
-.LE459              jsr       LF224               ; this subroutine decrements value in X00BD if not zero
-                    lda       bits_0089           ; load bits value
-                    anda      #$07                ; mask bits_0089 bits 2:0
-                    bne       .LE468              ; branch ahead if any bits are set
 
-                    ldx       #$008E              ; load index with address X008E
-                    jsr       LF1AD               ; this subroutine uses the indexed value
-
-.LE468              ldb       bits_205B           ; load bits value
-                    tst       $0088               ; test bank indicator bit
-                    bpl       .LE474              ; branch ahead if 0 (right bank)
-
-                    andb      #$FD                ; Left: clear bits_205B.1
-                    bra       .LE476              ; branch
-
-.LE474              andb      #$FE                ; Right: clear bits_205B.0
-
-.LE476              stb       bits_205B           ; store bits value
-                    tst       $0086               ; test X0086.7
-                    bpl       .LE489              ; branch ahead if X0086.7 is zero
-
-                    lda       $008B               ; load bits value
-                    anda      #$01                ; isolate X008B.0 (road speed > 4 KPH)
-                    bne       .LE489              ; branch ahead if road speed is > 4 KPH
-
-                    lda       $C7D6               ; data value can be $1B or $36
-                    sta       $0069               ; reset X0069 to this value
-
-.LE489              ldd       $00C8               ; short term trim value from X00C8/C9
-                    addb      $0069               ; add X0069 to low byte
-                    adca      #$00                ; if carry, add it to upper byte
-                    bcs       .LE497              ; and branch if the carry was set
-
-                    addb      $0069               ; else, add it again
-                    adca      #$00                ; and add carry again
 ; ---------------------------------------
-.LE495              bcc       .LE50A              ; branch if carry is clear
+.LE459              jsr       LF224               ;this subroutine decrements value in X00BD if not zero
+                    lda       bits_0089           ;load bits value
+                    anda      #$07                ;mask bits_0089 bits 2:0
+                    bne       .LE468              ;branch ahead if any bits are set
 
-.LE497              lda       bits_0089           ; load bits value
-                    bita      #$04                ; test bits_0089.2
-                    bne       .LE500              ; if set, branch ahead to set short term trim to $FFFF
+                    ldx       #$008E              ;load index with address X008E
+                    jsr       LF1AD               ;this subroutine uses the indexed value
 
-                    lda       coolantTempCount    ; load ECT sensor counts
-                    cmpa      $C17E               ; inside coolant temp table (value is $23 or 87 deg C)
-                    bcc       .LE500              ; if cooler, branch ahead to set short term trim to $FFFF
+.LE468              ldb       bits_205B           ;load bits value
+                    tst       $0088               ;test bank indicator bit
+                    bpl       .LE474              ;branch ahead if 0 (right bank)
 
-                    lda       $00DC               ; load bits value
-                    bita      #$01                ; test X00DC.0 (road speed > 4 AND TPS < 40%)
-                    bne       .LE500              ; if set, branch ahead to set short term trim to $FFFF
+                    andb      #$FD                ;Left: clear bits_205B.1
+                    bra       .LE476              ;branch
 
-                    ldd       purgeValveTimer     ; load purge valve timer value (16 bits)
-                    beq       .LE4B3              ; branch ahead if zero
+.LE474              andb      #$FE                ;Right: clear bits_205B.0
 
-                    jsr       purgeValveBits      ; purge valve timer subroutine, sets or clrs carry before return
-                    bcs       .LE500              ; if carry set, branch ahead to set short term trim to $FFFF
+.LE476              stb       bits_205B           ;store bits value
+                    tst       $0086               ;test X0086.7
+                    bpl       .LE489              ;branch ahead if X0086.7 is zero
 
-.LE4B3              lda       $00D2               ; load bits value
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE4DE              ; branch ahead if 1 (left bank)
+                    lda       $008B               ;load bits value
+                    anda      #$01                ;isolate X008B.0 (road speed > 4 KPH)
+                    bne       .LE489              ;branch ahead if road speed is > 4 KPH
+
+                    lda       $C7D6               ;data value can be $1B or $36
+                    sta       $0069               ;reset X0069 to this value
+
+.LE489              ldd       $00C8               ;short term trim value from X00C8/C9
+                    addb      $0069               ;add X0069 to low byte
+                    adca      #$00                ;if carry, add it to upper byte
+                    bcs       .LE497              ;and branch if the carry was set
+
+                    addb      $0069               ;else, add it again
+                    adca      #$00                ;and add carry again
+; ---------------------------------------
+.LE495              bcc       .LE50A              ;branch if carry is clear
+
+.LE497              lda       bits_0089           ;load bits value
+                    bita      #$04                ;test bits_0089.2
+                    bne       .LE500              ;if set, branch ahead to set short term trim to $FFFF
+
+                    lda       coolantTempCount    ;load ECT sensor counts
+                    cmpa      $C17E               ;inside coolant temp table (value is $23 or 87 deg C)
+                    bcc       .LE500              ;if cooler, branch ahead to set short term trim to $FFFF
+
+                    lda       $00DC               ;load bits value
+                    bita      #$01                ;test X00DC.0 (road speed > 4 AND TPS < 40%)
+                    bne       .LE500              ;if set, branch ahead to set short term trim to $FFFF
+
+                    ldd       purgeValveTimer     ;load purge valve timer value (16 bits)
+                    beq       .LE4B3              ;branch ahead if zero
+
+                    jsr       purgeValveBits      ;purge valve timer subroutine, sets or clrs carry before return
+                    bcs       .LE500              ;if carry set, branch ahead to set short term trim to $FFFF
+
+.LE4B3              lda       $00D2               ;load bits value
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE4DE              ;branch ahead if 1 (left bank)
 
 ; --------------
 ; Right Bank
 ; --------------
-                    ora       #$04                ; set X00D2.2
-                    sta       $00D2               ; store value
-                    ldb       $00D4               ; load counter
-                    incb                          ; increment X00D4 counter
-                    bne       .LE4CE              ; branch ahead if counter not zero
+                    ora       #$04                ;set X00D2.2
+                    sta       $00D2               ;store value
+                    ldb       $00D4               ;load counter
+                    incb                          ;increment X00D4 counter
+                    bne       .LE4CE              ;branch ahead if counter not zero
 
-                    ldb       $00D6               ; load dual nibble counter
-                    addb      #$01                ; add 1 to X00D6 low nibble
-                    bitb      #$04                ; test bit 2
-                    bne       .LE4D2              ; branch ahead if bit is set
+                    ldb       $00D6               ;load dual nibble counter
+                    addb      #$01                ;add 1 to X00D6 low nibble
+                    bitb      #$04                ;test bit 2
+                    bne       .LE4D2              ;branch ahead if bit is set
 
-                    stb       $00D6               ; store dual nibble counter
-                    clrb                          ; reset X00D4 counter to zero
+                    stb       $00D6               ;store dual nibble counter
+                    clrb                          ;reset X00D4 counter to zero
 
-.LE4CE              stb       $00D4               ; store X00D4 counter
-                    bra       .LE500              ; branch ahead to set short term trim to $FFFF
+.LE4CE              stb       $00D4               ;store X00D4 counter
+                    bra       .LE500              ;branch ahead to set short term trim to $FFFF
 
-.LE4D2              bita      #$40                ; test X00D2.6
-                    beq       .LE505              ; if zero, branch forward to set O2 fault bit
+.LE4D2              bita      #$40                ;test X00D2.6
+                    beq       .LE505              ;if zero, branch forward to set O2 fault bit
 
-                    lda       $00D3               ; load bits value
-                    ora       #$04                ; set X00D3.2
-                    sta       $00D3               ; store bits value
-                    bra       .LE500              ; branch ahead to set short term trim to $FFFF
+                    lda       $00D3               ;load bits value
+                    ora       #$04                ;set X00D3.2
+                    sta       $00D3               ;store bits value
+                    bra       .LE500              ;branch ahead to set short term trim to $FFFF
 
 ; --------------
 ; Left Bank
 ; --------------
-.LE4DE              ora       #$08                ; set X00D2.3
-                    sta       $00D2               ; store bits value
-                    ldb       $00D5               ; load counter
-                    incb                          ; increment X00D5 counter
-                    bne       .LE4F2              ; branch ahead if counter not zero
+.LE4DE              ora       #$08                ;set X00D2.3
+                    sta       $00D2               ;store bits value
+                    ldb       $00D5               ;load counter
+                    incb                          ;increment X00D5 counter
+                    bne       .LE4F2              ;branch ahead if counter not zero
 
-                    ldb       $00D6               ; load dual nibble counter
-                    addb      #$10                ; add 1 to upper nibble
-                    bitb      #$20                ; test bit 5
-                    bne       .LE4F6              ; branch ahead if bit 5 is set
+                    ldb       $00D6               ;load dual nibble counter
+                    addb      #$10                ;add 1 to upper nibble
+                    bitb      #$20                ;test bit 5
+                    bne       .LE4F6              ;branch ahead if bit 5 is set
 
-                    stb       $00D6               ; store dual nibble counter
-                    clrb                          ; clear X00D5 counter
+                    stb       $00D6               ;store dual nibble counter
+                    clrb                          ;clear X00D5 counter
 
-.LE4F2              stb       $00D5               ; store X00D5 counter
-                    bra       .LE500              ; branch ahead to set short term trim to $FFFF
+.LE4F2              stb       $00D5               ;store X00D5 counter
+                    bra       .LE500              ;branch ahead to set short term trim to $FFFF
 
-.LE4F6              bita      #$80                ; test X00D2.7
-                    beq       .LE505              ; if zero, branch ahead to set O2 fault bit
+.LE4F6              bita      #$80                ;test X00D2.7
+                    beq       .LE505              ;if zero, branch ahead to set O2 fault bit
 
-                    lda       $00D3               ; load bits value
-                    ora       #$08                ; set X00D3.3
-                    sta       $00D3               ; store bits value
+                    lda       $00D3               ;load bits value
+                    ora       #$08                ;set X00D3.3
+                    sta       $00D3               ;store bits value
 
 ; ------------------------------------------
 ; Common code: set short term trim to $FFFF
-.LE500              ldd       #$FFFF              ; AB = $FFFF (this value will be written to the short-term trim location)
-                    bra       .LE543              ; branch down to common condition code
+.LE500              ldd       #$FFFF              ;AB = $FFFF (this value will be written to the short-term trim location)
+                    bra       .LE543              ;branch down to common condition code
 
 ; ------------------------------------------
 
-.LE505              jsr       LF3A3               ; Set O2 Sensor Fault Bit (A or B, depending on bank bit)
-                    bra       .LE500              ; branch up to set short term trim to $FFFF
+.LE505              jsr       LF3A3               ;Set O2 Sensor Fault Bit (A or B, depending on bank bit)
+                    bra       .LE500              ;branch up to set short term trim to $FFFF
 
 ; ---------------------------------------------------------------------
 ; Reset Counters
 ; ---------------------------------------------------------------------
-.LE50A              psha                          ; push A to stack
-                    lda       $00D6               ; load dual nibble counter
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE519              ; branch ahead if set (left bank)
+.LE50A              psha                          ;push A to stack
+                    lda       $00D6               ;load dual nibble counter
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE519              ;branch ahead if set (left bank)
 
-                    clr       $00D4               ; Right: clear byte counter
-                    anda      #$F0                ; clear lower nibble of dual nibble counter
-                    bra       .LE51E              ; branch
+                    clr       $00D4               ;Right: clear byte counter
+                    anda      #$F0                ;clear lower nibble of dual nibble counter
+                    bra       .LE51E              ;branch
 
-.LE519              clr       $00D5               ; Left: clear byte counter
-                    anda      #$0F                ; clear upper nibble of dual nibble counter
+.LE519              clr       $00D5               ;Left: clear byte counter
+                    anda      #$0F                ;clear upper nibble of dual nibble counter
 
-.LE51E              sta       $00D6               ; store dual counter with cleared nibble
-                    pula                          ; pull A from stack
-                    bra       .LE543              ; branch
+.LE51E              sta       $00D6               ;store dual counter with cleared nibble
+                    pula                          ;pull A from stack
+                    bra       .LE543              ;branch
 
 ; -------------------------------------------------------------------------------
 ; Open Loop Map Destination
@@ -2371,25 +2371,25 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Closed loop maps, running in closed loop, eventually get here too.
 
 ; ------------------------------------------------------------------------------
-.LE523              lda       bits_0089           ; load bits value
-                    anda      #$07                ; mask bits_0089 bits 2:0
-                    bne       .LE53B              ; branch ahead if any are set
+.LE523              lda       bits_0089           ;load bits value
+                    anda      #$07                ;mask bits_0089 bits 2:0
+                    bne       .LE53B              ;branch ahead if any are set
 
-                    jsr       LF3C0               ; this routine clears some variables
-                    lda       $00D2               ; load bits value (bank related bits)
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE537              ; branch ahead if 1 (left bank)
+                    jsr       LF3C0               ;this routine clears some variables
+                    lda       $00D2               ;load bits value (bank related bits)
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE537              ;branch ahead if 1 (left bank)
 
-                    anda      #$AA                ; Right: clear X00D2 bits 6,4,2,0
-                    bra       .LE539              ; branch
+                    anda      #$AA                ;Right: clear X00D2 bits 6,4,2,0
+                    bra       .LE539              ;branch
 
-.LE537              anda      #$55                ; Left: clear X00D2 bits 7,5,3,1
+.LE537              anda      #$55                ;Left: clear X00D2 bits 7,5,3,1
 
-.LE539              sta       $00D2               ; store X00D2
+.LE539              sta       $00D2               ;store X00D2
 
-.LE53B              lda       #$FF                ; load A with $FF
-                    sta       purgeValveFailDelay  ; reset purge valve fault code delay counter to $FF
-                    ldd       #$8000              ; load the default (neutral) value for short term trim
+.LE53B              lda       #$FF                ;load A with $FF
+                    sta       purgeValveFailDelay  ;reset purge valve fault code delay counter to $FF
+                    ldd       #$8000              ;load the default (neutral) value for short term trim
 
 ; ------------------------------------------------------------------------------
 ; Final Stage of Short Term Trim Code
@@ -2398,46 +2398,46 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Write X00BD (working value) back to X00BE or X00BF
 
 ; ------------------------------------------------------------------------------
-.LE543              std       $00C8               ; store 16-bit short term trim value
-                    ldd       $00C8               ; (this is unneeded)
-                    tst       $0088               ; test bank indicator bit
-                    bpl       .LE564              ; branch ahead if 0 (right bank)
+.LE543              std       $00C8               ;store 16-bit short term trim value
+                    ldd       $00C8               ;(this is unneeded)
+                    tst       $0088               ;test bank indicator bit
+                    bpl       .LE564              ;branch ahead if 0 (right bank)
 ; --------------
 ; Left Bank
 ; --------------
-                    std       shortLambdaTrimL    ; store value as left short term trim
-                    ldb       bits_0089           ; load bits value
-                    bitb      #$40                ; test bits_0089.6
-                    beq       .LE558              ; branch if bit is zero
+                    std       shortLambdaTrimL    ;store value as left short term trim
+                    ldb       bits_0089           ;load bits value
+                    bitb      #$40                ;test bits_0089.6
+                    beq       .LE558              ;branch if bit is zero
 
-                    orb       #$20                ; set bits_0089.5
-                    bra       .LE55A              ; branch
+                    orb       #$20                ;set bits_0089.5
+                    bra       .LE55A              ;branch
 
-.LE558              andb      #$DF                ; clear bits_0089.5
+.LE558              andb      #$DF                ;clear bits_0089.5
 
-.LE55A              andb      #$BF                ; clear bits_0089.6
-                    stb       bits_0089           ; store bits value
-                    ldb       $00BD               ; load working value
-                    stb       $00BF               ; store it in X00BF
-                    bra       .LE57A              ; branch
+.LE55A              andb      #$BF                ;clear bits_0089.6
+                    stb       bits_0089           ;store bits value
+                    ldb       $00BD               ;load working value
+                    stb       $00BF               ;store it in X00BF
+                    bra       .LE57A              ;branch
 
 ; --------------
 ; Right Bank
 ; --------------
-.LE564              std       shortLambdaTrimR    ; store value as left short term trim
-                    ldb       bits_0089           ; load bits value
-                    bitb      #$40                ; test bits_0089.6
-                    beq       .LE570              ; branch if bit is zero
+.LE564              std       shortLambdaTrimR    ;store value as left short term trim
+                    ldb       bits_0089           ;load bits value
+                    bitb      #$40                ;test bits_0089.6
+                    beq       .LE570              ;branch if bit is zero
 
-                    orb       #$10                ; set bits_0089.4
-                    bra       .LE572              ; branch
+                    orb       #$10                ;set bits_0089.4
+                    bra       .LE572              ;branch
 
-.LE570              andb      #$EF                ; clear bits_0089.4
+.LE570              andb      #$EF                ;clear bits_0089.4
 
-.LE572              andb      #$BF                ; clear bits_0089.6
-                    stb       bits_0089           ; store bits value
-                    ldb       $00BD               ; load working value
-                    stb       $00BE               ; store it in X00BE
+.LE572              andb      #$BF                ;clear bits_0089.6
+                    stb       bits_0089           ;store bits value
+                    ldb       $00BD               ;load working value
+                    stb       $00BE               ;store it in X00BE
 
           #ifdef BUILD_R3365
 ; -----------------------------------------------------------
@@ -2450,78 +2450,78 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     sta       AdcDataLow
                     jsr       LFA46
           #else
-.LE57A              jsr       rdSpdCompTest       ; road speed comparator test
+.LE57A              jsr       rdSpdCompTest       ;road speed comparator test
           #endif
 ; ---------------------------------------------------------------------------------------------------
 ; Purge Valve Stuff
 ; ---------------------------------------------------------------------------------------------------
-                    lda       fuelMapNumber       ; load fuel map number
-                    beq       .LE5A5              ; branch ahead if fuel map is zero
-                    cmpa      #$04                ; compare fuel map number with 4
-                    bcc       .LE5A5              ; branch ahead if fuel map is 4 or 5
+                    lda       fuelMapNumber       ;load fuel map number
+                    beq       .LE5A5              ;branch ahead if fuel map is zero
+                    cmpa      #$04                ;compare fuel map number with 4
+                    bcc       .LE5A5              ;branch ahead if fuel map is 4 or 5
 
 ; ----------------------------------
 ; Fuel map 1, 2 and 3 (open loop)
 ; ----------------------------------
-                    ldb       bits_008D           ; load bits value
-                    bitb      #$10                ; test bits_008D.4
-                    beq       .LE5EA              ; branch ahead if bits_008D.4 is zero
+                    ldb       bits_008D           ;load bits value
+                    bitb      #$10                ;test bits_008D.4
+                    beq       .LE5EA              ;branch ahead if bits_008D.4 is zero
 
-                    ldd       engineRPM           ; load engine RPM (16-bit value)
-                    subd      savedEngineRPM      ; previously stored eng RPM value (in purge valve subroutine)
-                    bcs       .LE5EA              ; branch ahead if current RPM < savedEngineRPM (neg value)
+                    ldd       engineRPM           ;load engine RPM (16-bit value)
+                    subd      savedEngineRPM      ;previously stored eng RPM value (in purge valve subroutine)
+                    bcs       .LE5EA              ;branch ahead if current RPM < savedEngineRPM (neg value)
 
-                    subd      #$001E              ; positive result, subtract an additional 30 decimal
-                    bcs       .LE5EA              ; branch ahead if result is now negative
+                    subd      #$001E              ;positive result, subtract an additional 30 decimal
+                    bcs       .LE5EA              ;branch ahead if result is now negative
 
-                    ldb       bits_008D           ; load bits value
-                    andb      #$6F                ; clear bits_008D.7 and bits_008D.4
-                    stb       bits_008D           ; store bits value
-                    ldd       $C145               ; data value is 12,000 decimal
-                    std       purgeValveTimer2    ; reset down counter to 12000 dec
-                    bra       .LE5EA              ; branch ahead to fault code tests
+                    ldb       bits_008D           ;load bits value
+                    andb      #$6F                ;clear bits_008D.7 and bits_008D.4
+                    stb       bits_008D           ;store bits value
+                    ldd       $C145               ;data value is 12,000 decimal
+                    std       purgeValveTimer2    ;reset down counter to 12000 dec
+                    bra       .LE5EA              ;branch ahead to fault code tests
 
 ; ----------------------------------
 ; Fuel map 0, 4 and 5 (closed loop)
 ; ----------------------------------
-.LE5A5              ldb       bits_008D           ; load bits value
-                    bitb      #$10                ; test bits_008D.4
-                    beq       .LE5EA              ; branch ahead if bits_008D.4 is zero
+.LE5A5              ldb       bits_008D           ;load bits value
+                    bitb      #$10                ;test bits_008D.4
+                    beq       .LE5EA              ;branch ahead if bits_008D.4 is zero
 
-                    lda       shortLambdaTrimR    ; load right short term trim (MSB only)
-                    cmpa      $C1F1               ; data value is $56
-                    bcs       .LE5BD              ; branch ahead if right trim MSB < $56
+                    lda       shortLambdaTrimR    ;load right short term trim (MSB only)
+                    cmpa      $C1F1               ;data value is $56
+                    bcs       .LE5BD              ;branch ahead if right trim MSB < $56
 
-                    lda       secondaryLambdaR    ; load MSB of other right Lambda value
-                    adda      $C144               ; data value is $0A (add 10 decimal)
-                    bcs       .LE5CC              ; branch ahead if rollover
+                    lda       secondaryLambdaR    ;load MSB of other right Lambda value
+                    adda      $C144               ;data value is $0A (add 10 decimal)
+                    bcs       .LE5CC              ;branch ahead if rollover
 
-                    cmpa      purgeValveValue     ; compare value with 'purgeValveValue'
-                    bcc       .LE5DC              ; branch ahead if value > 'purgeValveValue'
+                    cmpa      purgeValveValue     ;compare value with 'purgeValveValue'
+                    bcc       .LE5DC              ;branch ahead if value > 'purgeValveValue'
 
-.LE5BD              andb      #$6F                ; clear bits_008D.7 and bits_008D.4
-                    stb       bits_008D           ; store bits value
-                    ldd       $C145               ; data value is 12,000 decimal
-                    std       purgeValveTimer2    ; reset down counter to 12000 dec
+.LE5BD              andb      #$6F                ;clear bits_008D.7 and bits_008D.4
+                    stb       bits_008D           ;store bits value
+                    ldd       $C145               ;data value is 12,000 decimal
+                    std       purgeValveTimer2    ;reset down counter to 12000 dec
 
-                    lda       $0088               ; load bits value
-                    anda      #$9F                ; clear X0088 bits 6:5
-                    sta       $0088               ; store bits value
+                    lda       $0088               ;load bits value
+                    anda      #$9F                ;clear X0088 bits 6:5
+                    sta       $0088               ;store bits value
 
-.LE5CC              lda       $00DD               ; load bits value
-                    anda      #$F7                ; clear X00DD.3
-                    sta       $00DD               ; store bits value
-                    lda       bits_203B           ; load bits value
-                    ora       #$01                ; set bits_203B.0
-                    sta       bits_203B           ; store bits value
-                    bra       .LE5EA              ; branch ahead to next section
+.LE5CC              lda       $00DD               ;load bits value
+                    anda      #$F7                ;clear X00DD.3
+                    sta       $00DD               ;store bits value
+                    lda       bits_203B           ;load bits value
+                    ora       #$01                ;set bits_203B.0
+                    sta       bits_203B           ;store bits value
+                    bra       .LE5EA              ;branch ahead to next section
 
-.LE5DC              lda       secondaryLambdaR    ; load MSB of other right Lambda value
-                    suba      purgeValveValue     ; subtract 'purgeValveValue'
-                    adda      $C1EC               ; data value is $01 or $02 (add this value)
-                    cmpa      $C1ED               ; data value is $02 or $04 (compare with this value)
-                    bhi       .LE5CC              ; branch up if value is higher than XC1ED
-                    bra       .LE5EA              ; (unneeded)
+.LE5DC              lda       secondaryLambdaR    ;load MSB of other right Lambda value
+                    suba      purgeValveValue     ;subtract 'purgeValveValue'
+                    adda      $C1EC               ;data value is $01 or $02 (add this value)
+                    cmpa      $C1ED               ;data value is $02 or $04 (compare with this value)
+                    bhi       .LE5CC              ;branch up if value is higher than XC1ED
+                    bra       .LE5EA              ;(unneeded)
 
 ; ---------------------------------------------------------------------------------------------------
 ; Test for Fault Codes 34, 36 and 59
@@ -2538,49 +2538,49 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; leak, low fuel pressure or a problem with the injector bank.
 
 ; ---------------------------------------------------------------------------------------------------
-.LE5EA              lda       ignPeriod           ; load ignition period MSB
-                    cmpa      #$07                ; is period at least $0700 (LT 4185 RPM)
-                    bcc       .LE5F3              ; branch to avoid jump for normal engine speed
-                    jmp       .LE72B              ; <-- high engine speed, jump way down skip fault tests
+.LE5EA              lda       ignPeriod           ;load ignition period MSB
+                    cmpa      #$07                ;is period at least $0700 (LT 4185 RPM)
+                    bcc       .LE5F3              ;branch to avoid jump for normal engine speed
+                    jmp       .LE72B              ;<-- high engine speed, jump way down skip fault tests
 
 ; ---------------------------------------------
 ; <-- engine speed is below 4185 RPM
-.LE5F3              lda       bits_008C           ; load bits value
-                    bita      #$02                ; test bits_008C.1 (double pulse timeout bit)
-                    beq       .LE667              ; if zero, branch to next fault check
+.LE5F3              lda       bits_008C           ;load bits value
+                    bita      #$02                ;test bits_008C.1 (double pulse timeout bit)
+                    beq       .LE667              ;if zero, branch to next fault check
 
-                    anda      #$30                ; mask bits_008C bits 5:4 (unused bits)
-                    cmpa      #$30                ; test bits_008C.5 and bits_008C.4
-                    bne       .LE667              ; branch ahead if either bit is set
+                    anda      #$30                ;mask bits_008C bits 5:4 (unused bits)
+                    cmpa      #$30                ;test bits_008C.5 and bits_008C.4
+                    bne       .LE667              ;branch ahead if either bit is set
 
-                    ldb       faultBits_4A        ; load fault bits from faultBits_4A
-                    lda       $00D3               ; load bits value
-                    anda      #$0C                ; mask X00D3 bits 3:2
-                    beq       .LE667              ; branch ahead if both bits are zero
+                    ldb       faultBits_4A        ;load fault bits from faultBits_4A
+                    lda       $00D3               ;load bits value
+                    anda      #$0C                ;mask X00D3 bits 3:2
+                    beq       .LE667              ;branch ahead if both bits are zero
 
-                    lda       $00DC               ; load bits value
-                    bita      #$20                ; test X00DC.5
-                    bne       .LE62F              ; branch ahead if bit is set
+                    lda       $00DC               ;load bits value
+                    bita      #$20                ;test X00DC.5
+                    bne       .LE62F              ;branch ahead if bit is set
 
-                    ora       #$20                ; set 00DC.5
-                    sta       $00DC               ; store bits value
-                    lda       shortLambdaTrimR    ; load MSB of right short term trim (128 +/-)
-                    cmpa      $C1F3               ; data value is $E0
-                    bcs       .LE62B              ; skip to injector fault test if < E0
+                    ora       #$20                ;set 00DC.5
+                    sta       $00DC               ;store bits value
+                    lda       shortLambdaTrimR    ;load MSB of right short term trim (128 +/-)
+                    cmpa      $C1F3               ;data value is $E0
+                    bcs       .LE62B              ;skip to injector fault test if < E0
 
-                    lda       shortLambdaTrimL    ; load MSB of left short term trim (128 +/-)
-                    cmpa      $C1F3               ; data value is $E0
-                    bcs       .LE627              ; skip to injector fault test if < $E0
+                    lda       shortLambdaTrimL    ;load MSB of left short term trim (128 +/-)
+                    cmpa      $C1F3               ;data value is $E0
+                    bcs       .LE627              ;skip to injector fault test if < $E0
 
-                    lda       faultBits_4D        ; if here, both banks seem to need much more fuel than normal
-                    ora       #$10                ; <-- Set Fault Code 59 (Unused Group Fault, air leak or low fuel pressure)
+                    lda       faultBits_4D        ;if here, both banks seem to need much more fuel than normal
+                    ora       #$10                ;<-- Set Fault Code 59 (Unused Group Fault, air leak or low fuel pressure)
                     sta       faultBits_4D
                     bra       .LE62D
 
-.LE627              orb       #$01                ; <-- Set Fault Code 34 (Injector Bank A Fault) LEFT SIDE!!
+.LE627              orb       #$01                ;<-- Set Fault Code 34 (Injector Bank A Fault) LEFT SIDE!!
                     bra       .LE62D
 
-.LE62B              orb       #$04                ; <-- Set Fault Code 36 (Injector Bank B Fault) RIGHT SIDE!!
+.LE62B              orb       #$04                ;<-- Set Fault Code 36 (Injector Bank B Fault) RIGHT SIDE!!
 
 .LE62D              stb       faultBits_4A
 
@@ -2593,42 +2593,42 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Fault Code 23 - Low fuel Pressure
 ; Fault Code 28 - Air Leak
 ; --------------------------------------------------------------------------------
-.LE62F              lda       faultBits_4D        ; load fault bits faultBits_4D
-                    bita      #$10                ; test bit 4 (Fault Code 59)
-                    beq       .LE667              ; If not set, skip ahead
+.LE62F              lda       faultBits_4D        ;load fault bits faultBits_4D
+                    bita      #$10                ;test bit 4 (Fault Code 59)
+                    beq       .LE667              ;If not set, skip ahead
 
-                    ldb       faultBits_4C        ; load fault bits faultBits_4C
-                    lda       fuelMapLoadIdx      ; load fuel map row index
-                    cmpa      #$30                ; compare with $30
-                    bcs       .LE667              ; if row index < $30, skip ahead
+                    ldb       faultBits_4C        ;load fault bits faultBits_4C
+                    lda       fuelMapLoadIdx      ;load fuel map row index
+                    cmpa      #$30                ;compare with $30
+                    bcs       .LE667              ;if row index < $30, skip ahead
 
-                    lda       shortLambdaTrimR    ; load MSB of right short term trim (128 +/-)
-                    cmpa      #$FF                ; check for maxed out value
-                    bne       .LE65A              ; if max, skip down
+                    lda       shortLambdaTrimR    ;load MSB of right short term trim (128 +/-)
+                    cmpa      #$FF                ;check for maxed out value
+                    bne       .LE65A              ;if max, skip down
 
-                    lda       shortLambdaTrimL    ; load MSB of left short term trim (128 +/-)
-                    cmpa      #$FF                ; check for maxed out value
-                    bne       .LE65A              ; if max, skip down
+                    lda       shortLambdaTrimL    ;load MSB of left short term trim (128 +/-)
+                    cmpa      #$FF                ;check for maxed out value
+                    bne       .LE65A              ;if max, skip down
 
-                    lda       groupFaultCounter   ; load fault delay counter
-                    inca                          ; increment it
-                    cmpa      #$32                ; compare it with 50 decimal
-                    beq       .LE654              ; branch to set fault code 23
+                    lda       groupFaultCounter   ;load fault delay counter
+                    inca                          ;increment it
+                    cmpa      #$32                ;compare it with 50 decimal
+                    beq       .LE654              ;branch to set fault code 23
 
-                    sta       groupFaultCounter   ; store counter
-                    bra       .LE667              ; branch to next section
+                    sta       groupFaultCounter   ;store counter
+                    bra       .LE667              ;branch to next section
 
 ; code gets here when 'groupFaultCounter' gets to 50 decimal
-.LE654              orb       #$01                ; <-- set fault code 23 (low fuel pressure -- unused)
+.LE654              orb       #$01                ;<-- set fault code 23 (low fuel pressure -- unused)
                     stb       faultBits_4C
-                    bra       .LE667              ; branch to next section
+                    bra       .LE667              ;branch to next section
 
-.LE65A              clr       groupFaultCounter   ; clear delay counter
-                    bitb      #$01                ; test for Fault Code 23
-                    bne       .LE667              ; if set, don't set Fault Code 28
+.LE65A              clr       groupFaultCounter   ;clear delay counter
+                    bitb      #$01                ;test for Fault Code 23
+                    bne       .LE667              ;if set, don't set Fault Code 28
 
                     lda       faultBits_4B
-                    ora       #$08                ; <-- set fault code 28 (air leak -- unused)
+                    ora       #$08                ;<-- set fault code 28 (air leak -- unused)
                     sta       faultBits_4B
 
 ; ---------------------------------------------------------------------------------------------------
@@ -2637,36 +2637,36 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Bits X00D3.4 and X00D3.5 can be set above when the O2 volatge is high (rich, depleted oxygen)
 
 ; ---------------------------------------------------------------------------------------------------
-.LE667              ldb       faultBits_4A        ; load fault bits value faultBits_4A
-                    lda       $00D3               ; load bank fault bits
-                    anda      #$30                ; test 2 bank related fault bits X00D3.5 and X00D3.4
-                    beq       .LE697              ; branch to next section if both are clear
+.LE667              ldb       faultBits_4A        ;load fault bits value faultBits_4A
+                    lda       $00D3               ;load bank fault bits
+                    anda      #$30                ;test 2 bank related fault bits X00D3.5 and X00D3.4
+                    beq       .LE697              ;branch to next section if both are clear
 
-                    lda       $00DC               ; load bits value
-                    bita      #$10                ; test X00DC.4
-                    bne       .LE697              ; if zero, branch to next section
+                    lda       $00DC               ;load bits value
+                    bita      #$10                ;test X00DC.4
+                    bne       .LE697              ;if zero, branch to next section
 
-                    ora       #$10                ; set X00DC.4 (may indicate that injector fault is already set)
+                    ora       #$10                ;set X00DC.4 (may indicate that injector fault is already set)
                     sta       $00DC
-                    lda       shortLambdaTrimR    ; load MSB of right short term trim (128 +/-)
-                    cmpa      $C1F2               ; data value is $30
-                    bcc       .LE693              ; if trim > $30, branch to set Inj B Fault
+                    lda       shortLambdaTrimR    ;load MSB of right short term trim (128 +/-)
+                    cmpa      $C1F2               ;data value is $30
+                    bcc       .LE693              ;if trim > $30, branch to set Inj B Fault
 
-                    lda       shortLambdaTrimL    ; load MSB of left short term trim (128 +/-)
-                    cmpa      $C1F2               ; data value is $30
-                    bcc       .LE68F              ; if trim > $30, branch to set Inj A Fault
+                    lda       shortLambdaTrimL    ;load MSB of left short term trim (128 +/-)
+                    cmpa      $C1F2               ;data value is $30
+                    bcc       .LE68F              ;if trim > $30, branch to set Inj A Fault
 
                     lda       faultBits_4C
-                    ora       #$01                ; set unused fuel pressure fault (Code 23)
+                    ora       #$01                ;set unused fuel pressure fault (Code 23)
                     sta       faultBits_4C
-                    bra       .LE695              ; branch
+                    bra       .LE695              ;branch
 
-.LE68F              orb       #$01                ; set injector bank A fault (Code 34)
-                    bra       .LE695              ; branch to store faultBits_4A
+.LE68F              orb       #$01                ;set injector bank A fault (Code 34)
+                    bra       .LE695              ;branch to store faultBits_4A
 
-.LE693              orb       #$04                ; set injector bank B fault (Code 36)
+.LE693              orb       #$04                ;set injector bank B fault (Code 36)
 
-.LE695              stb       faultBits_4A        ; store faultBits_4A fault bits value
+.LE695              stb       faultBits_4A        ;store faultBits_4A fault bits value
 
 ; ------------------------------------------------------------------------------
 
@@ -2678,33 +2678,33 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; X0044/45   A value similar to short term trim
 ; X0046/47    Long term trim (Left)
 ; ------------------------------------------------------------------------------
-.LE697              lda       bits_0089           ; load bits value
-                    anda      #$03                ; mask bits_0089.1 and bits_0089.0
-                    bne       .LE71A              ; if either set, branch and skip long term trim adjust
+.LE697              lda       bits_0089           ;load bits value
+                    anda      #$03                ;mask bits_0089.1 and bits_0089.0
+                    bne       .LE71A              ;if either set, branch and skip long term trim adjust
 
-                    lda       fuelMapNumber       ; load fuel map number
-                    beq       .LE6A6              ; if zero, branch to continue
+                    lda       fuelMapNumber       ;load fuel map number
+                    beq       .LE6A6              ;if zero, branch to continue
 
-                    cmpa      #$04                ; compare map number with 4
-                    bcs       .LE71A              ; continue if 4 or 5, else skip long term trim adjust
+                    cmpa      #$04                ;compare map number with 4
+                    bcs       .LE71A              ;continue if 4 or 5, else skip long term trim adjust
 
-.LE6A6              lda       $00CE               ; load value from rich or lean code above
-                    ora       $00CF               ; OR value from rich or lean code above
-                    beq       .LE71A              ; if zero, branch and skip long term trim adjust
+.LE6A6              lda       $00CE               ;load value from rich or lean code above
+                    ora       $00CF               ;OR value from rich or lean code above
+                    beq       .LE71A              ;if zero, branch and skip long term trim adjust
 
-                    lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C17E               ; inside coolant temp table (value is $23 or 87 deg C))
-                    bcc       .LE71A              ; if cooler than 87C, branch to skip long term adjustment
+                    lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C17E               ;inside coolant temp table (value is $23 or 87 deg C))
+                    bcc       .LE71A              ;if cooler than 87C, branch to skip long term adjustment
 
-                    lda       $0088               ; test bank indicator bit
-                    bmi       .LE6BE              ; branch if bit is 1 (left bank)
+                    lda       $0088               ;test bank indicator bit
+                    bmi       .LE6BE              ;branch if bit is 1 (left bank)
 
-                    ldd       shortLambdaTrimR    ; Right: load right short term trim into AB regs
-                    ldx       #secondaryLambdaR   ; load other right Lambda value into index reg
-                    bra       .LE6C3              ; branch
+                    ldd       shortLambdaTrimR    ;Right: load right short term trim into AB regs
+                    ldx       #secondaryLambdaR   ;load other right Lambda value into index reg
+                    bra       .LE6C3              ;branch
 
-.LE6BE              ldd       shortLambdaTrimL    ; Left: load left short term trim into AB regs
-                    ldx       #secondaryLambdaL   ; load other left Lambda value into index reg
+.LE6BE              ldd       shortLambdaTrimL    ;Left: load left short term trim into AB regs
+                    ldx       #secondaryLambdaL   ;load other left Lambda value into index reg
 
 ; -------------------------------------------------------------------------
 ; This block uses the short term trim values to adjust the values in
@@ -2713,83 +2713,83 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; If Right,  AB = right  short trim value,  X = #Left
 ; If Left, AB = left short trim value,  X = #secondaryLambdaLeft
 ; -------------------------------------------------------------------------
-.LE6C3              jsr       LF119               ; subroutine reduces AB to 1/2 or 1/4
-                    pshb                          ; push B to stack
-                    psha                          ; push A to stack
-                    ldd       $00,x               ; load the other Lambda value
-                    jsr       LF119               ; subroutine reduces AB to 1/2 or 1/4
-                    subd      $00,x               ; subtract original value
-                    jsr       absoluteValAB       ; get the absolute value
-                    std       $00,x               ; store it as the other value
-                    pula                          ; pull MSB of short term trim
-                    pulb                          ; pull LSB of short term trim
-                    addd      $00,x               ; add indexed value
-                    std       $00,x               ; and store as new "other" value
+.LE6C3              jsr       LF119               ;subroutine reduces AB to 1/2 or 1/4
+                    pshb                          ;push B to stack
+                    psha                          ;push A to stack
+                    ldd       $00,x               ;load the other Lambda value
+                    jsr       LF119               ;subroutine reduces AB to 1/2 or 1/4
+                    subd      $00,x               ;subtract original value
+                    jsr       absoluteValAB       ;get the absolute value
+                    std       $00,x               ;store it as the other value
+                    pula                          ;pull MSB of short term trim
+                    pulb                          ;pull LSB of short term trim
+                    addd      $00,x               ;add indexed value
+                    std       $00,x               ;and store as new "other" value
 
 ; ---------------------------------------------------------------------------------------------------
 
 ; Long Term Trim Adjustment
 
 ; ---------------------------------------------------------------------------------------------------
-                    ldb       bits_008D           ; load bits value
-                    bitb      #$11                ; test bits_008D.4 and bits_008D.0
-                    bne       .LE72B              ; if either bit is set, branch to next section
+                    ldb       bits_008D           ;load bits value
+                    bitb      #$11                ;test bits_008D.4 and bits_008D.0
+                    bne       .LE72B              ;if either bit is set, branch to next section
 
-                    ldb       $00DC               ; load bits value
-                    bitb      #$08                ; test X00DC.3
-                    beq       .LE72B              ; if X00DC.3 is zero, branch to next section
+                    ldb       $00DC               ;load bits value
+                    bitb      #$08                ;test X00DC.3
+                    beq       .LE72B              ;if X00DC.3 is zero, branch to next section
 
-                    ldb       $0088               ; test bank indicator bit
-                    bmi       .LE6F0              ; if bit is 1, branch ahead to left bank
+                    ldb       $0088               ;test bank indicator bit
+                    bmi       .LE6F0              ;if bit is 1, branch ahead to left bank
 
-                    bitb      #$40                ; Right: test X0088.6
-                    bne       .LE72B              ; if set, branch to next section
-                    bra       .LE6F4              ; branch
+                    bitb      #$40                ;Right: test X0088.6
+                    bne       .LE72B              ;if set, branch to next section
+                    bra       .LE6F4              ;branch
 
-.LE6F0              bitb      #$20                ; Left: test X0088.5
-                    bne       .LE72B              ; if set, branch to next section
+.LE6F0              bitb      #$20                ;Left: test X0088.5
+                    bne       .LE72B              ;if set, branch to next section
 
-.LE6F4              lda       $0086               ; load bits value
-                    bpl       .LE71A              ; if X0086.7 is zero, branch ahead to next section
+.LE6F4              lda       $0086               ;load bits value
+                    bpl       .LE71A              ;if X0086.7 is zero, branch ahead to next section
 
-                    lda       $008B               ; load bits value
-                    anda      #$01                ; mask X008B.0 (road speed > 4 KPH)
-                    bne       .LE72B              ; if road speed > 4, branch to next section
+                    lda       $008B               ;load bits value
+                    anda      #$01                ;mask X008B.0 (road speed > 4 KPH)
+                    bne       .LE72B              ;if road speed > 4, branch to next section
 
-                    ldd       $00,x               ; X is the "other" Lambda value
-                    subd      #$8000              ; subtract $8000
-                    bcc       .LE71C              ; branch if still positive
+                    ldd       $00,x               ;X is the "other" Lambda value
+                    subd      #$8000              ;subtract $8000
+                    bcc       .LE71C              ;branch if still positive
 
 ; ----------------------------------------------------------------
 ; AB is Lambda value (X0040/41 or X0044/45) minus $8000 (and is negative)
 ; X  is address of X0040 or X0044
 ; ----------------------------------------------------------------
-                    jsr       LF171               ; can subtract 1500 from short term trim location (preserves AB)
-                    jsr       absoluteValAB       ; convert to absolute value
-                    jsr       LF0FC               ; reduces value to 1/2 or 1/4 (uses code control value)
-                    subd      $02,x               ; subtract long term trim, X0042/43 (right) or X0046/47 (left)
-                    bcs       .LE715              ; branch if no underflow
+                    jsr       LF171               ;can subtract 1500 from short term trim location (preserves AB)
+                    jsr       absoluteValAB       ;convert to absolute value
+                    jsr       LF0FC               ;reduces value to 1/2 or 1/4 (uses code control value)
+                    subd      $02,x               ;subtract long term trim, X0042/43 (right) or X0046/47 (left)
+                    bcs       .LE715              ;branch if no underflow
 
-                    ldd       #$0000              ; clip it at zero
+                    ldd       #$0000              ;clip it at zero
 
 .LE715              jsr       absoluteValAB
-                    std       $02,x               ; store long term trim
+                    std       $02,x               ;store long term trim
 
-.LE71A              bra       .LE72B              ; this branch is also used above
+.LE71A              bra       .LE72B              ;this branch is also used above
 
 ; ----------------------------------------------------------------
 ; AB is Lambda value (X0040/41 or X0044/45) minus $8000 (and is negative)
 ; X  is address of X0040 or X0044
 ; ----------------------------------------------------------------
 
-.LE71C              jsr       LF171               ; can subtract 1500 from short term trim location (preserves AB)
-                    jsr       LF0FC               ; reduces value to 1/2 or 1/4 (uses code control value)
-                    addd      $02,x               ; add long term trim, X0042/43 (right) or X0046/47 (left)
-                    bcc       .LE729              ; branch if no overflow
+.LE71C              jsr       LF171               ;can subtract 1500 from short term trim location (preserves AB)
+                    jsr       LF0FC               ;reduces value to 1/2 or 1/4 (uses code control value)
+                    addd      $02,x               ;add long term trim, X0042/43 (right) or X0046/47 (left)
+                    bcc       .LE729              ;branch if no overflow
 
-                    ldd       #$FFFF              ; clip it at $FFFF
+                    ldd       #$FFFF              ;clip it at $FFFF
 
-.LE729              std       $02,x               ; store long term trim
+.LE729              std       $02,x               ;store long term trim
 
           #ifdef BUILD_R3365
 ; -----------------------------------------------------------
@@ -2802,7 +2802,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     sta       AdcDataLow
                     jsr       LFA46
           #else
-.LE72B              jsr       rdSpdCompTest       ; road speed test, loads lambdaReading in B before returning
+.LE72B              jsr       rdSpdCompTest       ;road speed test, loads lambdaReading in B before returning
           #endif
 ; ---------------------------------------------------------------------------------------------------
 ; Code above jumps ahead to this point if engine speed is GT 4185 RPM in order to
@@ -2830,67 +2830,67 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; LEADB skips fueling and bank toggle
 ; ---------------------------------------------------------------------------------------------------
-                    lda       bits_008C           ; load bits value
-                    bita      #$02                ; test bits_008C.1 (double pulse timeout bit)
-                    bne       .LE73F              ; branch ahead if bit is zero (0 = not timed out)
+                    lda       bits_008C           ;load bits value
+                    bita      #$02                ;test bits_008C.1 (double pulse timeout bit)
+                    bne       .LE73F              ;branch ahead if bit is zero (0 = not timed out)
 
-                    ldx       doubleInjecterRate  ; init to 192, decrements at spark rate
-                    beq       .LE74C              ; branch if zero
+                    ldx       doubleInjecterRate  ;init to 192, decrements at spark rate
+                    beq       .LE74C              ;branch if zero
 
-                    dex                           ; decrement the 192 count double pulse startup delay
-                    stx       doubleInjecterRate  ; store it
-                    lda       $0085               ; test X0085.7 (indicates no or low eng RPM)
-                    bmi       .LE76F              ; branch if set (engine cranking?)
+                    dex                           ;decrement the 192 count double pulse startup delay
+                    stx       doubleInjecterRate  ;store it
+                    lda       $0085               ;test X0085.7 (indicates no or low eng RPM)
+                    bmi       .LE76F              ;branch if set (engine cranking?)
 
-.LE73F              lda       bits_008C           ; if here, RPM OK (eng is running), load bits value
+.LE73F              lda       bits_008C           ;if here, RPM OK (eng is running), load bits value
 
-.LE741              eora      #$01                ; toggle bits_008C.0 (div by 2 bit)
-                    sta       bits_008C           ; store it
-                    bita      #$01                ; test bits_008C.0 (div by 2 bit)
-                    beq       .LE750              ; if zero, branch to continue
+.LE741              eora      #$01                ;toggle bits_008C.0 (div by 2 bit)
+                    sta       bits_008C           ;store it
+                    bita      #$01                ;test bits_008C.0 (div by 2 bit)
+                    beq       .LE750              ;if zero, branch to continue
 
-                    jmp       .LEADB              ; Jump way down to Column Index and RPM calculation
+                    jmp       .LEADB              ;Jump way down to Column Index and RPM calculation
 
 ; This skips the bank toggle!!
 
 ; ---------------------------------------------
 ; code branches to here after 'doubleInjecterRate' reaches zero
-.LE74C              ora       #$02                ; set bits_008C.1 (to indicate double pulse time is over)
-                    bra       .LE741              ; branch
+.LE74C              ora       #$02                ;set bits_008C.1 (to indicate double pulse time is over)
+                    bra       .LE741              ;branch
 
 ; ---------------------------------------------
 ; code gets here only if MAF is being measured
 ; this code executes every other time while 192 count not zero(maybe not!!)
-.LE750              lda       bits_0089           ; load bits value
-                    bmi       .LE76C              ; branch ahead if bits_0089.7 is set
+.LE750              lda       bits_0089           ;load bits value
+                    bmi       .LE76C              ;branch ahead if bits_0089.7 is set
 
-                    lda       tpsClosedLoopCntr   ; load tpsClosedLoopCntr
-                    inca                          ; increment it
-                    cmpa      $C13B               ; compare with data value 20 decimal
-                    bcc       .LE760              ; branch if tpsClosedLoopCntr is greater than 20
+                    lda       tpsClosedLoopCntr   ;load tpsClosedLoopCntr
+                    inca                          ;increment it
+                    cmpa      $C13B               ;compare with data value 20 decimal
+                    bcc       .LE760              ;branch if tpsClosedLoopCntr is greater than 20
 
-                    sta       tpsClosedLoopCntr   ; store tpsClosedLoopCntr
-                    bra       .LE766              ; branch
+                    sta       tpsClosedLoopCntr   ;store tpsClosedLoopCntr
+                    bra       .LE766              ;branch
 
-.LE760              ldb       $0087               ; branches here when tpsClosedLoopCntr >= 20 dec
-                    andb      #$7F                ; clr X0087.7 (to allow closed loop operation)
+.LE760              ldb       $0087               ;branches here when tpsClosedLoopCntr >= 20 dec
+                    andb      #$7F                ;clr X0087.7 (to allow closed loop operation)
                     stb       $0087
 
 ; ---------------------------------------------
 ; Eng RPM limit test
 ; ---------------------------------------------
 ; branches here when tpsClosedLoopCntr < 20 dec
-.LE766              lda       $0086               ; load bits value
-                    bita      #$20                ; test X0086.5 (1 = RPM < limit, 0 = RPM > limit)
-                    bne       .LE76F              ; branch if RPM < limit
+.LE766              lda       $0086               ;load bits value
+                    bita      #$20                ;test X0086.5 (1 = RPM < limit, 0 = RPM > limit)
+                    bne       .LE76F              ;branch if RPM < limit
 
-.LE76C              jmp       .LEAD5              ; RPM at limit, jump to tog bank bit & fall into RPM calc
+.LE76C              jmp       .LEAD5              ;RPM at limit, jump to tog bank bit & fall into RPM calc
 
 ; ---------------------------------------------
 
 ; branches here from above if eng cranking or low RPM
-.LE76F              tst       $0085               ; test X0085.7 (indicates no or low eng RPM)
-                    bpl       .LE7CC              ; branch if clear (engine running)
+.LE76F              tst       $0085               ;test X0085.7 (indicates no or low eng RPM)
+                    bpl       .LE7CC              ;branch if clear (engine running)
 
 ; ---------------------------------------------------------------------------------------------------
 ; Fueling Selection for Engine Cranking
@@ -2909,9 +2909,9 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; This is a typical table:
 
-; C0D0 : 00 12 1B 25 47 75 94 B0 C8 E2 E8 EC    ; <-- ECT sensor count
-; C0DC : 0B 0A 07 0D 1A 2A 3C 46 46 46 50 50    ; inits X009B (cranking fueling value above $EC)
-; C0E8 : 1C 0D 06 0A 14 19 25 2B 2B 2B 2D 2D    ; inits X009C (time fueling component, 1 Hz countdown)
+; C0D0 : 00 12 1B 25 47 75 94 B0 C8 E2 E8 EC    ;<-- ECT sensor count
+; C0DC : 0B 0A 07 0D 1A 2A 3C 46 46 46 50 50    ;inits X009B (cranking fueling value above $EC)
+; C0E8 : 1C 0D 06 0A 14 19 25 2B 2B 2B 2D 2D    ;inits X009C (time fueling component, 1 Hz countdown)
 
 ; There's one problem though. Ambient temperature can be colder than the temperature range of the
 ; table. The coldest value listed here is $EC which is about -18 C or zero F. This value, which is
@@ -2927,9 +2927,9 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; ---------------------------------------------
 ; Engine is cranking so select fueling type
 ; ---------------------------------------------
-                    lda       coolantTempCount    ; load ECT sensor counts
-                    cmpa      $C0DB               ; last table value, $E8 to $EC ($EC= -18 C or zero F)
-                    bcs       .LE7A4              ; branch ahead to normal startup if warmer than this
+                    lda       coolantTempCount    ;load ECT sensor counts
+                    cmpa      $C0DB               ;last table value, $E8 to $EC ($EC= -18 C or zero F)
+                    bcs       .LE7A4              ;branch ahead to normal startup if warmer than this
 
 ; ------------------------------------------------------------------------------
 ; Wicked Cold Startup
@@ -2982,32 +2982,32 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; the injector is toggled and 'injectorPulseCntr' is decremented.
 
 ; ------------------------------------------------------------------------------
-                    lda       #$14                ; (20 dec) controls number of micro-pulses
-                    sta       injectorPulseCntr   ; store it
-                    lda       ignPeriodFiltered   ; load MSB of filtered ignition period
-                    ldb       fuelMapNumber       ; load fuel map number
-                    cmpb      #$02                ; compare with 2
-                    bcc       .LE78C              ; branch if fuel map is 2, 3, 4 or 5
+                    lda       #$14                ;(20 dec) controls number of micro-pulses
+                    sta       injectorPulseCntr   ;store it
+                    lda       ignPeriodFiltered   ;load MSB of filtered ignition period
+                    ldb       fuelMapNumber       ;load fuel map number
+                    cmpb      #$02                ;compare with 2
+                    bcc       .LE78C              ;branch if fuel map is 2, 3, 4 or 5
 
-.LE788              ldb       #coldStartupFactor  ; fuel maps 0, 1 and 5 use this value
-                    bra       .LE792              ; (value is $12 for cold weather chip)
+.LE788              ldb       #coldStartupFactor  ;fuel maps 0, 1 and 5 use this value
+                    bra       .LE792              ;(value is $12 for cold weather chip)
 
-.LE78C              cmpb      #$05                ; compare with 5
-                    beq       .LE788              ; branch up if fuel map 5
+.LE78C              cmpb      #$05                ;compare with 5
+                    beq       .LE788              ;branch up if fuel map 5
 
-                    ldb       #$07                ; fuel maps 2, 3 and 4 use this value
+                    ldb       #$07                ;fuel maps 2, 3 and 4 use this value
 
-.LE792              mul                           ; mpy ign. period by value in B
-                    std       $00C8               ; store 16-bit result at X00C8/C9
-                    subd      #$05DC              ; subtract 1500
-                    bcc       .LE79F              ; branch ahead if value > 1500
+.LE792              mul                           ;mpy ign. period by value in B
+                    std       $00C8               ;store 16-bit result at X00C8/C9
+                    subd      #$05DC              ;subtract 1500
+                    bcc       .LE79F              ;branch ahead if value > 1500
 
-                    ldd       #$05DC              ; otherwise, clip value at 1500
+                    ldd       #$05DC              ;otherwise, clip value at 1500
                     bra       .LE7A1
 
-.LE79F              ldd       $00C8               ; load fueling value into AB
+.LE79F              ldd       $00C8               ;load fueling value into AB
 
-.LE7A1              jmp       .LE983              ; jump down to Phase II Compensation
+.LE7A1              jmp       .LE983              ;jump down to Phase II Compensation
 
 ; ------------------------------------------------------------------------------
 ; Normal Cranking Fuel
@@ -3019,32 +3019,32 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; ------------------------------------------------------------------------------
 
-.LE7A4              lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      #$40                ; compare with $40 (about 60 C or 140 F)
-                    bcc       .LE7C2              ; branch ahead cooler
+.LE7A4              lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      #$40                ;compare with $40 (about 60 C or 140 F)
+                    bcc       .LE7C2              ;branch ahead cooler
 
-                    ldd       throttlePot         ; ECT > 60 C, load 16-bit TPS value
-                    subd      #$0070              ; subtract $70 from TP value
-                    bcs       .LE7C2              ; branch ahead if TP is LT $0070
+                    ldd       throttlePot         ;ECT > 60 C, load 16-bit TPS value
+                    subd      #$0070              ;subtract $70 from TP value
+                    bcs       .LE7C2              ;branch ahead if TP is LT $0070
 
-                    lsrd                          ; if here, warm engine and throttle depressed
-                    lsrd                          ; 2 X lsrd gets the top 8 bits into 1 byte
-                    lda       $C0F6               ; data value is $19 (25 dec)
-                    mul                           ; mpy 1/4 TPS by 25
-                    cmpa      $C0F7               ; compare result MSB with value $0A
-                    bcs       .LE7C5              ; branch ahead if result < $0A00
+                    lsrd                          ;if here, warm engine and throttle depressed
+                    lsrd                          ;2 X lsrd gets the top 8 bits into 1 byte
+                    lda       $C0F6               ;data value is $19 (25 dec)
+                    mul                           ;mpy 1/4 TPS by 25
+                    cmpa      $C0F7               ;compare result MSB with value $0A
+                    bcs       .LE7C5              ;branch ahead if result < $0A00
 
-                    lda       $C0F7               ; this limits result to $0Axx maximum
-                    clrb                          ; clrb, result now $0A00
-                    bra       .LE7C5              ; branch
+                    lda       $C0F7               ;this limits result to $0Axx maximum
+                    clrb                          ;clrb, result now $0A00
+                    bra       .LE7C5              ;branch
 
-.LE7C2              ldd       #$0000              ; if here, cooler than 60 C or no throttle
+.LE7C2              ldd       #$0000              ;if here, cooler than 60 C or no throttle
 
-.LE7C5              addb      #$FF                ; add $FF to 16-bit value
-                    adca      $009B               ; add both the carry bit (if any) and the 2nd
+.LE7C5              addb      #$FF                ;add $FF to 16-bit value
+                    adca      $009B               ;add both the carry bit (if any) and the 2nd
 ; row table value to the final 16-bit value
 
-                    jmp       .LE983              ; jump down to Phase II Compensation
+                    jmp       .LE983              ;jump down to Phase II Compensation
 
 ; ------------------------------------------------------------------------------
 ; Time, Bank Time, Coolant Temp & Fuel Temp Adjustment
@@ -3074,44 +3074,44 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; The final 16-bit value is checked for rollover and limited, if necessary, to $FFFF.
 
 ; ------------------------------------------------------------------------------
-.LE7CC              clrb                          ; clear B
-                    lda       $008A               ; load bits value
-                    bita      #$40                ; test X008A.6 (0 = timeout of X009C 3rd row 1Hz value)
-                    beq       .LE7D5              ; branch to skip loading X009C if timeout has occurred
+.LE7CC              clrb                          ;clear B
+                    lda       $008A               ;load bits value
+                    bita      #$40                ;test X008A.6 (0 = timeout of X009C 3rd row 1Hz value)
+                    beq       .LE7D5              ;branch to skip loading X009C if timeout has occurred
 
-                    ldb       $009C               ; value from 3rd row of startup fueling table
+                    ldb       $009C               ;value from 3rd row of startup fueling table
 
-.LE7D5              tst       $0088               ; test X0088.7 (0 = even, 1 = odd)
-                    bmi       .LE7DF              ; branch if 1 (odd or left bank)
+.LE7D5              tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
+                    bmi       .LE7DF              ;branch if 1 (odd or left bank)
 
-                    addb      startupTimerEven    ; right bank startup down-counter
-                    bra       .LE7E2              ; branch
+                    addb      startupTimerEven    ;right bank startup down-counter
+                    bra       .LE7E2              ;branch
 
-.LE7DF              addb      startupTimerOdd     ; left bank startup down-counter
+.LE7DF              addb      startupTimerOdd     ;left bank startup down-counter
 
-.LE7E2              clra                          ; clear A
-                    addb      coolantTempAdjust   ; add ECT based fuel adjustment
-                    adca      #$00                ; if rollover, add the carry bit to A
-                    asld                          ; x2
-                    asld                          ; x4
-                    addd      #$0096              ; add this value
-                    asld                          ; x2
-                    asld                          ; x4
-                    asld                          ; x8
-                    asld                          ; x16
-                    asld                          ; x32
-                    psha                          ; push the upper byte
-                    lda       $008A               ; load bits value
-                    bita      #$02                ; test X008A.1 (may be EFT related, usually set)
-                    pula                          ; pull the upper byte
-                    bne       .LE800              ; branch if not zero (usually branches
+.LE7E2              clra                          ;clear A
+                    addb      coolantTempAdjust   ;add ECT based fuel adjustment
+                    adca      #$00                ;if rollover, add the carry bit to A
+                    asld                          ;x2
+                    asld                          ;x4
+                    addd      #$0096              ;add this value
+                    asld                          ;x2
+                    asld                          ;x4
+                    asld                          ;x8
+                    asld                          ;x16
+                    asld                          ;x32
+                    psha                          ;push the upper byte
+                    lda       $008A               ;load bits value
+                    bita      #$02                ;test X008A.1 (may be EFT related, usually set)
+                    pula                          ;pull the upper byte
+                    bne       .LE800              ;branch if not zero (usually branches
 
                     addd      hotFuelAdjustmment
-                    bcc       .LE800              ; if value did not overflow, use it
+                    bcc       .LE800              ;if value did not overflow, use it
 
-                    ldd       #$FFFF              ; else clip at $FFFF
+                    ldd       #$FFFF              ;else clip at $FFFF
 
-.LE800              std       $00CA               ; store double value for future use
+.LE800              std       $00CA               ;store double value for future use
 
 ; ------------------------------------------------------------------------------
 ; Lambda and Throttle Rate Adjustment to Fueling Value
@@ -3125,45 +3125,45 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; number and a closing throttle results in a lower number.
 
 ; ------------------------------------------------------------------------------
-                    ldd       $00C8               ; X00C8/C9 is still the short term trim value
-                    asld                          ; shift left double (shift msb into carry)
-                    sta       $00CC               ; store shifted MSB in X00CC
-                    bcc       .LE80F              ; branch if value is below 32K
+                    ldd       $00C8               ;X00C8/C9 is still the short term trim value
+                    asld                          ;shift left double (shift msb into carry)
+                    sta       $00CC               ;store shifted MSB in X00CC
+                    bcc       .LE80F              ;branch if value is below 32K
 ; ---------------------------------------
 ; Short term trim wants to increase fuel
 ; ---------------------------------------
-                    tab                           ; transfer shifted MSB into B
-                    clra                          ; clear A
-                    addd      tpsDirectionAndRate  ; add throttle direction and rate (1024 +/-)
-                    bra       .LE818              ; branch
+                    tab                           ;transfer shifted MSB into B
+                    clra                          ;clear A
+                    addd      tpsDirectionAndRate  ;add throttle direction and rate (1024 +/-)
+                    bra       .LE818              ;branch
 
 ; ---------------------------------------
 ; Short term trim wants to decrease fuel
 ; ---------------------------------------
 ; stored short term trim < 32K
-.LE80F              ldd       tpsDirectionAndRate  ; throttle direction and rate (1024 +/-)
-                    com       $00CC               ; 1's comp of short term trim MSB
-                    subb      $00CC               ; subtratc from TPS D&R
-                    sbca      #$00                ; if underflow, subtract 1 from upper byte
+.LE80F              ldd       tpsDirectionAndRate  ;throttle direction and rate (1024 +/-)
+                    com       $00CC               ;1's comp of short term trim MSB
+                    subb      $00CC               ;subtratc from TPS D&R
+                    sbca      #$00                ;if underflow, subtract 1 from upper byte
 
-.LE818              pshb                          ; push B to stack
-                    ldb       bits_008C           ; load bits value
-                    bitb      #$08                ; test bits_008C.3 (may indicate high throttle)
-                    pulb                          ; pull B (flags not affected)
-                    beq       .LE828              ; branch ahead if bit bits_008C.3 is zero
+.LE818              pshb                          ;push B to stack
+                    ldb       bits_008C           ;load bits value
+                    bitb      #$08                ;test bits_008C.3 (may indicate high throttle)
+                    pulb                          ;pull B (flags not affected)
+                    beq       .LE828              ;branch ahead if bit bits_008C.3 is zero
 
-                    addb      tpMinCounter        ; add throttle pot related value to low byte
-                    adca      #$00                ; handle rollover
-                    addb      tpMinCounter        ; add throttle pot related value to low byte
-                    adca      #$00                ; handle rollover
+                    addb      tpMinCounter        ;add throttle pot related value to low byte
+                    adca      #$00                ;handle rollover
+                    addb      tpMinCounter        ;add throttle pot related value to low byte
+                    adca      #$00                ;handle rollover
 
-.LE828              addd      #$0080              ; add $0080 to 16-bit value
+.LE828              addd      #$0080              ;add $0080 to 16-bit value
                     asld
                     asld
                     asld
-                    asld                          ; four asld's is a div by 16
-                    jsr       mpy16               ; mpy AB by X00CA/CB
-                    std       $00CA               ; store updated result at X00CA/CB
+                    asld                          ;four asld's is a div by 16
+                    jsr       mpy16               ;mpy AB by X00CA/CB
+                    std       $00CA               ;store updated result at X00CA/CB
 
 ; ------------------------------------------------------------------------------
 ; Reinitialize RAM with Fuel Map Specific Values
@@ -3190,29 +3190,29 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; a 2-byte value) that are stored in RAM at addresses X200A through X2011.
 
 ; ------------------------------------------------------------------------------
-                    ldx       #$C082              ; addr of default ADC control table
-                    stx       adcMuxTableStart    ; store as current table
-                    ldx       #limpHomeMap        ; load X with addr XC000
-                    lda       fuelMapNumber       ; load fuel map number
-                    beq       .LE868              ; skip this code if fuel map is zero
+                    ldx       #$C082              ;addr of default ADC control table
+                    stx       adcMuxTableStart    ;store as current table
+                    ldx       #limpHomeMap        ;load X with addr XC000
+                    lda       fuelMapNumber       ;load fuel map number
+                    beq       .LE868              ;skip this code if fuel map is zero
 
-                    ldx       fuelMapPtr          ; load the current fuel map pointer
-                    ldb       #mapMultiplierOffset  ; load B with offset $80
-                    abx                           ; add offset to pointer
-                    ldd       $00,x               ; load the 16-bit fuel map multiplier
-                    std       $2008               ; store it
-                    ldd       $8A,x               ; index becomes $80 + $8A
-                    std       $200A               ; store fm row multiplier and RPM margin
-                    ldd       mapRpmLimitOffset,x  ; offset is now $80 + $8C
-                    std       rpmLimitRAM         ; store 16-bit RPM limit
-                    ldd       $8E,x               ; offset is now $80 + $8E
-                    std       $200E               ; store two coolant temp related values
-                    ldd       $90,x               ; offset is now $80 + $90
-                    std       $2010               ; store last 2 values
-                    ldb       #mapAdcMuxTableOffset  ; load B with offset $7A
-                    abx                           ; add to X ($80 + $7A = $FA)
-                    stx       adcMuxTableStart    ; store ADC table pointer
-                    ldx       fuelMapPtr          ; load X with base fuel map ptr (later use)
+                    ldx       fuelMapPtr          ;load the current fuel map pointer
+                    ldb       #mapMultiplierOffset  ;load B with offset $80
+                    abx                           ;add offset to pointer
+                    ldd       $00,x               ;load the 16-bit fuel map multiplier
+                    std       $2008               ;store it
+                    ldd       $8A,x               ;index becomes $80 + $8A
+                    std       $200A               ;store fm row multiplier and RPM margin
+                    ldd       mapRpmLimitOffset,x  ;offset is now $80 + $8C
+                    std       rpmLimitRAM         ;store 16-bit RPM limit
+                    ldd       $8E,x               ;offset is now $80 + $8E
+                    std       $200E               ;store two coolant temp related values
+                    ldd       $90,x               ;offset is now $80 + $90
+                    std       $2010               ;store last 2 values
+                    ldb       #mapAdcMuxTableOffset  ;load B with offset $7A
+                    abx                           ;add to X ($80 + $7A = $FA)
+                    stx       adcMuxTableStart    ;store ADC table pointer
+                    ldx       fuelMapPtr          ;load X with base fuel map ptr (later use)
 
           #ifdef BUILD_R3365
 ; -----------------------------------------------------------
@@ -3224,11 +3224,11 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     sta       AdcDataLow
                     jsr       LFA46
           #else
-.LE868              jsr       rdSpdCompTest       ; road speed test, loads lambdaReading in B before returning
+.LE868              jsr       rdSpdCompTest       ;road speed test, loads lambdaReading in B before returning
           #endif
-                    lda       $0087               ; load bits value
-                    bita      #$02                ; test X0087.1 (indicates MAF fault)
-                    beq       .LE8C0              ; branch ahead if no MAF fault
+                    lda       $0087               ;load bits value
+                    bita      #$02                ;test X0087.1 (indicates MAF fault)
+                    beq       .LE8C0              ;branch ahead if no MAF fault
 
 ; ------------------------------------------------------------------------------
 ; MAF Fault Substitution Code
@@ -3243,63 +3243,63 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; normal fuel map code block is then bypassed.
 
 ; ------------------------------------------------------------------------------
-                    ldd       throttlePot         ; load 10-bit TPS value
-                    subd      throttlePotMinimum  ; subtract TPmin
-                    bcc       .LE87A              ; branch if result is positive
+                    ldd       throttlePot         ;load 10-bit TPS value
+                    subd      throttlePotMinimum  ;subtract TPmin
+                    bcc       .LE87A              ;branch if result is positive
 
-                    ldd       #$0000              ; else, limit value to zero
+                    ldd       #$0000              ;else, limit value to zero
 
-.LE87A              lsrd                          ; shift right twice so that
-                    lsrd                          ; top bits are in B register
-                    lda       fuelMapNumber       ; load fuel map number
-                    beq       .LE885              ; branch if map 0
+.LE87A              lsrd                          ;shift right twice so that
+                    lsrd                          ;top bits are in B register
+                    lda       fuelMapNumber       ;load fuel map number
+                    beq       .LE885              ;branch if map 0
 
-                    cmpa      #$04                ; compare with 4
-                    bcs       .LE89E              ; branch if less than 4
+                    cmpa      #$04                ;compare with 4
+                    bcs       .LE89E              ;branch if less than 4
 ; -------------------------
 ; Fuel Maps 0, 4 and 5
 ; -------------------------
-.LE885              lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C221               ; value is $47 (56 C or 138 F)
-                    bcs       .LE895              ; branch if ECT is hotter
+.LE885              lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C221               ;value is $47 (56 C or 138 F)
+                    bcs       .LE895              ;branch if ECT is hotter
 
-                    lda       $C222               ; value is $1E
-                    mul                           ; mpy top 8 bits of TPS by $1E
-                    addd      $C223               ; value is $1000, add this 16-bit value
-                    bra       .LE8B5              ; branch ahead
+                    lda       $C222               ;value is $1E
+                    mul                           ;mpy top 8 bits of TPS by $1E
+                    addd      $C223               ;value is $1000, add this 16-bit value
+                    bra       .LE8B5              ;branch ahead
 
-.LE895              lda       $C225               ; value is $24
-                    mul                           ; mpy top 8 bits of TPS by $24
-                    addd      $C226               ; value is $0E00, add this 16-bit value
-                    bra       .LE8B5              ; branch ahead
+.LE895              lda       $C225               ;value is $24
+                    mul                           ;mpy top 8 bits of TPS by $24
+                    addd      $C226               ;value is $0E00, add this 16-bit value
+                    bra       .LE8B5              ;branch ahead
 
 ; -------------------------
 ; Fuel Maps 1, 2 and 3
 ; -------------------------
-.LE89E              lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      $C228               ; value is $47 (56 C or 138 F)
-                    bcs       .LE8AE              ; branch if ECT is hotter
+.LE89E              lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      $C228               ;value is $47 (56 C or 138 F)
+                    bcs       .LE8AE              ;branch if ECT is hotter
 
-                    lda       $C229               ; value is $1E
-                    mul                           ; mpy top 8 bits of TPS by $1E
-                    addd      $C22A               ; value is $1000, add this 16-bit value
-                    bra       .LE8B5              ; branch ahead
+                    lda       $C229               ;value is $1E
+                    mul                           ;mpy top 8 bits of TPS by $1E
+                    addd      $C22A               ;value is $1000, add this 16-bit value
+                    bra       .LE8B5              ;branch ahead
 
-.LE8AE              lda       $C22C               ; value is $24
-                    mul                           ; mpy top 8 bits of TPS by $24
-                    addd      $C22D               ; value is $E000, add this 16-bit value
+.LE8AE              lda       $C22C               ;value is $24
+                    mul                           ;mpy top 8 bits of TPS by $24
+                    addd      $C22D               ;value is $E000, add this 16-bit value
 ; -------------------------
 ; Common code
 ; -------------------------
-.LE8B5              cmpa      #$1B                ; compare MSB of result with $1B
-                    bcs       .LE8BB              ; branch if value is lower
+.LE8B5              cmpa      #$1B                ;compare MSB of result with $1B
+                    bcs       .LE8BB              ;branch if value is lower
 
-                    lda       #$1B                ; else, limit to $1Bxx maximum
+                    lda       #$1B                ;else, limit to $1Bxx maximum
 
-.LE8BB              asld                          ; 2x
-                    asld                          ; 4x
-                    asld                          ; 8x (max value is $DFF8)
-                    bra       .LE921              ; branch to skip normal fuel map code and go
+.LE8BB              asld                          ;2x
+                    asld                          ;4x
+                    asld                          ;8x (max value is $DFF8)
+                    bra       .LE921              ;branch to skip normal fuel map code and go
 
 ; to fuel value filtering
 
@@ -3312,74 +3312,74 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; the four values.
 
 ; ---------------------------------------------------------------------------------------------------
-.LE8C0              lda       fuelMapLoadIdx      ; load fuel map row index ($70 max)
-                    anda      #$F0                ; mask upper nibble (4-bit row index)
-                    ldb       fuelMapSpeedIdx     ; load fuel map column index ($F0 max)
-                    lsrb                          ; shift upper nibble of column index into low position
+.LE8C0              lda       fuelMapLoadIdx      ;load fuel map row index ($70 max)
+                    anda      #$F0                ;mask upper nibble (4-bit row index)
+                    ldb       fuelMapSpeedIdx     ;load fuel map column index ($F0 max)
+                    lsrb                          ;shift upper nibble of column index into low position
                     lsrb
                     lsrb
                     lsrb
-                    aba                           ; add B to A (offset of upper left corner of box)
-                    tab                           ; xfr A to B (value range: 0x00 thru 0x7F)
-                    bne       .LE8D0              ; branch if not zero
+                    aba                           ;add B to A (offset of upper left corner of box)
+                    tab                           ;xfr A to B (value range: 0x00 thru 0x7F)
+                    bne       .LE8D0              ;branch if not zero
 
-                    ldb       #$60                ; else, it was zero so load $60 as default
+                    ldb       #$60                ;else, it was zero so load $60 as default
 
-.LE8D0              abx                           ; X = fuelMapPtr, add offset into map
+.LE8D0              abx                           ;X = fuelMapPtr, add offset into map
 
-                    lda       fuelMapSpeedIdx     ; load column index
-                    anda      #$0F                ; mask lower nibble of the column index
-                    sta       $00C9               ; and store it in X00C9
-                    lda       fuelMapLoadIdx      ; load row index
-                    anda      #$0F                ; mask lower nibble of the row index
-                    sta       $00C8               ; and store it in X00C8
-                    lda       #$10                ; load A with 16 decimal
-                    tab                           ; transfer it to B
-                    suba      $00C8               ; subtract X00C8 from $10
-                    subb      $00C9               ; subtract X00C9 from $10
-                    std       $00C8               ; store A at X00C8 and B at X00C9
-                    mul                           ; mpy A and B (value should be <= $FF and contained in B only)
-                    lda       $00,x               ; load upper left value from map into A
-                    mul                           ; mpy A and B
-                    std       $00CC               ; store 16-bits at X00CC/CD (upper left contribution value)
+                    lda       fuelMapSpeedIdx     ;load column index
+                    anda      #$0F                ;mask lower nibble of the column index
+                    sta       $00C9               ;and store it in X00C9
+                    lda       fuelMapLoadIdx      ;load row index
+                    anda      #$0F                ;mask lower nibble of the row index
+                    sta       $00C8               ;and store it in X00C8
+                    lda       #$10                ;load A with 16 decimal
+                    tab                           ;transfer it to B
+                    suba      $00C8               ;subtract X00C8 from $10
+                    subb      $00C9               ;subtract X00C9 from $10
+                    std       $00C8               ;store A at X00C8 and B at X00C9
+                    mul                           ;mpy A and B (value should be <= $FF and contained in B only)
+                    lda       $00,x               ;load upper left value from map into A
+                    mul                           ;mpy A and B
+                    std       $00CC               ;store 16-bits at X00CC/CD (upper left contribution value)
 
-                    bne       .LE8F7              ; branch ahead if result is not zero
-                    lda       $00,x               ; if zero, load value from map again
-                    bra       .LE921              ; and branch to filtering section with this value
+                    bne       .LE8F7              ;branch ahead if result is not zero
+                    lda       $00,x               ;if zero, load value from map again
+                    bra       .LE921              ;and branch to filtering section with this value
 
 ; -------------------------
-.LE8F2              ldd       $00CE               ; these 2 lines have nothing to do with this section of code
-                    jmp       .LE967              ; it was just a convenient place to put a jump (used below)
+.LE8F2              ldd       $00CE               ;these 2 lines have nothing to do with this section of code
+                    jmp       .LE967              ;it was just a convenient place to put a jump (used below)
 
 ; -------------------------
 
-.LE8F7              lda       fuelMapLoadIdx      ; load fuel map row index
-                    anda      #$0F                ; mask to get low nibble
-                    ldb       $00C9               ; X00C9 is $10 minus lower nibble of column index
-                    mul                           ; multiply the two 4-bit values
-                    lda       $10,x               ; get value from next row in table (same column)
-                    mul                           ; multiply table value by B
-                    std       $00CE               ; store 16-bits at X00CE/CF (lower left contribution value)
+.LE8F7              lda       fuelMapLoadIdx      ;load fuel map row index
+                    anda      #$0F                ;mask to get low nibble
+                    ldb       $00C9               ;X00C9 is $10 minus lower nibble of column index
+                    mul                           ;multiply the two 4-bit values
+                    lda       $10,x               ;get value from next row in table (same column)
+                    mul                           ;multiply table value by B
+                    std       $00CE               ;store 16-bits at X00CE/CF (lower left contribution value)
 
-                    lda       $00C8               ; load high byte of previous multiply
-                    ldb       fuelMapSpeedIdx     ; load fuel map column index
-                    andb      #$0F                ; mask to get low nibble
-                    mul                           ; multiply
-                    lda       $01,x               ; get value from next column up in table
-                    mul                           ; multiply
-                    std       $00C8               ; store 16-bits at X00C8/C9 (upper right contribution value)
+                    lda       $00C8               ;load high byte of previous multiply
+                    ldb       fuelMapSpeedIdx     ;load fuel map column index
+                    andb      #$0F                ;mask to get low nibble
+                    mul                           ;multiply
+                    lda       $01,x               ;get value from next column up in table
+                    mul                           ;multiply
+                    std       $00C8               ;store 16-bits at X00C8/C9 (upper right contribution value)
 
-                    lda       fuelMapSpeedIdx     ; load fuel map column index
-                    anda      #$0F                ; mask to get low nibble
-                    ldb       fuelMapLoadIdx      ; load fuel map row index
-                    andb      #$0F                ; mask to get low nibble
-                    mul                           ; multiply (result < $FF so it's contained in B only))
-                    lda       $11,x               ; load value from next row and column
-                    mul                           ; multiply (AB = lower right contribution value)
+                    lda       fuelMapSpeedIdx     ;load fuel map column index
+                    anda      #$0F                ;mask to get low nibble
+                    ldb       fuelMapLoadIdx      ;load fuel map row index
+                    andb      #$0F                ;mask to get low nibble
+                    mul                           ;multiply (result < $FF so it's contained in B only))
+                    lda       $11,x               ;load value from next row and column
+                    mul                           ;multiply (AB = lower right contribution value)
 
-                    addd      $00CC               ; add upper left contribution
-                    addd      $00C8               ; add upper right contribution
-                    addd      $00CE               ; add lower left contribution
+                    addd      $00CC               ;add upper left contribution
+                    addd      $00C8               ;add upper right contribution
+                    addd      $00CE               ;add lower left contribution
 
 ; ---------------------------------------------------------------------------------------------------
 ; Filtering of Uncompensated Fuel Value
@@ -3390,55 +3390,55 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; Bit X008A.7 can be set in the Throttle Direction & Rate code.
 
 ; ---------------------------------------------------------------------------------------------------
-.LE921              std       $00CE               ; store the uncompensated fueling value
-                    lda       $008A               ; load bits value
-                    bita      #$40                ; test X008A.6 (init to 1, 0 = timeout)
-                    bne       .LE8F2              ; if not timed out, branch to load X00CE/CF and jump to Phase 1 comp
+.LE921              std       $00CE               ;store the uncompensated fueling value
+                    lda       $008A               ;load bits value
+                    bita      #$40                ;test X008A.6 (init to 1, 0 = timeout)
+                    bne       .LE8F2              ;if not timed out, branch to load X00CE/CF and jump to Phase 1 comp
 
-                    bita      #$80                ; test X008A.7 (may indicate a large difference in TPS)
-                    beq       .LE8F2              ; if clr, branch to load X00CE/CF and jump to Phase 1 comp
+                    bita      #$80                ;test X008A.7 (may indicate a large difference in TPS)
+                    beq       .LE8F2              ;if clr, branch to load X00CE/CF and jump to Phase 1 comp
 
-                    anda      #$7F                ; clr X008A.7
-                    sta       $008A               ; store bits value
-                    clra                          ; clr A
-                    sta       $00CC               ; clear X00CC (for next section)
-                    lda       $C7D7               ; data value is $00 (a code control value??)
-                    bne       .LE949              ; does not branch
+                    anda      #$7F                ;clr X008A.7
+                    sta       $008A               ;store bits value
+                    clra                          ;clr A
+                    sta       $00CC               ;clear X00CC (for next section)
+                    lda       $C7D7               ;data value is $00 (a code control value??)
+                    bne       .LE949              ;does not branch
 
-                    lda       $008B               ; load bits value
-                    bita      #$01                ; test X008B.0 (road speed > 4 KPH)
-                    bne       .LE949              ; branch if road speed > 4
+                    lda       $008B               ;load bits value
+                    bita      #$01                ;test X008B.0 (road speed > 4 KPH)
+                    bne       .LE949              ;branch if road speed > 4
 
-                    lda       $0086               ; load bits value
-                    bita      #$80                ; test X0086.7
-                    beq       .LE949              ; if zero, branch to continue
+                    lda       $0086               ;load bits value
+                    bita      #$80                ;test X0086.7
+                    beq       .LE949              ;if zero, branch to continue
 
-                    ldd       $00CE               ; load uncompensated fueling value
-                    bra       .LE967              ; branch to Phase 1 comp
+                    ldd       $00CE               ;load uncompensated fueling value
+                    bra       .LE967              ;branch to Phase 1 comp
 
 ; -----------------------
 ; Filtering starts here
 ; -----------------------
-.LE949              ldd       uncompFuelInjValue  ; load previous fueling value
-                    asld                          ; double the value
-                    rol       $00CC               ; rotate left (carry is included)
-                    addd      uncompFuelInjValue  ; add previous fueling value (now 3X the value)
-                    bcc       .LE956              ; branch if no rollover
+.LE949              ldd       uncompFuelInjValue  ;load previous fueling value
+                    asld                          ;double the value
+                    rol       $00CC               ;rotate left (carry is included)
+                    addd      uncompFuelInjValue  ;add previous fueling value (now 3X the value)
+                    bcc       .LE956              ;branch if no rollover
 
-                    inc       $00CC               ; rollover, so increment MSB
+                    inc       $00CC               ;rollover, so increment MSB
 
-.LE956              addd      $00CE               ; add the new fueling value (3 old, 1 new)
-                    bcc       .LE95D              ; branch if no rollover
+.LE956              addd      $00CE               ;add the new fueling value (3 old, 1 new)
+                    bcc       .LE95D              ;branch if no rollover
 
-                    inc       $00CC               ; rollover, so increment MSB again
+                    inc       $00CC               ;rollover, so increment MSB again
 
 ; this part divides 16-bit value by 4
-.LE95D              lsr       $00CC               ; logical shift right (lsb into carry)
-                    rora                          ; rotate right A
-                    rorb                          ; rotate right C
-                    lsr       $00CC               ; logical shift right (lsb into carry)
-                    rora                          ; rotate right A
-                    rorb                          ; new filtered fueling value is now in AB
+.LE95D              lsr       $00CC               ;logical shift right (lsb into carry)
+                    rora                          ;rotate right A
+                    rorb                          ;rotate right C
+                    lsr       $00CC               ;logical shift right (lsb into carry)
+                    rora                          ;rotate right A
+                    rorb                          ;new filtered fueling value is now in AB
 
 ; ---------------------------------------------------------------------------------------------------
 ; Phase 1 Compensation
@@ -3461,23 +3461,23 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; ---------------------------------------------------------------------------------------------------
 
-.LE967              std       uncompFuelInjValue  ; save new fuel value here for use next time
-                    jsr       mpy16               ; mpy AB by X00CA/CB
-                    asld                          ; double the value (MSB becomes carry)
-                    bcs       .LE972              ; if value > $FFFF, branch ahead to limit to $FFFF
+.LE967              std       uncompFuelInjValue  ;save new fuel value here for use next time
+                    jsr       mpy16               ;mpy AB by X00CA/CB
+                    asld                          ;double the value (MSB becomes carry)
+                    bcs       .LE972              ;if value > $FFFF, branch ahead to limit to $FFFF
 
-                    asld                          ; double the value again
-                    bcc       .LE975              ; limit to $FFFF again, else branch ahead
+                    asld                          ;double the value again
+                    bcc       .LE975              ;limit to $FFFF again, else branch ahead
 
-.LE972              ldd       #$FFFF              ; limit value to $#FFFF
+.LE972              ldd       #$FFFF              ;limit value to $#FFFF
 
-.LE975              std       $00CA               ; store for multiplication with fuel map multiplier
-                    ldd       $2008               ; fuel map multiplier value
-                    jsr       mpy16               ; mpy AB by X00CA/CB
-                    asld                          ; double the value (MSB becomes carry)
-                    bcc       .LE983              ; branch if carry clr
+.LE975              std       $00CA               ;store for multiplication with fuel map multiplier
+                    ldd       $2008               ;fuel map multiplier value
+                    jsr       mpy16               ;mpy AB by X00CA/CB
+                    asld                          ;double the value (MSB becomes carry)
+                    bcc       .LE983              ;branch if carry clr
 
-                    ldd       #$FF00              ; limit value to $FF00 (65280 dec)
+                    ldd       #$FF00              ;limit value to $FF00 (65280 dec)
 
 ; ---------------------------------------------------------------------------------------------------
 ; Phase 2 Compensation (long term trim adjustment)
@@ -3496,34 +3496,34 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; skipped. This value is normally $80, which enables the long term adjustment.
 
 ; ---------------------------------------------------------------------------------------------------
-.LE983              std       $00CC               ; store partially compensated fuel value in X00CC/CD
+.LE983              std       $00CC               ;store partially compensated fuel value in X00CC/CD
 
-                    lda       $C0A0               ; data value is $80 (code control byte)
-                    bpl       .LE9A8              ; msb set, so does not branch to next section
+                    lda       $C0A0               ;data value is $80 (code control byte)
+                    bpl       .LE9A8              ;msb set, so does not branch to next section
 
-                    ldd       longLambdaTrimR     ; load right long term trim value
-                    tst       $0088               ; test bank indicator bit
-                    bpl       .LE993              ; if right, branch to use this value
+                    ldd       longLambdaTrimR     ;load right long term trim value
+                    tst       $0088               ;test bank indicator bit
+                    bpl       .LE993              ;if right, branch to use this value
 
-                    ldd       longLambdaTrimL     ; else, load the left bank value
+                    ldd       longLambdaTrimL     ;else, load the left bank value
 
-.LE993              asld                          ; double the value (msb into carry flag)
-                    tab                           ; xfer A to B (carry flag not affected)
-                    bcs       .LE9A3              ; branch if value was $8000 or higher
+.LE993              asld                          ;double the value (msb into carry flag)
+                    tab                           ;xfer A to B (carry flag not affected)
+                    bcs       .LE9A3              ;branch if value was $8000 or higher
 
-                    lda       bits_008C           ; reduce fuel
-                    bita      #$08                ; test bits_008C.3 (this bit forces open loop)
-                    beq       .LE99F              ; if zero, branch to continue
+                    lda       bits_008C           ;reduce fuel
+                    bita      #$08                ;test bits_008C.3 (this bit forces open loop)
+                    beq       .LE99F              ;if zero, branch to continue
 
-                    ldb       #$FF                ; create value of -1 ($FFFF), basically neutral
+                    ldb       #$FF                ;create value of -1 ($FFFF), basically neutral
 
-.LE99F              lda       #$FF                ; create negative value
-                    bra       .LE9A4              ; branch
+.LE99F              lda       #$FF                ;create negative value
+                    bra       .LE9A4              ;branch
 
-.LE9A3              clra                          ; create positive value
+.LE9A3              clra                          ;create positive value
 
-.LE9A4              addd      $00CC               ; add adjustment to fuel value (range is +255 to -256)
-                    std       $00CC               ; store in-process fuel value
+.LE9A4              addd      $00CC               ;add adjustment to fuel value (range is +255 to -256)
+                    std       $00CC               ;store in-process fuel value
 
 ; ---------------------------------------------------------------------------------------------------
 ; Phase 3 Adjustment (boost or reduce fuel)
@@ -3533,69 +3533,69 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 ; ---------------------------------------------------------------------------------------------------
 
-.LE9A8              lda       ignPeriod           ; load ignition period (MSB)
-                    cmpa      #$07                ; compare with $07 (equivalent to 4185 RPM)
-                    bcs       .LE9F2              ; branch to skip section if eng spd > 4185 RPM
+.LE9A8              lda       ignPeriod           ;load ignition period (MSB)
+                    cmpa      #$07                ;compare with $07 (equivalent to 4185 RPM)
+                    bcs       .LE9F2              ;branch to skip section if eng spd > 4185 RPM
 
-                    ldd       $00D2               ; load X00D2/D3 (2 bytes of bank related bits)
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LE9DC              ; if set, branch to left bank
+                    ldd       $00D2               ;load X00D2/D3 (2 bytes of bank related bits)
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LE9DC              ;if set, branch to left bank
 ; --------------
 ; Right Bank
 ; --------------
-                    bitb      #$15                ; test X00D3 bits 4, 2, 0
-                    bne       .LE9F2              ; if any are set, branch to skip
+                    bitb      #$15                ;test X00D3 bits 4, 2, 0
+                    bne       .LE9F2              ;if any are set, branch to skip
 
-                    anda      #$55                ; mask X00D2 bits 6, 4, 2, 0
-                    beq       .LE9F2              ; if all are zero, branch to skip
+                    anda      #$55                ;mask X00D2 bits 6, 4, 2, 0
+                    beq       .LE9F2              ;if all are zero, branch to skip
 
-                    bita      #$50                ; test X00D2 bits 6 & 4
-                    bne       .LE9F2              ; if either is set, branch to skip
+                    bita      #$50                ;test X00D2 bits 6 & 4
+                    bne       .LE9F2              ;if either is set, branch to skip
 
-                    cmpa      #$05                ; test X00D2 bit 2 & 0 (6 & 4 must be zeros)
-                    beq       .LE9F2              ; if both are set, branch to skip
+                    cmpa      #$05                ;test X00D2 bit 2 & 0 (6 & 4 must be zeros)
+                    beq       .LE9F2              ;if both are set, branch to skip
 
-                    cmpa      #$01                ; test X00D2 bit 0
-                    beq       .LE9D1              ; if bit is clear branch to 0.75 fuel
+                    cmpa      #$01                ;test X00D2 bit 0
+                    beq       .LE9D1              ;if bit is clear branch to 0.75 fuel
 ; else fall thru to 1.25 fuel
 ; --------------
 ; 1.25 Fuel
 ; --------------
-.LE9C9              ldd       $00CC               ; load fuel value
-                    lsrd                          ; div by 4
+.LE9C9              ldd       $00CC               ;load fuel value
+                    lsrd                          ;div by 4
                     lsrd
-                    addd      $00CC               ; add original value
-                    bra       .LE9F4              ; branch to Phase 4
+                    addd      $00CC               ;add original value
+                    bra       .LE9F4              ;branch to Phase 4
 
 ; --------------
 ; 0.75 Fuel
 ; --------------
-.LE9D1              ldd       $00CC               ; load fuel value
-                    lsrd                          ; div by 4
+.LE9D1              ldd       $00CC               ;load fuel value
+                    lsrd                          ;div by 4
                     lsrd
-                    subd      $00CC               ; subtract original value (now it's negative)
-                    jsr       absoluteValAB       ; convert to positive (absolute value)
-                    bra       .LE9F4              ; branch to Phase 4
+                    subd      $00CC               ;subtract original value (now it's negative)
+                    jsr       absoluteValAB       ;convert to positive (absolute value)
+                    bra       .LE9F4              ;branch to Phase 4
 
 ; --------------
 ; Left Bank
 ; --------------
-.LE9DC              bitb      #$2A                ; test X00D3 bits 5, 3, 1
-                    bne       .LE9F2              ; if any are set, branch to skip
+.LE9DC              bitb      #$2A                ;test X00D3 bits 5, 3, 1
+                    bne       .LE9F2              ;if any are set, branch to skip
 
-                    anda      #$AA                ; mask X00D2 bits 7, 5, 3, 1
-                    beq       .LE9F2              ; if all are zero, branch to skip
+                    anda      #$AA                ;mask X00D2 bits 7, 5, 3, 1
+                    beq       .LE9F2              ;if all are zero, branch to skip
 
-                    bita      #$A0                ; test X00D2 bits 7 & 5
-                    bne       .LE9F2              ; if either is set, branch to skip
+                    bita      #$A0                ;test X00D2 bits 7 & 5
+                    bne       .LE9F2              ;if either is set, branch to skip
 
-                    cmpa      #$0A                ; test X00D2 bits 3 & 1
-                    beq       .LE9F2              ; if both are set, branch to skip
+                    cmpa      #$0A                ;test X00D2 bits 3 & 1
+                    beq       .LE9F2              ;if both are set, branch to skip
 
-                    cmpa      #$02                ; test X00D2 bit 1
-                    beq       .LE9D1              ; if bit is clear, branch to 0.75 fuel
+                    cmpa      #$02                ;test X00D2 bit 1
+                    beq       .LE9D1              ;if bit is clear, branch to 0.75 fuel
 
-                    bra       .LE9C9              ; branch to 1.25 fuel
+                    bra       .LE9C9              ;branch to 1.25 fuel
 
 ; ---------------------------------------------------------------------------------------------------
 ; Phase 4 (final adjustment, main voltage)
@@ -3604,15 +3604,15 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; checked for the right bank only. Only the right bank shuts off when the speed limit is reached.
 
 ; ---------------------------------------------------------------------------------------------------
-.LE9F2              ldd       $00CC               ; Load the partially compensated fueling value
+.LE9F2              ldd       $00CC               ;Load the partially compensated fueling value
 
-.LE9F4              addd      mainVoltageAdj      ; used to adjust inj. pulse based on main voltage
-                    bcc       .LE9FB              ; branch to continue if value did not roll over
+.LE9F4              addd      mainVoltageAdj      ;used to adjust inj. pulse based on main voltage
+                    bcc       .LE9FB              ;branch to continue if value did not roll over
 
-                    ldd       #$FFFF              ; limit value to $FFFF
+                    ldd       #$FFFF              ;limit value to $FFFF
 
-.LE9FB              std       compedFuelInjValue  ; store final fuel value
-                    std       $00CC               ; also store it temporarily at X00CC/CD
+.LE9FB              std       compedFuelInjValue  ;store final fuel value
+                    std       $00CC               ;also store it temporarily at X00CC/CD
           #ifdef BUILD_R3365
 ; -----------------------------------------------------------
 ; Defender Only (R3365)
@@ -3623,105 +3623,105 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     sta       AdcDataLow
                     jsr       LFA46
           #else
-                    jsr       rdSpdCompTest       ; road speed test, loads lambdaReading in B before returning
+                    jsr       rdSpdCompTest       ;road speed test, loads lambdaReading in B before returning
           #endif
-                    tst       $0088               ; test for bank (0 = even, 1 = odd)
-                    bmi       .LEA73              ; if X0088.7 is high, branch to left bank
+                    tst       $0088               ;test for bank (0 = even, 1 = odd)
+                    bmi       .LEA73              ;if X0088.7 is high, branch to left bank
 
           #ifndef BUILD_TVR_CODE
 ; -----------------------------------------------
 ; Road speed limiting code (not in TVR code)
 ; -----------------------------------------------
-                    lda       bits_2004           ; test bits_2004.0 (1 = road speed over limit)
-                    bita      #$01                ; if set, skips injector refresh for right bank and
-                    bne       .LEA71              ; branch down to toggle bank bit
+                    lda       bits_2004           ;test bits_2004.0 (1 = road speed over limit)
+                    bita      #$01                ;if set, skips injector refresh for right bank and
+                    bne       .LEA71              ;branch down to toggle bank bit
           #endif
 ; -----------------------------------------------
 ; Right (even) Bank Timer Setup (X0088.7 = 0)
 ; -----------------------------------------------
-                    lda       timerCntrlReg1      ; load timer control register 1
-                    anda      #$FE                ; clr OLVL1 (P21 for even Injector Bank)
+                    lda       timerCntrlReg1      ;load timer control register 1
+                    anda      #$FE                ;clr OLVL1 (P21 for even Injector Bank)
                     sta       timerCntrlReg1
-                    lda       bits_201F           ; this bit is set in TPS routine
-                    bita      #$04                ; test bits_201F.2 (does this mean TPS code is doing a fuel adjust?)
-                    beq       .LEA3B              ; branch ahead if if bits_201F.2 is low
+                    lda       bits_201F           ;this bit is set in TPS routine
+                    bita      #$04                ;test bits_201F.2 (does this mean TPS code is doing a fuel adjust?)
+                    beq       .LEA3B              ;branch ahead if if bits_201F.2 is low
 
-                    anda      #$FB                ; bits_201F.2 was set, clear it
-                    sta       bits_201F           ; store it
-                    lda       timerStsReg         ; load timer status register
-                    bita      #$08                ; test output compare flag (OCF1)
-                    bne       .LEA3B              ; branch ahead if OCF1 is high
+                    anda      #$FB                ;bits_201F.2 was set, clear it
+                    sta       bits_201F           ;store it
+                    lda       timerStsReg         ;load timer status register
+                    bita      #$08                ;test output compare flag (OCF1)
+                    bne       .LEA3B              ;branch ahead if OCF1 is high
 
-                    ldd       ocr1High            ; OCF1 is low
-                    addd      $00CC               ; add fueling value
-                    std       ocr1High            ; this clears OCF1
-                    lda       timerCntrlReg1      ; load timer control register 1
-                    ora       #$01                ; set OLVL1 (Output Level 1)
-                    sta       timerCntrlReg1      ; write it back
-                    cmpa      timerStsReg         ; compare status and control regs??
-                    ldd       ocr1High            ; load 16-bit output compare value
-                    std       ocr1High            ; this sequence clears OCF1
-                    jmp       .LEAD5              ; jump ahead to toggle bank bit and fall into RPM calc
+                    ldd       ocr1High            ;OCF1 is low
+                    addd      $00CC               ;add fueling value
+                    std       ocr1High            ;this clears OCF1
+                    lda       timerCntrlReg1      ;load timer control register 1
+                    ora       #$01                ;set OLVL1 (Output Level 1)
+                    sta       timerCntrlReg1      ;write it back
+                    cmpa      timerStsReg         ;compare status and control regs??
+                    ldd       ocr1High            ;load 16-bit output compare value
+                    std       ocr1High            ;this sequence clears OCF1
+                    jmp       .LEAD5              ;jump ahead to toggle bank bit and fall into RPM calc
 
 ; code branches here from above if bits_201F.2 is low or OCF1 is high
 .LEA3B              lda       timerCSR
-                    sta       $00CA               ; store Timer Control Status reg in 00CA
-                    ldd       counterHigh         ; get current counter value
-                    addd      #$0013              ; add 19
-                    std       ocr1High            ; store in output compare reg
+                    sta       $00CA               ;store Timer Control Status reg in 00CA
+                    ldd       counterHigh         ;get current counter value
+                    addd      #$0013              ;add 19
+                    std       ocr1High            ;store in output compare reg
                     cmpa      timerStsReg
-                    std       ocr1High            ; store it again (this sequence clears the OCF1)
+                    std       ocr1High            ;store it again (this sequence clears the OCF1)
                     addd      $00CC
                     std       $00CE
                     lda       $00CA
-                    bita      #$20                ; test TOF (timer overflow flag)
-                    beq       .LEA63              ; branch ahead if no overflow
+                    bita      #$20                ;test TOF (timer overflow flag)
+                    beq       .LEA63              ;branch ahead if no overflow
 
-                    inc       timerOverflow2      ; overflow, so increment both overflow counters
+                    inc       timerOverflow2      ;overflow, so increment both overflow counters
                     bne       .LEA5C
-                    dec       timerOverflow2      ; clip at FF
+                    dec       timerOverflow2      ;clip at FF
 
-.LEA5C              ldb       timerOverflow1      ; inc timerOverflow1 but not GT $FF
+.LEA5C              ldb       timerOverflow1      ;inc timerOverflow1 but not GT $FF
                     incb
                     beq       .LEA63
                     stb       timerOverflow1
 
 .LEA63              lda       timerCntrlReg1
-                    ora       #$01                ; set OLVL1 (Output Level 1)
+                    ora       #$01                ;set OLVL1 (Output Level 1)
                     sta       timerCntrlReg1
                     ldd       $00CE
-                    std       ocr1High            ; store X00CE/CF in the 16-bit Output Compare Register 1
+                    std       ocr1High            ;store X00CE/CF in the 16-bit Output Compare Register 1
                     cmpa      timerStsReg
-                    std       ocr1High            ; this sequence clears OCF1
+                    std       ocr1High            ;this sequence clears OCF1
 
-.LEA71              bra       .LEAD5              ; LEAD5 = toggle bank bit and fall into RPM calc
+.LEA71              bra       .LEAD5              ;LEAD5 = toggle bank bit and fall into RPM calc
 
 ; -----------------------------------------------
 ; Left (odd) Bank Timer Setup (X0088.7 = 1)
 ; -----------------------------------------------
 
 .LEA73              lda       timerCntrlReg1
-                    ora       #$04                ; set OLVL3 (P12 --> Even Injector Bank)
+                    ora       #$04                ;set OLVL3 (P12 --> Even Injector Bank)
                     sta       timerCntrlReg1
                     lda       bits_201F
-                    bita      #$08                ; test bits_201F.3 (1 means TP is doing a fuel adjust)
-                    beq       .LEA9F              ; branch ahead if bit 3 is low
+                    bita      #$08                ;test bits_201F.3 (1 means TP is doing a fuel adjust)
+                    beq       .LEA9F              ;branch ahead if bit 3 is low
 
-                    anda      #$F7                ; bit 3 was set, clear it
+                    anda      #$F7                ;bit 3 was set, clear it
                     sta       bits_201F
                     lda       timerStsReg
-                    bita      #$20                ; test bit 5 in timerStsReg (OCF?)
+                    bita      #$20                ;test bit 5 in timerStsReg (OCF?)
                     bne       .LEA9F
                     ldd       ocr3high
-                    addd      $00CC               ; <-- Adjust Value??
+                    addd      $00CC               ;<-- Adjust Value??
                     std       ocr3high
                     lda       timerCntrlReg1
-                    anda      #$FB                ; clr OLVL3
+                    anda      #$FB                ;clr OLVL3
                     sta       timerCntrlReg1
                     cmpa      timerStsReg
                     ldd       ocr3high
-                    std       ocr3high            ; this clrs OCF3
-                    bra       .LEAD5              ; LEAD5 = toggle bank bit and fall into RPM calc
+                    std       ocr3high            ;this clrs OCF3
+                    bra       .LEAD5              ;LEAD5 = toggle bank bit and fall into RPM calc
 
 .LEA9F              lda       timerCSR
                     sta       $00CA
@@ -3736,17 +3736,17 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     bita      #$20
                     beq       .LEAC7
 
-                    inc       timerOverflow2      ; overflow, so increment both overflow counters
+                    inc       timerOverflow2      ;overflow, so increment both overflow counters
                     bne       .LEAC0
                     dec       timerOverflow2
 
-.LEAC0              ldb       timerOverflow1      ; inc timerOverflow1 but not GT $FF
+.LEAC0              ldb       timerOverflow1      ;inc timerOverflow1 but not GT $FF
                     incb
                     beq       .LEAC7
                     stb       timerOverflow1
 
 .LEAC7              lda       timerCntrlReg1
-                    anda      #$FB                ; clr OLVL3
+                    anda      #$FB                ;clr OLVL3
                     sta       timerCntrlReg1
                     ldd       $00CE
                     std       ocr3high
@@ -3758,7 +3758,7 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; -----------------------------------------------
 
 .LEAD5              lda       $0088
-                    eora      #$80                ; <-- Toggle right/left bank bit
+                    eora      #$80                ;<-- Toggle right/left bank bit
                     sta       $0088
 
 ; ------------------------------------------------------------------------------
@@ -3777,50 +3777,50 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; ------------------------------------------------------------------------------
 
 .LEADB              ldx       #rpmTable
-                    lda       #$0F                ; load length of data table
-                    sta       $00CA               ; store $0F into 00CA (general purpose var)
+                    lda       #$0F                ;load length of data table
+                    sta       $00CA               ;store $0F into 00CA (general purpose var)
 ; Start Loop *
-.LEAE2              ldd       $00,x               ; value from C800 table (1st value is $0553 or 5502 RPM)
+.LEAE2              ldd       $00,x               ;value from C800 table (1st value is $0553 or 5502 RPM)
                     subd      ignPeriod
-                    bcc       .LEAF5              ; branch out if period is LT table value (RPM is higher)
-                    ldb       #$04                ; add 04 to index
-                    abx                           ; add B ($04) to X ($C800) = $C804
-                    dec       $00CA               ; decrement table length counter
-                    bpl       .LEAE2              ; End Loop * (loop back if not end of table)
+                    bcc       .LEAF5              ;branch out if period is LT table value (RPM is higher)
+                    ldb       #$04                ;add 04 to index
+                    abx                           ;add B ($04) to X ($C800) = $C804
+                    dec       $00CA               ;decrement table length counter
+                    bpl       .LEAE2              ;End Loop * (loop back if not end of table)
                     clr       fuelMapSpeedIdx
-                    bra       .LEB1F              ; table ran out, branch way down
+                    bra       .LEB1F              ;table ran out, branch way down
 
-.LEAF5              std       $00C8               ; 00C8/C9 is table entry minus current ignition period
-                    lda       $00CA               ; 00CA is table entry counter ($F->0) and it becomes
-                    asla                          ; the fuel map column index upper nibble
+.LEAF5              std       $00C8               ;00C8/C9 is table entry minus current ignition period
+                    lda       $00CA               ;00CA is table entry counter ($F->0) and it becomes
+                    asla                          ;the fuel map column index upper nibble
                     asla
                     asla
                     asla
-                    sta       $00CA               ; index shifted to upper nibble
-                    lda       $02,x               ; load value from table column 3 ($40, $00 or $80)
-                    bpl       .LEB0B              ; bra if value is not $80
-                    ldd       $00C8               ; value is $80, reload speed delta from above
+                    sta       $00CA               ;index shifted to upper nibble
+                    lda       $02,x               ;load value from table column 3 ($40, $00 or $80)
+                    bpl       .LEB0B              ;bra if value is not $80
+                    ldd       $00C8               ;value is $80, reload speed delta from above
                     lsrd
                     lsrd
                     lsrd
-                    lsrd                          ; shift speed delta down to lower nibble
+                    lsrd                          ;shift speed delta down to lower nibble
                     bra       .LEB15
 
 ; value is $40 or $00
-.LEB0B              bita      #$40                ; test bit 6
+.LEB0B              bita      #$40                ;test bit 6
                     beq       .LEB13
-                    ldb       $00C8               ; value is $40, reload speed delta from above (no shift)
+                    ldb       $00C8               ;value is $40, reload speed delta from above (no shift)
                     bra       .LEB15
 
 ; value is $00
-.LEB13              ldb       $00C9               ; reload just the low byte of speed delta (no shift)
+.LEB13              ldb       $00C9               ;reload just the low byte of speed delta (no shift)
 
-.LEB15              lda       $03,x               ; load right-most value from table
-                    mul                           ; mpy A (table value) by B (speed delta)
-                    ora       $00CA               ; or it into the low nibble of the column index
+.LEB15              lda       $03,x               ;load right-most value from table
+                    mul                           ;mpy A (table value) by B (speed delta)
+                    ora       $00CA               ;or it into the low nibble of the column index
                     sta       fuelMapSpeedIdx
           #ifndef BUILD_R3365
-                    jsr       rdSpdCompTest       ; road speed test, reloads lambdaReading in B before returning
+                    jsr       rdSpdCompTest       ;road speed test, reloads lambdaReading in B before returning
           #endif
 .LEB1F              jsr       keepAlive
 ; ------------------------------------------------------------------------------
@@ -3830,24 +3830,24 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; This is a division loop.
 ; ------------------------------------------------------------------------------
                     ldd       ignPeriodFiltered
-                    cmpa      #pwRpmComputeLimit  ; don't compute the RPM beyond this speed (1953 RPM)
+                    cmpa      #pwRpmComputeLimit  ;don't compute the RPM beyond this speed (1953 RPM)
                     bhi       .computeRPM
-                    ldd       #compRpmMaxConst    ; instead used this fixed value (1950 RPM)
+                    ldd       #compRpmMaxConst    ;instead used this fixed value (1950 RPM)
                     bra       .storeEngineRPM
 
-.computeRPM         ldd       #$7270              ; <-- code branches here if eng RPM is less than 1953
-                    std       $00C8               ; store $7270 in 00C8/C9
-                    ldd       #$00E0              ; store $E0 in 00CA
-                    stb       $00CA               ; C8/C9/CA is now the 24-bit value 0x7270E0 (7,500,000 decimal)
-                    tab                           ; transfer a to b to clear b
-                    ldx       #$0018              ; load index with 24 for 24-bit divide loop
+.computeRPM         ldd       #$7270              ;<-- code branches here if eng RPM is less than 1953
+                    std       $00C8               ;store $7270 in 00C8/C9
+                    ldd       #$00E0              ;store $E0 in 00CA
+                    stb       $00CA               ;C8/C9/CA is now the 24-bit value 0x7270E0 (7,500,000 decimal)
+                    tab                           ;transfer a to b to clear b
+                    ldx       #$0018              ;load index with 24 for 24-bit divide loop
 
 ; Start Division Loop *
-.rpmDivLoop         asl       $00CA               ; arith shift left (c <- b7, b0 <- 0)
-                    rol       $00C9               ; rotate left (c <- b7, b0 <- c)
-                    rol       $00C8               ; this results in 24-bit left shift (c <- b23, b0 <- 0)
-                    rolb                          ; rotate left (c <- b7, b0 <- c)
-                    rola                          ; rotate left (c <- b7, b0 <- c)
+.rpmDivLoop         asl       $00CA               ;arith shift left (c <- b7, b0 <- 0)
+                    rol       $00C9               ;rotate left (c <- b7, b0 <- c)
+                    rol       $00C8               ;this results in 24-bit left shift (c <- b23, b0 <- 0)
+                    rolb                          ;rotate left (c <- b7, b0 <- c)
+                    rola                          ;rotate left (c <- b7, b0 <- c)
 
                     subd      ignPeriodFiltered
                     bcc       .LEB4E
@@ -3856,19 +3856,19 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 
 .LEB4E              inc       $00CA
 
-.LEB51              dex                           ; decrement counter
+.LEB51              dex                           ;decrement counter
                     bne       .rpmDivLoop
 
                     ldd       $00C9
                     bra       .storeEngineRPM
 
-                    ldx       #$0007              ; begin unused code
+                    ldx       #$0007              ;begin unused code
 .LEB5B              addd      engineRPM
                     dex
                     bne       .LEB5B
                     lsrd
                     lsrd
-                    lsrd                          ; end unused code
+                    lsrd                          ;end unused code
 
 .storeEngineRPM     std       engineRPM
 
@@ -3888,18 +3888,18 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     bcs       .roadSpeedLow
 
 ; road speed is greater than
-                    orb       #$01                ; set bits_2004.0
+                    orb       #$01                ;set bits_2004.0
                     lda       #highSpeedIndByte
-                    sta       speedLimitIndicator  ; set to $AA (or $91) to indicate high speed
+                    sta       speedLimitIndicator  ;set to $AA (or $91) to indicate high speed
 
 .LEB76              stb       bits_2004
-                    bra       .LEB86              ; branch to next section
+                    bra       .LEB86              ;branch to next section
 
 .roadSpeedLow       cmpa      #highRoadSpeed_OFF
-                    bcc       .LEB86              ; branch to next section if road speed is GT 119 MPH
-                    andb      #$FE                ; clr bits_2004.0
-                    clr       speedLimitIndicator  ; set to zero
-                    bra       .LEB76              ; branch up to store bits_2004 and branch to next section
+                    bcc       .LEB86              ;branch to next section if road speed is GT 119 MPH
+                    andb      #$FE                ;clr bits_2004.0
+                    clr       speedLimitIndicator  ;set to zero
+                    bra       .LEB76              ;branch up to store bits_2004 and branch to next section
 
 ; ------------------------------------------------------------------
 ; This section executes only after the 009C timeout and if
@@ -3907,13 +3907,13 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; ------------------------------------------------------------------
 
 .LEB86              lda       $008A
-                    bita      #$40                ; test 008A.6 (0 = startup timeout, 009C 1Hz down-counter)
+                    bita      #$40                ;test 008A.6 (0 = startup timeout, 009C 1Hz down-counter)
                     bne       .LEB92
                     lda       bits_0089
-                    anda      #$03                ; mask bits_0089.1 and bits_0089.0
-                    beq       .LEB95              ; branch ahead (to skip jump) if both are zero
+                    anda      #$03                ;mask bits_0089.1 and bits_0089.0
+                    beq       .LEB95              ;branch ahead (to skip jump) if both are zero
 
-.LEB92              jmp       .LEC53              ; jump way down to next section
+.LEB92              jmp       .LEC53              ;jump way down to next section
 
 ; ------------------------------------------------------------------
 ;*** Check Engine RPM Limit ***
@@ -3924,138 +3924,138 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 ; A safety margin of $1B equates to about 100 RPM
 ; A safety margin of $0F equates to about  75 RPM
 ; ------------------------------------------------------------------
-.LEB95              ldd       ignPeriodFiltered   ; load 16-bit filtered spark period
-                    subd      rpmLimitRAM         ; subtract (X200C) RPM limit
-                    bcc       .LEBA4              ; branch if RPM is OK
+.LEB95              ldd       ignPeriodFiltered   ;load 16-bit filtered spark period
+                    subd      rpmLimitRAM         ;subtract (X200C) RPM limit
+                    bcc       .LEBA4              ;branch if RPM is OK
 
-                    lda       $0086               ; <-- if here, eng speed is over limit
-                    anda      #$DF                ; clear X0086.5 to indicate RPM over limit (bit is normally 1)
-                    sta       $0086               ; store it
-                    bra       .LEC1A              ; branch
+                    lda       $0086               ;<-- if here, eng speed is over limit
+                    anda      #$DF                ;clear X0086.5 to indicate RPM over limit (bit is normally 1)
+                    sta       $0086               ;store it
+                    bra       .LEC1A              ;branch
 
-.LEBA4              cmpa      #$00                ; is upper byte of remainder non-zero?
-                    bne       .LEBAD              ; if so, plenty of margin, so branch to RPM OK
+.LEBA4              cmpa      #$00                ;is upper byte of remainder non-zero?
+                    bne       .LEBAD              ;if so, plenty of margin, so branch to RPM OK
 
-                    cmpb      $200B               ; compare low byte of remainder with safety margin
-                    bcs       .LEC1A              ; if remainder < safety margin, branch down
+                    cmpb      $200B               ;compare low byte of remainder with safety margin
+                    bcs       .LEC1A              ;if remainder < safety margin, branch down
 
-.LEBAD              lda       ignPeriodFiltered   ; <-- RPM is OK, load spark period again
-                    cmpa      $C137               ; data value is $10 (about 1831 RPM)
-                    bhi       .LEBBA              ; branch ahead if RPM < 1831
+.LEBAD              lda       ignPeriodFiltered   ;<-- RPM is OK, load spark period again
+                    cmpa      $C137               ;data value is $10 (about 1831 RPM)
+                    bhi       .LEBBA              ;branch ahead if RPM < 1831
 
-                    lda       bits_0089           ; <-- RPM > 1831
-                    ora       #$08                ; set bits_0089.3 (this bit only used in this section)
+                    lda       bits_0089           ;<-- RPM > 1831
+                    ora       #$08                ;set bits_0089.3 (this bit only used in this section)
                     sta       bits_0089
 
-.LEBBA              lda       bits_0089           ; load bits value
-                    bita      #$08                ; test bits_0089.3 (this bit only used in this section)
-                    beq       .LEBDF              ; branch ahead if bit is zero
+.LEBBA              lda       bits_0089           ;load bits value
+                    bita      #$08                ;test bits_0089.3 (this bit only used in this section)
+                    beq       .LEBDF              ;branch ahead if bit is zero
 
-                    lda       coolantTempCount    ; if here RPM > 1831, load ECT sensor count
-                    ldb       $0086               ; load bits value
-                    orb       #$20                ; set X0086.5 to indicate RPM is under limit
-                    stb       $0086               ; store it
-                    tstb                          ; test X0086.7
-                    bmi       .LEBDA              ; branch if set
+                    lda       coolantTempCount    ;if here RPM > 1831, load ECT sensor count
+                    ldb       $0086               ;load bits value
+                    orb       #$20                ;set X0086.5 to indicate RPM is under limit
+                    stb       $0086               ;store it
+                    tstb                          ;test X0086.7
+                    bmi       .LEBDA              ;branch if set
 
-                    cmpa      $C17E               ; 4th col coolant temp table ($23 or 87 deg C)
-                    bcc       .LEBD5              ; branch if cooler
+                    cmpa      $C17E               ;4th col coolant temp table ($23 or 87 deg C)
+                    bcc       .LEBD5              ;branch if cooler
 
-                    ldd       $C14B               ; <-- warmer than 87 C, load value $0064
-                    bra       .LEBD8              ; branch
+                    ldd       $C14B               ;<-- warmer than 87 C, load value $0064
+                    bra       .LEBD8              ;branch
 
-.LEBD5              ldd       $C149               ; <-- cooler than 87 C, load value $0000
-.LEBD8              bra       .LEBE2              ; branch
+.LEBD5              ldd       $C149               ;<-- cooler than 87 C, load value $0000
+.LEBD8              bra       .LEBE2              ;branch
 
-.LEBDA              cmpa      $200E               ; <-- X0086.7 is set, compare with X200E
-                    bcs       .LEBFD              ; branch if hotter
+.LEBDA              cmpa      $200E               ;<-- X0086.7 is set, compare with X200E
+                    bcs       .LEBFD              ;branch if hotter
 ; ----------------------------------------
 
-.LEBDF              ldd       $C14D               ; for R3360 this value is 008C
+.LEBDF              ldd       $C14D               ;for R3360 this value is 008C
 
-.LEBE2              tst       bits_0089           ; test bits_0089.7
-                    bpl       .LEC1A              ; branch ahead if bits_0089.7 is clear
+.LEBE2              tst       bits_0089           ;test bits_0089.7
+                    bpl       .LEC1A              ;branch ahead if bits_0089.7 is clear
 
-                    addd      throttlePot         ; add 10-bit TPS value
-                    std       throttlePot24bit    ; store as top 2 bytes of 24-bit value
-                    ldd       throttlePot         ; load 10-bit TPS value
-                    std       throttlePotTemp     ; store TPS value temporarily
-                    lda       bits_0089           ; load bits value
-                    anda      #$7F                ; clear bits_0089.7
-                    sta       bits_0089           ; store it
-                    lda       $00DC               ; load bits value
-                    ora       #$40                ; set X00DC.6
-                    sta       $00DC               ; store it
-                    bra       .LEC4D              ; branch
+                    addd      throttlePot         ;add 10-bit TPS value
+                    std       throttlePot24bit    ;store as top 2 bytes of 24-bit value
+                    ldd       throttlePot         ;load 10-bit TPS value
+                    std       throttlePotTemp     ;store TPS value temporarily
+                    lda       bits_0089           ;load bits value
+                    anda      #$7F                ;clear bits_0089.7
+                    sta       bits_0089           ;store it
+                    lda       $00DC               ;load bits value
+                    ora       #$40                ;set X00DC.6
+                    sta       $00DC               ;store it
+                    bra       .LEC4D              ;branch
 
 ; ----------------------------------------
-.LEBFD              ldb       $008B               ; load bits value
-                    lsrb                          ; shift X008B.0 into carry (road speed > 4)
-                    bcc       .LEBDF              ; branch back if road speed < 4 KPH
+.LEBFD              ldb       $008B               ;load bits value
+                    lsrb                          ;shift X008B.0 into carry (road speed > 4)
+                    bcc       .LEBDF              ;branch back if road speed < 4 KPH
 
-                    lda       #$FF                ; <-- road speed > 4 KPH
-                    ldb       $0087               ; load bits value
-                    orb       #$80                ; set X0087.7 (this bit forces open loop)
-                    stb       $0087               ; store it
-                    ldb       bits_205B           ; load bits value
-                    orb       #$03                ; set bits_205B.1 and bits_205B.0 (bank related bits)
-                    stb       bits_205B           ; store it
-                    sta       tpsClosedLoopCntr   ; reset this variable to $FF (loaded earlier)
-                    lda       bits_0089           ; load bits value
-                    ora       #$80                ; set bits_0089.7
-                    sta       bits_0089           ; store it (end normal RPM code)
+                    lda       #$FF                ;<-- road speed > 4 KPH
+                    ldb       $0087               ;load bits value
+                    orb       #$80                ;set X0087.7 (this bit forces open loop)
+                    stb       $0087               ;store it
+                    ldb       bits_205B           ;load bits value
+                    orb       #$03                ;set bits_205B.1 and bits_205B.0 (bank related bits)
+                    stb       bits_205B           ;store it
+                    sta       tpsClosedLoopCntr   ;reset this variable to $FF (loaded earlier)
+                    lda       bits_0089           ;load bits value
+                    ora       #$80                ;set bits_0089.7
+                    sta       bits_0089           ;store it (end normal RPM code)
 ; ----------------------------------------
-.LEC1A              lda       $00DC               ; code above branches here when RPM is above limit
-                    bita      #$40                ; test X00DC.6
-                    beq       .LEC38              ; branch if bit is zero
+.LEC1A              lda       $00DC               ;code above branches here when RPM is above limit
+                    bita      #$40                ;test X00DC.6
+                    beq       .LEC38              ;branch if bit is zero
 
-                    anda      #$BF                ; clear X00DC.6
-                    ora       #$80                ; set X00DC.7
-                    sta       $00DC               ; store it
-                    ldd       throttlePot         ; load 10-bit TPS value
-                    subd      throttlePotTemp     ; subtract TPS value stored earlier
-                    bcs       .LEC38              ; branch if negative (TPS value < stored value)
+                    anda      #$BF                ;clear X00DC.6
+                    ora       #$80                ;set X00DC.7
+                    sta       $00DC               ;store it
+                    ldd       throttlePot         ;load 10-bit TPS value
+                    subd      throttlePotTemp     ;subtract TPS value stored earlier
+                    bcs       .LEC38              ;branch if negative (TPS value < stored value)
 
-                    subd      $C1F4               ; still positive, subtract data value $0023
-                    bcs       .LEC38              ; now branch if negative
+                    subd      $C1F4               ;still positive, subtract data value $0023
+                    bcs       .LEC38              ;now branch if negative
 
-                    ldd       throttlePot         ; still positive
-                    subd      $C1F6               ; subtract data value $0000
-                    std       throttlePot24bit    ; store as top 2 bytes of 24-bit value
+                    ldd       throttlePot         ;still positive
+                    subd      $C1F6               ;subtract data value $0000
+                    std       throttlePot24bit    ;store as top 2 bytes of 24-bit value
 
-.LEC38              lda       coolantTempCount    ; load ECT sensor count
-                    ldb       ignPeriodFiltered   ; load filtered spark period (MSB only)
-                    cmpa      $200F               ; compare ECT with X200F
-                    bcs       .LEC48              ; branch if hotter
+.LEC38              lda       coolantTempCount    ;load ECT sensor count
+                    ldb       ignPeriodFiltered   ;load filtered spark period (MSB only)
+                    cmpa      $200F               ;compare ECT with X200F
+                    bcs       .LEC48              ;branch if hotter
 
-                    cmpb      $C138               ; compare B with value $14 (approx 1400 RPM)
-                    bcs       .LEC53              ; branch if RPM > 1400
+                    cmpb      $C138               ;compare B with value $14 (approx 1400 RPM)
+                    bcs       .LEC53              ;branch if RPM > 1400
 
-                    bra       .LEC4D              ; if here, RPM < 1400, branch
+                    bra       .LEC4D              ;if here, RPM < 1400, branch
 
-.LEC48              cmpb      $C139               ; compare B with value $17 (approx 1250 RPM)
-                    bcs       .LEC53              ; branch if RPM > 1250
+.LEC48              cmpb      $C139               ;compare B with value $17 (approx 1250 RPM)
+                    bcs       .LEC53              ;branch if RPM > 1250
 
 .LEC4D              ldb       bits_0089
-                    andb      #$F7                ; clear bits_0089.3 (this bit only used in this section)
+                    andb      #$F7                ;clear bits_0089.3 (this bit only used in this section)
                     stb       bits_0089
 ; ------------------------------------------------------------------
 ; This section uses the 'mysteryDownCounter'
 ; ------------------------------------------------------------------
 
 .LEC53              lda       $0086
-                    bmi       .LEC84              ; branch ahead if 0086.7 is one
+                    bmi       .LEC84              ;branch ahead if 0086.7 is one
 
-                    sei                           ; <-- set interrupt mask
-                    lda       stprMtrSavedValue   ; load battery backed value
-                    adda      iacvValue1          ; stayed 128 (exc for spike to 37 at RR end)
+                    sei                           ;<-- set interrupt mask
+                    lda       stprMtrSavedValue   ;load battery backed value
+                    adda      iacvValue1          ;stayed 128 (exc for spike to 37 at RR end)
                     bcs       .LEC6B
 
-                    adda      #$B4                ; 180 dec
+                    adda      #$B4                ;180 dec
                     tab
                     bcs       .LEC67
 
-                    lda       #$7F                ; limit value to 127
+                    lda       #$7F                ;limit value to 127
                     bra       .LEC76
 
 .LEC67              lda       #$80
@@ -4071,14 +4071,14 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
 .LEC74              lda       #$81
 
 .LEC76              std       $00C8
-                    ldd       stepperMtrCounter   ; a 16-bit counter
+                    ldd       stepperMtrCounter   ;a 16-bit counter
                     subd      $00C8
                     bcs       .LEC84
 
                     ldd       $00C8
                     std       stepperMtrCounter
 
-.LEC84              cli                           ; <-- clr interrupt mask
+.LEC84              cli                           ;<-- clr interrupt mask
 
           #ifdef BUILD_R3365
 ; -----------------------------------------------------------
@@ -4090,21 +4090,21 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     sta       AdcDataLow
                     jsr       LFA46
           #else
-                    jsr       rdSpdCompTest       ; road speed test, loads lambdaReading in B before returning
+                    jsr       rdSpdCompTest       ;road speed test, loads lambdaReading in B before returning
           #endif
                     lda       coolantTempCount
-                    cmpa      $C15F               ; value is $A0
-                    bcs       .LEC9D              ; branch ahead if coolant value is less than (hotter than)
+                    cmpa      $C15F               ;value is $A0
+                    bcs       .LEC9D              ;branch ahead if coolant value is less than (hotter than)
 
                     lda       $008B
-                    ora       #$08                ; set 008B.3 (1 of 2)
+                    ora       #$08                ;set 008B.3 (1 of 2)
                     sta       $008B
-                    ldd       $C178               ; only referenced here, value is $5000
-                    std       mysteryDownCounter  ; some kind of down counter (1 of 3)
+                    ldd       $C178               ;only referenced here, value is $5000
+                    std       mysteryDownCounter  ;some kind of down counter (1 of 3)
                     bra       .LECB5
 
-.LEC9D              cmpa      $C17E               ; inside coolant temp table (value is $23)
-                    bcc       .LECB5              ; branch ahead if coolant is GT (cooler than)
+.LEC9D              cmpa      $C17E               ;inside coolant temp table (value is $23)
+                    bcc       .LECB5              ;branch ahead if coolant is GT (cooler than)
 
                     ldd       mysteryDownCounter
                     beq       .LECAF
@@ -4113,72 +4113,72 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     bra       .LECB5
 
 .LECAF              lda       $008B
-                    anda      #$F7                ; clr 008B.3 (2 of 2) when down counter reaches zero
+                    anda      #$F7                ;clr 008B.3 (2 of 2) when down counter reaches zero
                     sta       $008B
 ; (divider here? stppr mtr code below)
 
 .LECB5              lda       iacMotorStepCount
-                    bne       .LED29              ; branch way down if not equal to zero
+                    bne       .LED29              ;branch way down if not equal to zero
                     lda       $0086
                     ora       $0085
-                    bmi       .LED29              ; branch down if either 0085.7 or 0086.7 is set
+                    bmi       .LED29              ;branch down if either 0085.7 or 0086.7 is set
 
                     lda       bits_008C
-                    bita      #$04                ; test bits_008C.2
+                    bita      #$04                ;test bits_008C.2
                     beq       .LECCE
 
-                    anda      #$FB                ; clr bits_008C.2
+                    anda      #$FB                ;clr bits_008C.2
                     sta       bits_008C
-                    ldx       #$0000              ; reset 'idleControlValue' to zero
-                    stx       idleControlValue    ; varies between -20 and about 60
+                    ldx       #$0000              ;reset 'idleControlValue' to zero
+                    stx       idleControlValue    ;varies between -20 and about 60
 
 .LECCE              ldx       idleControlValue
-                    inx                           ; increment 'idleControlValue'
+                    inx                           ;increment 'idleControlValue'
                     lda       coolantTempCount
                     cmpa      #$AD
-                    bcs       .LECD8              ; branch ahead if CT is LT $AD
+                    bcs       .LECD8              ;branch ahead if CT is LT $AD
 
                     inx
 
-.LECD8              cpx       $C171               ; value is $003C (60 decimal)
-                    bcs       .LED27              ; branch ahead if 'idleControlValue' value is LT $003C
+.LECD8              cpx       $C171               ;value is $003C (60 decimal)
+                    bcs       .LED27              ;branch ahead if 'idleControlValue' value is LT $003C
 
-                    jsr       LF9A1               ; the only call to this routine (calculates iacvEctValue)
+                    jsr       LF9A1               ;the only call to this routine (calculates iacvEctValue)
                     lda       $008B
-                    bita      #$08                ; test 008B.3
+                    bita      #$08                ;test 008B.3
                     beq       .LECFC
 
-                    ldb       $C186               ; val is $A0 (160 dec)
-                    subb      iacvEctValue        ; calc value based on coolant temp (100 -> 160)
-                    lda       $C15E               ; val is $0A
-                    sba                           ; subtract B from A
-                    bcs       .LECFC              ; branch ahead if B was GT A
+                    ldb       $C186               ;val is $A0 (160 dec)
+                    subb      iacvEctValue        ;calc value based on coolant temp (100 -> 160)
+                    lda       $C15E               ;val is $0A
+                    sba                           ;subtract B from A
+                    bcs       .LECFC              ;branch ahead if B was GT A
 
-                    tab                           ; xfer A to B
+                    tab                           ;xfer A to B
                     lda       #$80
                     sba
-                    tab                           ; xfer A to B
-                    lda       iacvVariable        ; initial (middle value) is 128
-                    sba                           ; subtract B from A
+                    tab                           ;xfer A to B
+                    lda       iacvVariable        ;initial (middle value) is 128
+                    sba                           ;subtract B from A
                     bra       .LED01
 
-.LECFC              lda       iacvVariable        ; initial (middle value) is 128
+.LECFC              lda       iacvVariable        ;initial (middle value) is 128
                     suba      #$80
 
 .LED01              bne       .LED08
 
-                    clr       iacvValue0          ; occasionally init to 6 and decremented to zero
+                    clr       iacvValue0          ;occasionally init to 6 and decremented to zero
                     bra       .LED24
 
 .LED08              bcs       .LED13
 
                     clr       iacvValue0
                     lda       $008A
-                    anda      #$FE                ; clr 008A.0 (stepper mtr direction bit, 0 = open)
+                    anda      #$FE                ;clr 008A.0 (stepper mtr direction bit, 0 = open)
                     bra       .LED1E
 
 .LED13              lda       $008A
-                    ora       #$01                ; set 008A.0 (stepper mtr direction bit, 1 = close)
+                    ora       #$01                ;set 008A.0 (stepper mtr direction bit, 1 = close)
                     ldb       iacvValue0
                     beq       .LED1E
 
@@ -4189,41 +4189,41 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     lda       #$01
                     sta       iacMotorStepCount
 
-.LED24              ldx       #$0000              ; reset 'idleControlValue' to zero
+.LED24              ldx       #$0000              ;reset 'idleControlValue' to zero
 
 .LED27              stx       idleControlValue
 
-.LED29              lda       $0085               ; test 0085.7 (indicates no or low eng RPM)
-                    bmi       .LED5F              ; branch if set (eng not running)
+.LED29              lda       $0085               ;test 0085.7 (indicates no or low eng RPM)
+                    bmi       .LED5F              ;branch if set (eng not running)
                     ldb       $008A
-                    bitb      #$40                ; test 008A.6 (0 = startup timeout)
+                    bitb      #$40                ;test 008A.6 (0 = startup timeout)
                     beq       .LED5F
 
-                    ldd       $C09A               ; $F830 (-2000 dec)
+                    ldd       $C09A               ;$F830 (-2000 dec)
                     std       $008E
-                    ldd       $C09C               ; $07D0 (+2000 dec)
+                    ldd       $C09C               ;$07D0 (+2000 dec)
                     std       $0090
                     lda       bits_0089
-                    ora       #$07                ; set bits_0089 bits 2:0
+                    ora       #$07                ;set bits_0089 bits 2:0
                     sta       bits_0089
 
 ; ---------------------------------------
 ; Lots of timeout counter checks
 ; ---------------------------------------
-                    ldx       #$009C              ; X009C was init from 3rd row of coolant table
-                    jsr       LF135               ; 1 Hz down counter for X009C
-                    lda       $009C               ; 009C decrements to zero at 1 Hz rate
-                    bne       .LED5F              ; branch ahead until 009C reaches zero
+                    ldx       #$009C              ;X009C was init from 3rd row of coolant table
+                    jsr       LF135               ;1 Hz down counter for X009C
+                    lda       $009C               ;009C decrements to zero at 1 Hz rate
+                    bne       .LED5F              ;branch ahead until 009C reaches zero
 
                     lda       $008A
-                    anda      #$BF                ; clear 008A.6 (0 = startup timeout)
+                    anda      #$BF                ;clear 008A.6 (0 = startup timeout)
                     sta       $008A
                     lda       faultBits_49
-                    bita      #$40                ; Test for MAF Sensor Fault
+                    bita      #$40                ;Test for MAF Sensor Fault
                     bne       .LED5F
 
                     lda       $0087
-                    anda      #$FD                ; clr 0087.1 (indicates MAF fault)
+                    anda      #$FD                ;clr 0087.1 (indicates MAF fault)
                     sta       $0087
 
           #ifdef BUILD_R3365
@@ -4236,79 +4236,79 @@ inputCapInt         ldb       bits_2059           ; bits_2059.5 controls 1-time 
                     sta       AdcDataLow
                     jsr       LFA46
           #else
-.LED5F              jsr       rdSpdCompTest       ; road speed test, reloads lambdaReading in B before returning
+.LED5F              jsr       rdSpdCompTest       ;road speed test, reloads lambdaReading in B before returning
           #endif
                     lda       fuelMapNumber
-                    beq       .LED7F              ; branch ahead if map is zero
+                    beq       .LED7F              ;branch ahead if map is zero
 
                     cmpa      #$04
-                    bcc       .LED7F              ; branch ahead if map is 4 or 5
+                    bcc       .LED7F              ;branch ahead if map is 4 or 5
 
-                    lda       bits_2004           ; if here, map is open loop (1, 2 or 3)
-                    ora       #$0C                ; set bits_2004 bits 3:2
+                    lda       bits_2004           ;if here, map is open loop (1, 2 or 3)
+                    ora       #$0C                ;set bits_2004 bits 3:2
                     sta       bits_2004
                     lda       $0086
-                    bita      #$04                ; test 0086.2
+                    bita      #$04                ;test 0086.2
                     beq       .LEDBC
 
                     lda       $008A
-                    bita      #$40                ; test 008A.6 (0 = startup timeout)
+                    bita      #$40                ;test 008A.6 (0 = startup timeout)
                     beq       .LED8C
 ; ---------------------------------------
 
-.LED7F              lda       closedLoopDelay     ; counts down from $10 to zero (about 1 sec rate)
+.LED7F              lda       closedLoopDelay     ;counts down from $10 to zero (about 1 sec rate)
                     beq       .LED8C
 
-                    ldx       #closedLoopDelay    ; load ADDRESS of closedLoopDelay
-                    jsr       LF151               ; down counter for closedLoopDelay
+                    ldx       #closedLoopDelay    ;load ADDRESS of closedLoopDelay
+                    jsr       LF151               ;down counter for closedLoopDelay
                     bra       .LEDBC
 
 ; ---------------------------------------
 
-.LED8C              lda       startupTimerEven    ; right bank startup timer
-                    beq       .LEDA4              ; branch ahead if timer reached zero
+.LED8C              lda       startupTimerEven    ;right bank startup timer
+                    beq       .LEDA4              ;branch ahead if timer reached zero
 ; ---------------------------------------
                     lda       bits_0089
-                    anda      #$03                ; mask bits_0089 bits 1:0
-                    beq       .LED9E              ; branch ahead if both bits are zero
+                    anda      #$03                ;mask bits_0089 bits 1:0
+                    beq       .LED9E              ;branch ahead if both bits are zero
                     lda       bits_2004
-                    bita      #$04                ; test bits_2004.2
+                    bita      #$04                ;test bits_2004.2
                     beq       .LEDA4
 
-.LED9E              ldx       #startupTimerEven   ; load ADDRESS of timer
-                    jsr       LF135               ; call timer 1 subroutine
+.LED9E              ldx       #startupTimerEven   ;load ADDRESS of timer
+                    jsr       LF135               ;call timer 1 subroutine
 ; ---------------------------------------
 
-.LEDA4              lda       startupTimerOdd     ; left bank startup timer
-                    beq       .LEDBC              ; branch ahead if timer has reached zero
+.LEDA4              lda       startupTimerOdd     ;left bank startup timer
+                    beq       .LEDBC              ;branch ahead if timer has reached zero
 ; ---------------------------------------
                     lda       bits_0089
-                    anda      #$03                ; mask bits_0089 bits 1:0
-                    beq       .LEDB6              ; branch ahead if both bits are zero
+                    anda      #$03                ;mask bits_0089 bits 1:0
+                    beq       .LEDB6              ;branch ahead if both bits are zero
 
                     lda       bits_2004
-                    bita      #$08                ; test bits_2004.3
+                    bita      #$08                ;test bits_2004.3
                     beq       .LEDBC
 
-.LEDB6              ldx       #startupTimerOdd    ; load ADDRESS of timer
-                    jsr       LF151               ; call timer 2 subroutine
+.LEDB6              ldx       #startupTimerOdd    ;load ADDRESS of timer
+                    jsr       LF151               ;call timer 2 subroutine
 ; ---------------------------------------
 
-.LEDBC              lda       #$FF                ; reset fuel pump delay
+.LEDBC              lda       #$FF                ;reset fuel pump delay
                     sta       fuelPumpTimer
                     lda       port1data
-                    anda      #$BF                ; P1.6 low (fuel pump ON)
+                    anda      #$BF                ;P1.6 low (fuel pump ON)
                     sta       port1data
-                    lda       purgeValveFailDelay  ; fault code delay counter
+                    lda       purgeValveFailDelay  ;fault code delay counter
                     beq       .LEDCF
                     deca
-                    sta       purgeValveFailDelay  ; decrem fault code delay counter
+                    sta       purgeValveFailDelay  ;decrem fault code delay counter
 
-.LEDCF              jsr       LF018               ; only call to F018, alters values at 008E/8F, 0090/91
+.LEDCF              jsr       LF018               ;only call to F018, alters values at 008E/8F, 0090/91
           #ifdef USE_4004_BIT4_FOR_ICI
-                    lda       i2cPort             ; [4] profiling code
-                    anda      #$EF                ; [2] 4004.4 low
-                    sta       i2cPort             ; [4]
+                    lda       i2cPort             ;[4] profiling code
+                    anda      #$EF                ;[2] 4004.4 low
+                    sta       i2cPort             ;[4]
           #endif
                     jmp       iciReentry
 

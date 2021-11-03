@@ -39,66 +39,66 @@
 
 ; ------------------------------------------------------------------------------
 
-adcRoutine11        sta       fuelTempCount       ; EFT sensor count
-                    tab                           ; xfr it to B accum
-                    addb      #$04                ; add 4 (see note about sensot limits above)
-                    cmpb      #$08                ; compare it to 8
-                    bhi       .LD457              ; branch if value is > 8 (EFT reading is OK)
+adcRoutine11        sta       fuelTempCount       ;EFT sensor count
+                    tab                           ;xfr it to B accum
+                    addb      #$04                ;add 4 (see note about sensot limits above)
+                    cmpb      #$08                ;compare it to 8
+                    bhi       .LD457              ;branch if value is > 8 (EFT reading is OK)
 
-                    lda       #$71                ; $71 is code for fuel temp sensor fault (also default val)
-                    jsr       setTempTPFaults     ; <-- Set Fault Code 15 (Fuel Temp)
+                    lda       #$71                ;$71 is code for fuel temp sensor fault (also default val)
+                    jsr       setTempTPFaults     ;<-- Set Fault Code 15 (Fuel Temp)
 
-.LD457              ldb       $0085               ; X0085.4 is cleared after mux list finishes at least once)
-                    bitb      #$10                ; test X0085.4
-                    beq       .LD468              ; branch ahead if X0085.4 is clr
-                    suba      hiFuelTemperature   ; this is the temp saved in battery backed memory
-                    bcs       .LD487              ; branch ahead if fuel temp is < hiFuelTemperature
+.LD457              ldb       $0085               ;X0085.4 is cleared after mux list finishes at least once)
+                    bitb      #$10                ;test X0085.4
+                    beq       .LD468              ;branch ahead if X0085.4 is clr
+                    suba      hiFuelTemperature   ;this is the temp saved in battery backed memory
+                    bcs       .LD487              ;branch ahead if fuel temp is < hiFuelTemperature
 ; -----------------------------------------------------------
 ; fall through or branch up from 1 place below
-.LD461              lda       $008A               ; gets here normally when saved hot EFT is zero
-                    ora       #$02                ; set X008A.1 (this is the only place this bit is set)
-                    sta       $008A               ; store it
+.LD461              lda       $008A               ;gets here normally when saved hot EFT is zero
+                    ora       #$02                ;set X008A.1 (this is the only place this bit is set)
+                    sta       $008A               ;store it
 
-.LD467              rts                           ; return
+.LD467              rts                           ;return
 
 ; -----------------------------------------------------------
 ; branches here if X0085.4 is clr
 .LD468              lda       $008A
-                    bita      #$02                ; test X008A.1
-                    bne       .LD467              ; return if bit is 1
+                    bita      #$02                ;test X008A.1
+                    bne       .LD467              ;return if bit is 1
 
-                    bitb      #$20                ; test X0085.5
-                    beq       .LD467              ; rtn if bit is zero
+                    bitb      #$20                ;test X0085.5
+                    beq       .LD467              ;rtn if bit is zero
 
-                    lda       fuelTempCounter     ; a local down-counter
-                    beq       .LD47A              ; branch ahead if down-counter is zero
+                    lda       fuelTempCounter     ;a local down-counter
+                    beq       .LD47A              ;branch ahead if down-counter is zero
 
-                    dec       fuelTempCounter     ; else decrement it and return
+                    dec       fuelTempCounter     ;else decrement it and return
                     rts
 
 ; -----------------------------------------------------------
-.LD47A              lda       $C0AE               ; for R3526, value is $02
-                    sta       fuelTempCounter     ; store it
-                    ldx       hotFuelAdjustmment  ; only written in this routine
-                    beq       .LD461              ; branch up if zero
-                    dex                           ; decrement 'hotFuelAdjustmment'
-                    stx       hotFuelAdjustmment  ; store it
-                    rts                           ; and return
+.LD47A              lda       $C0AE               ;for R3526, value is $02
+                    sta       fuelTempCounter     ;store it
+                    ldx       hotFuelAdjustmment  ;only written in this routine
+                    beq       .LD461              ;branch up if zero
+                    dex                           ;decrement 'hotFuelAdjustmment'
+                    stx       hotFuelAdjustmment  ;store it
+                    rts                           ;and return
 
 ; -----------------------------------------------------------
 ; code gets here if fuel temp is hotter than saved hot fuel temp
-.LD487              nega                          ; convert negative temp delta to positive
-                    ldb       $C0AF               ; for R3526, value is $32 (48 dec)
-                    mul                           ; 48 * temp_delta
-                    std       hotFuelAdjustmment  ; store the 16-bit result
-                    subd      $C0B2               ; for R3526, value is $0780 (1920 dec)
-                    bcs       .LD498              ; branch if calculated value < $0780
+.LD487              nega                          ;convert negative temp delta to positive
+                    ldb       $C0AF               ;for R3526, value is $32 (48 dec)
+                    mul                           ;48 * temp_delta
+                    std       hotFuelAdjustmment  ;store the 16-bit result
+                    subd      $C0B2               ;for R3526, value is $0780 (1920 dec)
+                    bcs       .LD498              ;branch if calculated value < $0780
 
-                    ldd       $C0B2               ; else store $0780 (this sets a limit)
+                    ldd       $C0B2               ;else store $0780 (this sets a limit)
                     std       hotFuelAdjustmment
 
-.LD498              lda       $C0AE               ; for R3526, value is $02
-                    sta       fuelTempCounter     ; store it
+.LD498              lda       $C0AE               ;for R3526, value is $02
+                    sta       fuelTempCounter     ;store it
 ; fall through to rts below
 ; ------------------------------------------------------------------------------
 ; ADC Routine - O2 Sensors - Channels 12 and 15

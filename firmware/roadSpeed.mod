@@ -93,56 +93,56 @@
 ; roadSpeed       - Road Speed in KPH
 
 ; ------------------------------------------------------------------------------
-adcRoutine7         sta       $00C8               ; now both C8 and C9 hold the 8-bit value
-                    ldb       timerOverflow2      ; latch counter, increments every 65 ms
-                    cmpb      #$0D                ; compare with 13
-                    bhi       .resetCounters      ; branch if timerOverflow2 > 13
-                    bcs       .lessThan13         ; branch if timerOverflow2 < 13
+adcRoutine7         sta       $00C8               ;now both C8 and C9 hold the 8-bit value
+                    ldb       timerOverflow2      ;latch counter, increments every 65 ms
+                    cmpb      #$0D                ;compare with 13
+                    bhi       .resetCounters      ;branch if timerOverflow2 > 13
+                    bcs       .lessThan13         ;branch if timerOverflow2 < 13
 ; ---------------------------------------------
 ;*** Latch Counter as Road Speed ***
 ; Code gets here when overflow counter is 13.
 ; ---------------------------------------------
 ; if here, timerOverflow2 = 13 (happens approx once per second)
-                    ldb       speedLimitIndicator  ; ICI sets this to $AA or $00 to indicate high road speed
-                    beq       .roadSpeedOK        ; branch if zero (road speed is LT 119 to 122 MPH)
+                    ldb       speedLimitIndicator  ;ICI sets this to $AA or $00 to indicate high road speed
+                    beq       .roadSpeedOK        ;branch if zero (road speed is LT 119 to 122 MPH)
                     #ifdef    BUILD_R3365
-                    ldb       #$96                ; limit road speed reading to 93 MPH for NAS D90
+                    ldb       #$96                ;limit road speed reading to 93 MPH for NAS D90
                     #else
-                    ldb       #$B0                ; limit road speed reading to 109 MPH for others
+                    ldb       #$B0                ;limit road speed reading to 109 MPH for others
                     #endif
-                    bra       .LD38D              ; skip loading transition counter and store value as road speed
+                    bra       .LD38D              ;skip loading transition counter and store value as road speed
 
 ; if here, road speed is LT 122 (or 119?)
-.roadSpeedOK        ldb       $2002               ; capture transition counter as road speed
+.roadSpeedOK        ldb       $2002               ;capture transition counter as road speed
 
-.LD38D              stb       roadSpeed           ; store as road speed (or 176 KPH limit)
-                    beq       .LD3A5              ; branch if road speed is zero
+.LD38D              stb       roadSpeed           ;store as road speed (or 176 KPH limit)
+                    beq       .LD3A5              ;branch if road speed is zero
 
 ; if here, VSS appears to be working (non-zero)
-                    inc       $207D               ; X207D looks like a fault delay (slowdown) counter
-                    ldb       $C258               ; this value is usually $0A
-                    cmpb      $207D               ; compare counter with $0A
-                    bcc       .resetCounters      ; branch ahead if counter < $0A
+                    inc       $207D               ;X207D looks like a fault delay (slowdown) counter
+                    ldb       $C258               ;this value is usually $0A
+                    cmpb      $207D               ;compare counter with $0A
+                    bcc       .resetCounters      ;branch ahead if counter < $0A
 
-                    ldb       $2047               ; else, clear internal fault bit
-                    andb      #$FB                ; clr X2047.2 (clear VSS fail bit)
+                    ldb       $2047               ;else, clear internal fault bit
+                    andb      #$FB                ;clr X2047.2 (clear VSS fail bit)
                     stb       $2047
 
-.LD3A5              clr       $207D               ; clear the fault delay counter
+.LD3A5              clr       $207D               ;clear the fault delay counter
 ; ---------------------------------------------
 ;*** Reset Counters ***
 ; Code branches here when timerOverflow2 > 13
 ; ---------------------------------------------
-.resetCounters      clrb                          ; reset both latch and transition counters
-                    sei                           ; these apparently must be clrd together, hence the mask
-                    stb       $2001               ; reset timerOverflow2
-                    stb       $2002               ; reset vssStateCounter
-                    cli                           ; clear interrupt mask
+.resetCounters      clrb                          ;reset both latch and transition counters
+                    sei                           ;these apparently must be clrd together, hence the mask
+                    stb       $2001               ;reset timerOverflow2
+                    stb       $2002               ;reset vssStateCounter
+                    cli                           ;clear interrupt mask
 
                     #ifdef    NEW_STYLE_AC_CODE
-                    lda       startupDownCount1Hz  ; this down-counter is used by A/C routine and is
-                    beq       .lessThan13         ; just decremented here
-                    deca                          ; decrement 1 Hz counter but not less than zero
+                    lda       startupDownCount1Hz  ;this down-counter is used by A/C routine and is
+                    beq       .lessThan13         ;just decremented here
+                    deca                          ;decrement 1 Hz counter but not less than zero
                     sta       startupDownCount1Hz
                     #endif
 
@@ -152,15 +152,15 @@ adcRoutine7         sta       $00C8               ; now both C8 and C9 hold the 
 ; Code branches here when X2001 < 13
 ; ---------------------------------------------
 ; this sets/clears an idle control bit
-.lessThan13         lda       $008B               ; load bits value
-                    ldb       roadSpeed           ; load road speed
-                    cmpb      #$04                ; compare road speed with 4
-                    bcc       .roadspeedGT4       ; branch to set X008B.0 if RS > 4
+.lessThan13         lda       $008B               ;load bits value
+                    ldb       roadSpeed           ;load road speed
+                    cmpb      #$04                ;compare road speed with 4
+                    bcc       .roadspeedGT4       ;branch to set X008B.0 if RS > 4
 
-                    anda      #$FE                ; clr X008B.0 (road speed < 4)
+                    anda      #$FE                ;clr X008B.0 (road speed < 4)
                     bra       .LD3C9
 
-.roadspeedGT4       ora       #$01                ; set X008B.0 (road speed > 4)
+.roadspeedGT4       ora       #$01                ;set X008B.0 (road speed > 4)
 
 .LD3C9              sta       $008B
 
@@ -175,40 +175,40 @@ adcRoutine7         sta       $00C8               ; now both C8 and C9 hold the 
 ; 3) Fault 68 counter has been incremented enough times
 ; (the value is stored in the data section at XC0CE/CF)
 ; -----------------------------------------------------------
-                    lda       roadSpeed           ; load road speed
-                    bne       .LD41A              ; branch to skip test if not zero
+                    lda       roadSpeed           ;load road speed
+                    bne       .LD41A              ;branch to skip test if not zero
 
-                    ldd       mafDirectHi         ; if here, Road Speed is zero
+                    ldd       mafDirectHi         ;if here, Road Speed is zero
                     addd      mafDirectLo
-                    subd      #$04CE              ; this equals an average value of 3.0 volts
-                    bcs       .LD41A              ; abort test if airFlow sum avgs 3.0 volts
+                    subd      #$04CE              ;this equals an average value of 3.0 volts
+                    bcs       .LD41A              ;abort test if airFlow sum avgs 3.0 volts
 
-                    lda       ignPeriodFiltered   ; load MSB of ignition period
-                    cmpa      #dtc68_minimumRPM   ; 2250 RPM for newer code, 2100 RPM for older code
-                    bcc       .LD41A              ; abort test if engine speed is lower than this
+                    lda       ignPeriodFiltered   ;load MSB of ignition period
+                    cmpa      #dtc68_minimumRPM   ;2250 RPM for newer code, 2100 RPM for older code
+                    bcc       .LD41A              ;abort test if engine speed is lower than this
 
-                    cmpa      #$08                ; about 3600 RPM
-                    bcs       .LD41A              ; abort test if engine speed is greater than about 3600 RPM
+                    cmpa      #$08                ;about 3600 RPM
+                    bcs       .LD41A              ;abort test if engine speed is greater than about 3600 RPM
 
-                    ldx       rsFaultSlowdown     ; load Road Speed fault delay counter
-                    inx                           ; increment it
-                    stx       rsFaultSlowdown     ; store it
-                    cpx       rsFaultSlowdownThreshold  ; compare it with XC0CE/CF (usually $0800)
-                    bcs       .LD41E              ; branch to skip fault setting if less than this
+                    ldx       rsFaultSlowdown     ;load Road Speed fault delay counter
+                    inx                           ;increment it
+                    stx       rsFaultSlowdown     ;store it
+                    cpx       rsFaultSlowdownThreshold  ;compare it with XC0CE/CF (usually $0800)
+                    bcs       .LD41E              ;branch to skip fault setting if less than this
 
                     lda       $0088
-                    ora       #$02                ; set X0088.1 (a Road Speed Sensor Fail bit)
+                    ora       #$02                ;set X0088.1 (a Road Speed Sensor Fail bit)
                     sta       $0088
 
                     lda       faultBits_4C
-                    ora       #$40                ; set Fault Code 68 (Vehicle Speed Sensor)
+                    ora       #$40                ;set Fault Code 68 (Vehicle Speed Sensor)
                     sta       faultBits_4C
 
                     lda       $2047
-                    ora       #$04                ; set X2047.2 (another Road Speed Sensor Fail bit)
+                    ora       #$04                ;set X2047.2 (another Road Speed Sensor Fail bit)
                     sta       $2047
 
-                    bra       .LD41E              ; end of Road Speed Sensor fault check
+                    bra       .LD41E              ;end of Road Speed Sensor fault check
 
 ; ------------------------------------------------------------------------------
 ; Road Speed Comparator (Level) Test
@@ -239,58 +239,58 @@ adcRoutine7         sta       $00C8               ; now both C8 and C9 hold the 
 ; Clock cycle execution time is in square brackets.
 
 ; ------------------------------------------------------------------------------
-rdSpdCompTest       lda       #$27                ; [2] SC=0 PC=1 Set comparator mode on ch 7 (RS)
-                    sta       AdcControlReg1      ; [4] Hitachi says write this reg starts conversion
-                    lda       #$C8                ; [2] load compare value (to determine high or low)
-                    sta       AdcDataLow          ; [4] write comparitor value (R4 reg)
+rdSpdCompTest       lda       #$27                ;[2] SC=0 PC=1 Set comparator mode on ch 7 (RS)
+                    sta       AdcControlReg1      ;[4] Hitachi says write this reg starts conversion
+                    lda       #$C8                ;[2] load compare value (to determine high or low)
+                    sta       AdcDataLow          ;[4] write comparitor value (R4 reg)
 ; 1 if Vin > $C8, 0 if Vin < $C8
-.LD40D              lda       AdcStsDataHigh      ; [4]
-                    bita      #$40                ; [2] test busy flag (BSY)
-                    bne       .LD40D              ; [3] loop back if busy
-                    bita      #$20                ; [2] test comparitor output bit (PCO)
-                    beq       .lowLevel           ; [3] branch if low
-                    bra       .highLevel          ; [3] high, branch to set 008B.7
+.LD40D              lda       AdcStsDataHigh      ;[4]
+                    bita      #$40                ;[2] test busy flag (BSY)
+                    bne       .LD40D              ;[3] loop back if busy
+                    bita      #$20                ;[2] test comparitor output bit (PCO)
+                    beq       .lowLevel           ;[3] branch if low
+                    bra       .highLevel          ;[3] high, branch to set 008B.7
 
 ; ---------------------------------------------------------------
 ; Comparator test does not use this code
 ; ---------------------------------------------------------------
 ; VSS fault code test (above) branches here when RS is not zero
 ; or when zero but test passes (such as when stopped at a light)
-.LD41A              clra                          ; [2]
-                    tab                           ; [2]
-                    std       rsFaultSlowdown     ; [3] clr slowdown counter for road speed sensor fault
+.LD41A              clra                          ;[2]
+                    tab                           ;[2]
+                    std       rsFaultSlowdown     ;[3] clr slowdown counter for road speed sensor fault
 ; ---------------------------------------------------------------
 ; VSS fault code test (above) branches here when waiting for
 ; RS Sensor fail counts or after failure bits are set
-.LD41E              lda       $00C8               ; [3] 8-bit road speed ADC value
-                    suba      #$C8                ; [2] compare with threshold
-                    bcs       .lowLevel           ; [3] if less, branch to road speed low
+.LD41E              lda       $00C8               ;[3] 8-bit road speed ADC value
+                    suba      #$C8                ;[2] compare with threshold
+                    bcs       .lowLevel           ;[3] if less, branch to road speed low
 ; ---------------------------------------------------------------
 ; Used by both comparator test and above code (normal RS routine)
 ; ---------------------------------------------------------------
-.highLevel          lda       $008B               ; [3] waveform is high
-                    ora       #$80                ; [2] set 008B.7 (VSS high bit)
-                    sta       $008B               ; [3]
-                    bra       .rsReturn           ; [3] return
+.highLevel          lda       $008B               ;[3] waveform is high
+                    ora       #$80                ;[2] set 008B.7 (VSS high bit)
+                    sta       $008B               ;[3]
+                    bra       .rsReturn           ;[3] return
 
 ; ---------------------------------------------------------------
-.lowLevel           lda       $008B               ; [3] waveform is low
-                    bita      #$80                ; [2] test 008B.7 (test the waveform-high bit)
-                    beq       .rsReturn           ; [3] just return if it's clear
+.lowLevel           lda       $008B               ;[3] waveform is low
+                    bita      #$80                ;[2] test 008B.7 (test the waveform-high bit)
+                    beq       .rsReturn           ;[3] just return if it's clear
 
-                    anda      #$7F                ; [2] else, clr 008B.7 and count this transition
-                    sta       $008B               ; [3]
-                    inc       vssStateCounter     ; [6] (3 of 3) increment X2002 when road speed is not zero
-                    ldd       faultCode26Counter  ; [4] road speed counter
-                    addd      #$0001              ; [4] increment road speed counter
-                    bcs       .loadO2AndRet       ; [3] but stop at $FFFF
-                    std       faultCode26Counter  ; [5] (value ramps up while vehicle is moving)
+                    anda      #$7F                ;[2] else, clr 008B.7 and count this transition
+                    sta       $008B               ;[3]
+                    inc       vssStateCounter     ;[6] (3 of 3) increment X2002 when road speed is not zero
+                    ldd       faultCode26Counter  ;[4] road speed counter
+                    addd      #$0001              ;[4] increment road speed counter
+                    bcs       .loadO2AndRet       ;[3] but stop at $FFFF
+                    std       faultCode26Counter  ;[5] (value ramps up while vehicle is moving)
 
 ; note that R2157 code (1990) does not have 'faultCode26Counter'
 ; nor the loading of 'lambdaReading' before rts
 
-.loadO2AndRet       ldb       lambdaReading       ; [4] load O2 sensor before returning
+.loadO2AndRet       ldb       lambdaReading       ;[4] load O2 sensor before returning
 
-.rsReturn           rts                           ; [5]
+.rsReturn           rts                           ;[5]
 
 ; ------------------------------------------------------------------------------

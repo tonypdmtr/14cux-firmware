@@ -29,185 +29,185 @@
 
 ; ------------------------------------------------------------------------------
 
-purgeValve          lda       bits_008D           ; load bits value
-                    anda      #$FE                ; clear bits_008D.0
-                    sta       bits_008D           ; store bits value
-                    lda       $0085               ; load another bits value X0085.7 (indicates no or low eng RPM)
-                    bmi       .LEE3A              ; test X0085.7 (eng running?, if set, NO, so branch up to jump down)
+purgeValve          lda       bits_008D           ;load bits value
+                    anda      #$FE                ;clear bits_008D.0
+                    sta       bits_008D           ;store bits value
+                    lda       $0085               ;load another bits value X0085.7 (indicates no or low eng RPM)
+                    bmi       .LEE3A              ;test X0085.7 (eng running?, if set, NO, so branch up to jump down)
 
-                    lda       bits_0089           ; eng IS running
-                    anda      #$03                ; mask bits_0089.1 and bits_0089.0
-                    bne       .LEE3A              ; if either is set, branch up to jump down
+                    lda       bits_0089           ;eng IS running
+                    anda      #$03                ;mask bits_0089.1 and bits_0089.0
+                    bne       .LEE3A              ;if either is set, branch up to jump down
 
-                    lda       $00DC               ; load bits value
-                    bita      #$04                ; test X00DC.2 (controls 1-time code)
-                    bne       .LEE63              ; branch if bit is set
+                    lda       $00DC               ;load bits value
+                    bita      #$04                ;test X00DC.2 (controls 1-time code)
+                    bne       .LEE63              ;branch if bit is set
 
-                    ora       #$04                ; set X00DC.2 (this is a block of 1-time code)
-                    sta       $00DC               ; store bits value
-                    lda       fuelTempCount       ; load EFT sensor count
-                    cmpa      #85                 ; compare with 85 decimal (48 C or 118 F)
-                    bcc       .LEE63              ; branch ahead if EFT is cooler than this
-                    ldd       $C145               ; data value is $2EE0 (12000 dec)
-                    std       purgeValveTimer2    ; reset down counter to 12000 dec
+                    ora       #$04                ;set X00DC.2 (this is a block of 1-time code)
+                    sta       $00DC               ;store bits value
+                    lda       fuelTempCount       ;load EFT sensor count
+                    cmpa      #85                 ;compare with 85 decimal (48 C or 118 F)
+                    bcc       .LEE63              ;branch ahead if EFT is cooler than this
+                    ldd       $C145               ;data value is $2EE0 (12000 dec)
+                    std       purgeValveTimer2    ;reset down counter to 12000 dec
 
-.LEE63              lda       coolantTempCount    ; load ECT sensor count
-                    cmpa      #50                 ; compare with $32 (50 C or 122 F)
-                    bcc       .LEEE3              ; branch ahead to jump if cooler than this
+.LEE63              lda       coolantTempCount    ;load ECT sensor count
+                    cmpa      #50                 ;compare with $32 (50 C or 122 F)
+                    bcc       .LEEE3              ;branch ahead to jump if cooler than this
 
-                    lda       $008A               ; load bits value
-                    bita      #$40                ; test X008A.6 (0 = startup timeout)
-                    bne       .LEE87              ; branch ahead if not yet timed out
+                    lda       $008A               ;load bits value
+                    bita      #$40                ;test X008A.6 (0 = startup timeout)
+                    bne       .LEE87              ;branch ahead if not yet timed out
 
 ; after warmup, load purgeValveVar1 and purgeValveVar2 here
-                    lda       bits_201F           ; load bits value
-                    bita      #$02                ; test bits_201F.1 (controls 1-time loading of variables)
+                    lda       bits_201F           ;load bits value
+                    bita      #$02                ;test bits_201F.1 (controls 1-time loading of variables)
                     bne       .LEE87
 
-                    ora       #$02                ; set bits_201F.1 (1-time code control)
+                    ora       #$02                ;set bits_201F.1 (1-time code control)
                     sta       bits_201F
-                    ldd       $C202               ; value is $0C00 (3072 dec)
-                    std       purgeValveVar2      ; init purgeValveVar2 to 3072 dec
-                    ldd       $C140               ; value is $1482 (5250 dec)
-                    std       purgeValveVar1      ; init purgeValveVar1 to 5250 dec
+                    ldd       $C202               ;value is $0C00 (3072 dec)
+                    std       purgeValveVar2      ;init purgeValveVar2 to 3072 dec
+                    ldd       $C140               ;value is $1482 (5250 dec)
+                    std       purgeValveVar1      ;init purgeValveVar1 to 5250 dec
 
-.LEE87              lda       $0088               ; load bits value
-                    bita      #$02                ; test X0088.1 (road speed sensor fail bit)
-                    bne       .LEE93              ; branch ahead if VSS fail
+.LEE87              lda       $0088               ;load bits value
+                    bita      #$02                ;test X0088.1 (road speed sensor fail bit)
+                    bne       .LEE93              ;branch ahead if VSS fail
 
-                    lda       $008B               ; load bits value
-                    bita      #$01                ; test X008B.0 (road speed GT 4 KPH)
-                    beq       .LEEA7              ; branch to jump if road speed > 4 KPH
+                    lda       $008B               ;load bits value
+                    bita      #$01                ;test X008B.0 (road speed GT 4 KPH)
+                    beq       .LEEA7              ;branch to jump if road speed > 4 KPH
 
-.LEE93              ldd       engineRPM           ; load eng RPM
-                    subd      $C142               ; data value = $06B8 (1720 RPM)
-                    bcc       .LEEAA              ; branch ahead if RPM > 1720
+.LEE93              ldd       engineRPM           ;load eng RPM
+                    subd      $C142               ;data value = $06B8 (1720 RPM)
+                    bcc       .LEEAA              ;branch ahead if RPM > 1720
 
-                    lda       $0086               ; load bits value
-                    bpl       .LEEA4              ; branch ahead if X0086.7 is zero
+                    lda       $0086               ;load bits value
+                    bpl       .LEEA4              ;branch ahead if X0086.7 is zero
 
-                    lda       $0088               ; load bits value
-                    bita      #$10                ; test X0088.4 (set when eng RPM > 1250)
-                    bne       .LEF03              ; branch down if RPM > 1250
+                    lda       $0088               ;load bits value
+                    bita      #$10                ;test X0088.4 (set when eng RPM > 1250)
+                    bne       .LEF03              ;branch down if RPM > 1250
 
-.LEEA4              jmp       .LEFC3              ; this 'jmp' is the only way to get to LEFC3
-
-; ---------------------------------------
-
-.LEEA7              jmp       .LEF38              ; only used in 1 one place above
+.LEEA4              jmp       .LEFC3              ;this 'jmp' is the only way to get to LEFC3
 
 ; ---------------------------------------
 
-.LEEAA              lda       fuelMapNumber       ; load fuel map number
-                    beq       .LEEB3              ; branch if fuel map 0
+.LEEA7              jmp       .LEF38              ;only used in 1 one place above
 
-                    cmpa      #$04                ; compare with 4
-                    bcs       .LEF25              ; branch down if fuel map 1, 2 or 3
+; ---------------------------------------
+
+.LEEAA              lda       fuelMapNumber       ;load fuel map number
+                    beq       .LEEB3              ;branch if fuel map 0
+
+                    cmpa      #$04                ;compare with 4
+                    bcs       .LEF25              ;branch down if fuel map 1, 2 or 3
 
 ; ---------------------------------------
 ; For closed loop maps (0, 4 and 5)
 ; ---------------------------------------
 
-.LEEB3              ldd       purgeValveTimer2    ; load purge valve down counter
-                    subd      #$1000              ; subtract 4096
-                    bcc       .LEF25              ; if counter > 4096, branch down to load 40,000 into 'purgeValveTimer'
+.LEEB3              ldd       purgeValveTimer2    ;load purge valve down counter
+                    subd      #$1000              ;subtract 4096
+                    bcc       .LEF25              ;if counter > 4096, branch down to load 40,000 into 'purgeValveTimer'
 
-                    lda       $00DD               ; load bits value
-                    bita      #$08                ; test X00DD.3
-                    beq       .LEF25              ; if 0, branch down to load 40,000 into 'purgeValveTimer'
+                    lda       $00DD               ;load bits value
+                    bita      #$08                ;test X00DD.3
+                    beq       .LEF25              ;if 0, branch down to load 40,000 into 'purgeValveTimer'
 
-                    ldb       $0085               ; load bits value
-                    bitb      #$08                ; test X0085.3
-                    beq       .LEF21              ; if 0, branch to clr bits and load 40000 into 'purgeValveTimer'
+                    ldb       $0085               ;load bits value
+                    bitb      #$08                ;test X0085.3
+                    beq       .LEF21              ;if 0, branch to clr bits and load 40000 into 'purgeValveTimer'
 
-                    ldb       fuelMapLoadIdx      ; load the fuel map row pointer (range: $00 through $70)
+                    ldb       fuelMapLoadIdx      ;load the fuel map row pointer (range: $00 through $70)
           #ifdef BUILD_R3360_AND_LATER
-                    cmpb      #$10                ; compare with $10 (late LR code)
+                    cmpb      #$10                ;compare with $10 (late LR code)
           #else
-                    cmpb      #$30                ; compare with $30 (older code including TVR)
+                    cmpb      #$30                ;compare with $30 (older code including TVR)
           #endif
-                    bcc       .LEF21              ; if greater, branch to clr bits and load 40000 into 'purgeValveTimer'
+                    bcc       .LEF21              ;if greater, branch to clr bits and load 40000 into 'purgeValveTimer'
 
-                    ldb       ignPeriod           ; load ignition period
+                    ldb       ignPeriod           ;load ignition period
           #ifdef BUILD_R3360_AND_LATER
-            #ifdef BUILD_R3652                    ; cold weather chip
-                    cmpb      #$3A                ; this value unchanged for CWC
+            #ifdef BUILD_R3652                    ;cold weather chip
+                    cmpb      #$3A                ;this value unchanged for CWC
             #else
-                    cmpb      #ignPeriodEngStart  ; value is $3A (500 RPM) (for late LR code)
+                    cmpb      #ignPeriodEngStart  ;value is $3A (500 RPM) (for late LR code)
             #endif
           #else
-                    cmpb      #$0D                ; older code: $0D (2250 RPM)
+                    cmpb      #$0D                ;older code: $0D (2250 RPM)
           #endif
-                    bcs       .LEF21              ; branch if RPM is lower, to clr bits and load 40,000
+                    bcs       .LEF21              ;branch if RPM is lower, to clr bits and load 40,000
 
-                    ldb       purgeValveFailDelay  ; delay counter for setting purge valve fault code (88)
-                    bne       .LEF21              ; if counter not zero, branch to clr bits and load 40,000
+                    ldb       purgeValveFailDelay  ;delay counter for setting purge valve fault code (88)
+                    bne       .LEF21              ;if counter not zero, branch to clr bits and load 40,000
 
-                    bita      #$10                ; test X00DD.4
-                    bne       .LEEE6              ; branch if not zero (this is the only path to LEEE6)
+                    bita      #$10                ;test X00DD.4
+                    bne       .LEEE6              ;branch if not zero (this is the only path to LEEE6)
 
-                    ora       #$10                ; set X00DD.4
-                    sta       $00DD               ; store bits value
-                    ldb       #$FF                ; load $FF
-                    stb       purgeValveCounter   ; reset local counter to $FF
+                    ora       #$10                ;set X00DD.4
+                    sta       $00DD               ;store bits value
+                    ldb       #$FF                ;load $FF
+                    stb       purgeValveCounter   ;reset local counter to $FF
 
-.LEEE3              jmp       .LEF33              ; one place (above) jumps to this
+.LEEE3              jmp       .LEF33              ;one place (above) jumps to this
 
 ; ---------------------------------------
 ; LEED9 (above is the only path here (X00DD is in A)
-.LEEE6              ldb       purgeValveCounter   ; load local counter
-                    beq       .LEEF3              ; branch ahead if counter is zero
+.LEEE6              ldb       purgeValveCounter   ;load local counter
+                    beq       .LEEF3              ;branch ahead if counter is zero
 
-                    decb                          ; else decrement it by 1
-                    stb       purgeValveCounter   ; store it
-                    bita      #$80                ; test X00DD.7
-                    bne       .LEF25              ; if one, branch down to load purge valve timer with 40,000
-                    bra       .LEF33              ; else it's zero, branch down to next section
+                    decb                          ;else decrement it by 1
+                    stb       purgeValveCounter   ;store it
+                    bita      #$80                ;test X00DD.7
+                    bne       .LEF25              ;if one, branch down to load purge valve timer with 40,000
+                    bra       .LEF33              ;else it's zero, branch down to next section
 
-.LEEF3              bita      #$80                ; test X00DD.7
-                    bne       .LEF05              ; branch ahead if bit is set
+.LEEF3              bita      #$80                ;test X00DD.7
+                    bne       .LEF05              ;branch ahead if bit is set
 
-                    ora       #$80                ; set X00DD.7
-                    sta       $00DD               ; store it
-                    ldb       #$FF                ; load B with $FF
-                    stb       purgeValveCounter   ; reset local counter to $FF
-                    ldb       secondaryLambdaR    ; load left bank, battery backed value X0040 (MSB only)
-                    stb       purgeValveValue     ; and store it as 'purgeValveValue'
+                    ora       #$80                ;set X00DD.7
+                    sta       $00DD               ;store it
+                    ldb       #$FF                ;load B with $FF
+                    stb       purgeValveCounter   ;reset local counter to $FF
+                    ldb       secondaryLambdaR    ;load left bank, battery backed value X0040 (MSB only)
+                    stb       purgeValveValue     ;and store it as 'purgeValveValue'
 
-.LEF03              bra       .LEF25              ; branch down
+.LEF03              bra       .LEF25              ;branch down
 
 ; ---------------------------------------
 ; only jump is from LEEF5 above, X00DD is in A
-.LEF05              ldb       secondaryLambdaR    ; load left bank, battery backed value X0040 (MSB only)
-                    subb      purgeValveValue     ; subtract 'purgeValveValue'
-                    addb      $C22F               ; this data value is in the range of 1 to 3
-                    cmpb      $C230               ; this data value is in the range of 2 to 6
-                    bhi       .LEF17              ; branch ahead if B result if higher
+.LEF05              ldb       secondaryLambdaR    ;load left bank, battery backed value X0040 (MSB only)
+                    subb      purgeValveValue     ;subtract 'purgeValveValue'
+                    addb      $C22F               ;this data value is in the range of 1 to 3
+                    cmpb      $C230               ;this data value is in the range of 2 to 6
+                    bhi       .LEF17              ;branch ahead if B result if higher
 
                     ldb       faultBits_4A
-                    orb       #$80                ; <-- Set Fault Code 88 (Purge Valve Fault)
+                    orb       #$80                ;<-- Set Fault Code 88 (Purge Valve Fault)
                     stb       faultBits_4A
 
-.LEF17              anda      #$F7                ; clear X00DD.3
+.LEF17              anda      #$F7                ;clear X00DD.3
                     ldb       bits_203B
-                    orb       #$01                ; set bits_203B.0 (this is the only bit used in this bits value)
+                    orb       #$01                ;set bits_203B.0 (this is the only bit used in this bits value)
                     stb       bits_203B
 
-.LEF21              anda      #$6F                ; clr X00DD.7 and X00DD.4
-                    sta       $00DD               ; store X00DD
+.LEF21              anda      #$6F                ;clr X00DD.7 and X00DD.4
+                    sta       $00DD               ;store X00DD
 ; ---------------------------------------
 ; Turn Purge Valve ON
 ; ---------------------------------------
-.LEF25              ldd       #$9C40              ; $9C40 = 40,000 (this turns purge valve ON)
+.LEF25              ldd       #$9C40              ;$9C40 = 40,000 (this turns purge valve ON)
 ; ---------------------------------------
 ; code falls thru or from 1 place below (LEF33)
 .LEF28              std       purgeValveTimer
-                    jmp       .LEFE2              ; jump down to last block
+                    jmp       .LEFE2              ;jump down to last block
 
 ; ---------------------------------------
 ; there are 3 branches to here from below
 .LEF2D              lda       bits_008D
-                    anda      #$8E                ; clr bits_008D bits 6,5,4,0
+                    anda      #$8E                ;clr bits_008D bits 6,5,4,0
                     sta       bits_008D
 ; ---------------------------------------
 ; Turn Purge Valve OFF
@@ -216,48 +216,48 @@ purgeValve          lda       bits_008D           ; load bits value
 ; Eng not running - jumps to here
 ; ---------------------------------------
 
-.LEF33              ldd       #$0000              ; set purge valve timer value to zero
-                    bra       .LEF28              ; branch up to store purgeValveTimer and jump down to last block
+.LEF33              ldd       #$0000              ;set purge valve timer value to zero
+                    bra       .LEF28              ;branch up to store purgeValveTimer and jump down to last block
 
 ; ---------------------------------------
 ; There is 1 jmp from above to get here
 ; ---------------------------------------
 ; path to here is jmp (above) at LEEA7
 .LEF38              lda       $0086
-                    bpl       .LEF33              ; branch ahead if X0086.7 is zero
+                    bpl       .LEF33              ;branch ahead if X0086.7 is zero
 
-                    ldd       purgeValveTimer2    ; load down counter
-                    bne       .LEFB1              ; branch ahead if counter is not zero
+                    ldd       purgeValveTimer2    ;load down counter
+                    bne       .LEFB1              ;branch ahead if counter is not zero
 
-                    ldb       fuelMapNumber       ; load fuel map number
-                    beq       .LEF6E              ; branch down if fuel map is 0
+                    ldb       fuelMapNumber       ;load fuel map number
+                    beq       .LEF6E              ;branch down if fuel map is 0
 
-                    cmpb      #$04                ; compare with 4
-                    bcc       .LEF6E              ; branch to LEF6E if map is 4 or 5
+                    cmpb      #$04                ;compare with 4
+                    bcc       .LEF6E              ;branch to LEF6E if map is 4 or 5
 
 ; ---------------------------------------
 ; For maps 1, 2 and 3
 ; ---------------------------------------
-                    ldb       coolantTempCount    ; load ECT sensor count
-                    cmpb      $C17E               ; inside coolant temp table (value is $23 or 87 degrees C)
-                    bcc       .LEF2D              ; branch up if cooler than this
+                    ldb       coolantTempCount    ;load ECT sensor count
+                    cmpb      $C17E               ;inside coolant temp table (value is $23 or 87 degrees C)
+                    bcc       .LEF2D              ;branch up if cooler than this
 
                     ldb       $00DC
-                    bitb      #$08                ; test X00DC.3
-                    beq       .LEF2D              ; branch up if X00DC.3 is set
+                    bitb      #$08                ;test X00DC.3
+                    beq       .LEF2D              ;branch up if X00DC.3 is set
 
                     ldb       bits_008D
-                    bitb      #$10                ; test bits_008D.4
-                    bne       .LEFA0              ; branch down if bits_008D.4 is set
+                    bitb      #$10                ;test bits_008D.4
+                    bne       .LEFA0              ;branch down if bits_008D.4 is set
 
-                    orb       #$10                ; set bits_008D.4
-                    andb      #$7F                ; clr bits_008D.7
-                    stb       bits_008D           ; store bits_008D
-                    ldd       engineRPM           ; load engine RPM
-                    std       savedEngineRPM      ; store eng RPM
-                    ldd       $C147               ; value is usually $0052
-                    std       purgeValveTimer2    ; reset down counter to this value
-                    bra       .LEFB1              ; branch down
+                    orb       #$10                ;set bits_008D.4
+                    andb      #$7F                ;clr bits_008D.7
+                    stb       bits_008D           ;store bits_008D
+                    ldd       engineRPM           ;load engine RPM
+                    std       savedEngineRPM      ;store eng RPM
+                    ldd       $C147               ;value is usually $0052
+                    std       purgeValveTimer2    ;reset down counter to this value
+                    bra       .LEFB1              ;branch down
 
 ; ---------------------------------------
 ; For maps 0, 4 and 5 (purge valve timer code)
@@ -265,78 +265,78 @@ purgeValve          lda       bits_008D           ; load bits value
 ; It seems when 00E2.4 is set, purge valve
 ; is turned OFF by interrupt.
 ; ---------------------------------------
-.LEF6E              ldb       $0088               ; load X0088
-                    andb      #$60                ; mask X0088.6 and X0088.5
-                    cmpb      #$60                ; check both bits
-                    bne       .LEF2D              ; branch ahead if either bit is clear
+.LEF6E              ldb       $0088               ;load X0088
+                    andb      #$60                ;mask X0088.6 and X0088.5
+                    cmpb      #$60                ;check both bits
+                    bne       .LEF2D              ;branch ahead if either bit is clear
 
-                    ldb       bits_008D           ; load bits_008D
-                    bitb      #$10                ; test bits_008D.4
-                    bne       .LEFA0              ; branch ahead if bit is set
+                    ldb       bits_008D           ;load bits_008D
+                    bitb      #$10                ;test bits_008D.4
+                    bne       .LEFA0              ;branch ahead if bit is set
 
-                    lda       $00E2               ; load X00E2
-                    anda      #$EE                ; clr X00E2.4 and X00E2.0
-                    sta       $00E2               ; store X00E2
-                    lda       secondaryLambdaR    ; load left bank value at X0040 (MSB only)
-                    sta       purgeValveValue     ; store it as 'purgeValveValue'
-                    orb       #$10                ; set bits_008D.4
-                    andb      #$7F                ; clr bits_008D.7
-                    stb       bits_008D           ; store bits_008D
-                    ldd       $C147               ; value is usually $0052
-                    std       purgeValveTimer2    ; reset down counter to this value
+                    lda       $00E2               ;load X00E2
+                    anda      #$EE                ;clr X00E2.4 and X00E2.0
+                    sta       $00E2               ;store X00E2
+                    lda       secondaryLambdaR    ;load left bank value at X0040 (MSB only)
+                    sta       purgeValveValue     ;store it as 'purgeValveValue'
+                    orb       #$10                ;set bits_008D.4
+                    andb      #$7F                ;clr bits_008D.7
+                    stb       bits_008D           ;store bits_008D
+                    ldd       $C147               ;value is usually $0052
+                    std       purgeValveTimer2    ;reset down counter to this value
                     lda       bits_203B
-                    bita      #$01                ; test bits_203B.0
-                    bne       .LEFB1              ; branch down if bit is set
+                    bita      #$01                ;test bits_203B.0
+                    bne       .LEFB1              ;branch down if bit is set
 
                     lda       $00DD
-                    ora       #$08                ; set X00DD.3
+                    ora       #$08                ;set X00DD.3
                     sta       $00DD
-                    bra       .LEFB1              ; branch down
+                    bra       .LEFB1              ;branch down
 
 ; ---------------------------------------
-.LEFA0              andb      #$EF                ; clr bits_008D.4
-                    orb       #$80                ; set bits_008D.7
-                    stb       bits_008D           ; store bits_008D
+.LEFA0              andb      #$EF                ;clr bits_008D.4
+                    orb       #$80                ;set bits_008D.7
+                    stb       bits_008D           ;store bits_008D
                     lda       $0088
-                    anda      #$9F                ; clear X0088.6 and X0088.5
+                    anda      #$9F                ;clear X0088.6 and X0088.5
                     sta       $0088
-                    ldd       $C145               ; value is $2EE0 (12000 dec)
-                    std       purgeValveTimer2    ; reset down counter to 12000 dec
+                    ldd       $C145               ;value is $2EE0 (12000 dec)
+                    std       purgeValveTimer2    ;reset down counter to 12000 dec
 
 .LEFB1              lda       bits_008D
-                    bita      #$80                ; test bits_008D.7
-                    bne       .LEFC0              ; branch down if bit is set
+                    bita      #$80                ;test bits_008D.7
+                    bne       .LEFC0              ;branch down if bit is set
 
-                    ldx       #$C13F              ; load index with address of data value (value is $3C)
-                    ora       #$01                ; set bits_008D.0
-                    sta       bits_008D           ; store bits_008D
-                    bra       .LEFCD              ; branch down
+                    ldx       #$C13F              ;load index with address of data value (value is $3C)
+                    ora       #$01                ;set bits_008D.0
+                    sta       bits_008D           ;store bits_008D
+                    bra       .LEFCD              ;branch down
 
 ; ---------------------------------------
-.LEFC0              jmp       .LEF33              ; there are 2 references to this jump
+.LEFC0              jmp       .LEF33              ;there are 2 references to this jump
 
 ; ---------------------------------------
 ; EEA4 is the only way to get here
 ; ---------------------------------------
 
-.LEFC3              ldd       engineRPM           ; load engine RPM
-                    subd      #$0320              ; subtract 800 dec
-                    bcs       .LEFC0              ; branch back to jmp if RPM < 800
+.LEFC3              ldd       engineRPM           ;load engine RPM
+                    subd      #$0320              ;subtract 800 dec
+                    bcs       .LEFC0              ;branch back to jmp if RPM < 800
 
-                    ldx       #$C13D              ; load index with address of data value (value is $C8)
+                    ldx       #$C13D              ;load index with address of data value (value is $C8)
 ; ---------------------------------------
 ; can also branch here from LEFBE
-.LEFCD              ldb       $00,x               ; load B (value will be 60 dec or 200 dec)
-                    lda       fuelMapLoadIdx      ; load A with fuel map row index
-                    mul                           ; multiply (highest possible value is $70 * $C8 = $5780)
-                    asld                          ; arithmetic doublw (highest value now $AF00)
-                    addd      $C140               ; add $1482 (highest now $C382 = 50,050 dec)
-                    std       purgeValveTimer     ; store in 'purgeValveTimer'
-                    subd      #$6D60              ; subtract 28000 (this is the constant ON threshold)
-                    bcs       .LEFE2              ; branch ahead to last block if value < 28000
+.LEFCD              ldb       $00,x               ;load B (value will be 60 dec or 200 dec)
+                    lda       fuelMapLoadIdx      ;load A with fuel map row index
+                    mul                           ;multiply (highest possible value is $70 * $C8 = $5780)
+                    asld                          ;arithmetic doublw (highest value now $AF00)
+                    addd      $C140               ;add $1482 (highest now $C382 = 50,050 dec)
+                    std       purgeValveTimer     ;store in 'purgeValveTimer'
+                    subd      #$6D60              ;subtract 28000 (this is the constant ON threshold)
+                    bcs       .LEFE2              ;branch ahead to last block if value < 28000
 
-                    ldd       #$6D60              ; else limit value to 28000
-                    std       purgeValveTimer     ; and store it
+                    ldd       #$6D60              ;else limit value to 28000
+                    std       purgeValveTimer     ;and store it
 ; ---------------------------------------
 ; Last code block
 
@@ -345,31 +345,31 @@ purgeValve          lda       bits_008D           ; load bits value
 ; from XEFDB or jumps from XEF2A
 
 ; ---------------------------------------
-.LEFE2              ldx       purgeValveVar2      ; after warmup, purgeValveVar2 is loaded with 3072 dec and decrements to zero in about 24 secs
-                    beq       .LF011              ; branch ahead when it reaches zero (takes about 23 to 28 seconds)
+.LEFE2              ldx       purgeValveVar2      ;after warmup, purgeValveVar2 is loaded with 3072 dec and decrements to zero in about 24 secs
+                    beq       .LF011              ;branch ahead when it reaches zero (takes about 23 to 28 seconds)
 
-                    dex                           ; decrement the 16-bit value purgeValveVar2
-                    stx       purgeValveVar2      ; and store it
-                    ldd       purgeValveTimer     ; load 'purgeValveTimer'
-                    beq       .LEFFE              ; branch ahead if zero
+                    dex                           ;decrement the 16-bit value purgeValveVar2
+                    stx       purgeValveVar2      ;and store it
+                    ldd       purgeValveTimer     ;load 'purgeValveTimer'
+                    beq       .LEFFE              ;branch ahead if zero
 
-                    ldd       purgeValveVar1      ; after warmup, purgeValveVar1 is loaded with 5250 and increments to approx 16K to 18K
-                    subd      purgeValveTimer     ; subtract 'purgeValveTimer'
-                    bcc       .LF006              ; branch ahead if purgeValveVar1 was greater than 'purgeValveTimer'
+                    ldd       purgeValveVar1      ;after warmup, purgeValveVar1 is loaded with 5250 and increments to approx 16K to 18K
+                    subd      purgeValveTimer     ;subtract 'purgeValveTimer'
+                    bcc       .LF006              ;branch ahead if purgeValveVar1 was greater than 'purgeValveTimer'
 
                     ldd       purgeValveVar1
-                    addd      $C200               ; value is $0004 (add this to purgeValveVar1)
-                    bra       .LF00C              ; and branch ahead
+                    addd      $C200               ;value is $0004 (add this to purgeValveVar1)
+                    bra       .LF00C              ;and branch ahead
 
-.LEFFE              ldd       $C140               ; value is $1482 (5250 dec)
-                    std       purgeValveVar1      ; set purgeValveVar1 to this value
-                    bra       .LF011              ; and branch to end
+.LEFFE              ldd       $C140               ;value is $1482 (5250 dec)
+                    std       purgeValveVar1      ;set purgeValveVar1 to this value
+                    bra       .LF011              ;and branch to end
 
-.LF006              ldd       purgeValveVar1      ; load purgeValveVar1
-                    subd      $C200               ; value $0004, subtract this from purgeValveVar1
-.LF00C              std       purgeValveVar1      ; store it
-                    std       purgeValveTimer     ; also store it as 'purgeValveTimer'
+.LF006              ldd       purgeValveVar1      ;load purgeValveVar1
+                    subd      $C200               ;value $0004, subtract this from purgeValveVar1
+.LF00C              std       purgeValveVar1      ;store it
+                    std       purgeValveTimer     ;also store it as 'purgeValveTimer'
 .LF011              lda       $0088
-                    anda      #$EF                ; clear X0088.4 (set when eng RPM > 1250)
+                    anda      #$EF                ;clear X0088.4 (set when eng RPM > 1250)
                     sta       $0088
-                    rts                           ; return, end of purge valve timer routine
+                    rts                           ;return, end of purge valve timer routine

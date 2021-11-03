@@ -36,31 +36,31 @@
 
 ; ------------------------------------------------------------------------------
 TpFaultCheck        std       throttlePot
-                    subd      #dtc17_tpsMinimum   ; fault code 17 threshold
-                    bcc       .LCD12              ; branch if TPS > threshold
+                    subd      #dtc17_tpsMinimum   ;fault code 17 threshold
+                    bcc       .LCD12              ;branch if TPS > threshold
 
-                    ldd       #throttlePotDefault  ; failure, so use the default value
+                    ldd       #throttlePotDefault  ;failure, so use the default value
                     std       throttlePot
-                    tba                           ; default value is 8-bits, fits in A
-                    jsr       setTempTPFaults     ; this subroutine sets fault code 17
-                    lda       #240                ; reset slowdown counter to 240 dec
+                    tba                           ;default value is 8-bits, fits in A
+                    jsr       setTempTPFaults     ;this subroutine sets fault code 17
+                    lda       #240                ;reset slowdown counter to 240 dec
                     sta       tpFaultSlowdown
 
-.LCD12              lda       tpFaultSlowdown     ; load counter
-                    beq       .LCD26              ; branch ahead if zero
+.LCD12              lda       tpFaultSlowdown     ;load counter
+                    beq       .LCD26              ;branch ahead if zero
 
-                    ldd       throttlePot         ; load 10-bit TPS value
-                    subd      #205                ; subtract 205 dec (1.0 Volt) from value
-                    bcs       .tpLessThan1V       ; branch ahead if less than 1 volt
+                    ldd       throttlePot         ;load 10-bit TPS value
+                    subd      #205                ;subtract 205 dec (1.0 Volt) from value
+                    bcs       .tpLessThan1V       ;branch ahead if less than 1 volt
 
-                    dec       tpFaultSlowdown     ; TPS > 1 V, decrement counter
+                    dec       tpFaultSlowdown     ;TPS > 1 V, decrement counter
 
-.tpLessThan1V       ldd       #throttlePotDefault  ; continue with default value
+.tpLessThan1V       ldd       #throttlePotDefault  ;continue with default value
                     std       throttlePot
 
 .LCD26              ldd       throttlePot
-                    tst       $0085               ; test X0085.7 (no or low eng RPM)
-                    rts                           ; return
+                    tst       $0085               ;test X0085.7 (no or low eng RPM)
+                    rts                           ;return
 
 ; ------------------------------------------------------------------------------
 ; ADC Routine - Throttle Pot - Channel 3 (10-bit conversion)
@@ -89,102 +89,102 @@ TpFaultCheck        std       throttlePot
 ; is less than 78 mV for longer than 160 milliseconds.
 
 ; ------------------------------------------------------------------------------
-adcRoutine3         lda       $008B               ; load bits value
-                    anda      #$01                ; test X008B.0 (1 means road speed > 4 KPH)
-                    bne       .roadSpeedGT4       ; if 1, branch
+adcRoutine3         lda       $008B               ;load bits value
+                    anda      #$01                ;test X008B.0 (1 means road speed > 4 KPH)
+                    bne       .roadSpeedGT4       ;if 1, branch
 
 ; -------------------------------
 ; Road Speed is less than 4 KPH
 ; -------------------------------
-                    jsr       LD609               ; this returns ECT based idle delta (range is about zero to 300)
-                    addd      $C167               ; value is 1200 (now RPM range is 1200 to about 1500)
-                    subd      engineRPM           ; subtract actual engine RPM
-                    bcs       .LCD55              ; branch down to set X0087.6 if eng RPM is greater
+                    jsr       LD609               ;this returns ECT based idle delta (range is about zero to 300)
+                    addd      $C167               ;value is 1200 (now RPM range is 1200 to about 1500)
+                    subd      engineRPM           ;subtract actual engine RPM
+                    bcs       .LCD55              ;branch down to set X0087.6 if eng RPM is greater
 
-.LCD3C              lda       $0087               ; if here, RPM is less than calculated value
-                    anda      #$BF                ; clear X0087.6
+.LCD3C              lda       $0087               ;if here, RPM is less than calculated value
+                    anda      #$BF                ;clear X0087.6
 
-.LCD40              sta       $0087               ; store X0087 bits value
-                    ldd       $00C8               ; load 10-bit throttle pot value
-                    bsr       TpFaultCheck        ; call fault routine above (tests for low RPM before return)
-                    bpl       .LCD5E              ; branch if engine is running
-                    jmp       .LCE58              ; engine not running, branch way down
+.LCD40              sta       $0087               ;store X0087 bits value
+                    ldd       $00C8               ;load 10-bit throttle pot value
+                    bsr       TpFaultCheck        ;call fault routine above (tests for low RPM before return)
+                    bpl       .LCD5E              ;branch if engine is running
+                    jmp       .LCE58              ;engine not running, branch way down
 
 ; -------------------------------
 ; Road Speed is more than 4 KPH
 ; -------------------------------
-.roadSpeedGT4       jsr       LD609               ; rtns coolant temp based idle delta (range is about zero to 300)
-                    addd      $C162               ; val is 1500 (now range is 1500 to about 1800)
+.roadSpeedGT4       jsr       LD609               ;rtns coolant temp based idle delta (range is about zero to 300)
+                    addd      $C162               ;val is 1500 (now range is 1500 to about 1800)
                     subd      engineRPM
-                    bcc       .LCD3C              ; branch back up if double value is GT x
+                    bcc       .LCD3C              ;branch back up if double value is GT x
 
-.LCD55              lda       $0087               ; code above branches here when RPM > (1200 + delta)
-                    ora       #$40                ; set X0087.6
-                    bra       .LCD40              ; branch up to common code
-
-; -------------------------------
+.LCD55              lda       $0087               ;code above branches here when RPM > (1200 + delta)
+                    ora       #$40                ;set X0087.6
+                    bra       .LCD40              ;branch up to common code
 
 ; -------------------------------
-.LCD5B              jmp       .LCE09              ; 'bcc' just below uses this
+
+; -------------------------------
+.LCD5B              jmp       .LCE09              ;'bcc' just below uses this
 
 ; -------------------------------
 ; Engine is running
 ; -------------------------------
-.LCD5E              subd      throttlePotMinimum  ; subtract TPmin from TPS
-                    std       $00C8               ; store result in temporary location
-                    bcs       .LCD69              ; branch if TPS is less than TPmin
+.LCD5E              subd      throttlePotMinimum  ;subtract TPmin from TPS
+                    std       $00C8               ;store result in temporary location
+                    bcs       .LCD69              ;branch if TPS is less than TPmin
 
-                    subd      #$0007              ; TPS is greater so subtract another 7
-                    bcc       .LCD5B              ; TPS still greater so branch->jump->CE09 (below)
+                    subd      #$0007              ;TPS is greater so subtract another 7
+                    bcc       .LCD5B              ;TPS still greater so branch->jump->CE09 (below)
 ; ----------------------------
-.LCD69              clra                          ; if here, TPS is less than TPmin (or less after subtracting 7)
+.LCD69              clra                          ;if here, TPS is less than TPmin (or less after subtracting 7)
                     clrb
-                    std       $00C8               ; clear X00C8/C9 to zero
-                    lda       $0086               ; load bits value
-                    bita      #$01                ; test X0086.0
-                    sei                           ; set int mask (cleared at XCE06)
-                    bne       .LCD8F              ; branch ahead if X0086.0 is set
+                    std       $00C8               ;clear X00C8/C9 to zero
+                    lda       $0086               ;load bits value
+                    bita      #$01                ;test X0086.0
+                    sei                           ;set int mask (cleared at XCE06)
+                    bne       .LCD8F              ;branch ahead if X0086.0 is set
 
-                    ldx       $C1E3               ; data value is $FFEC (minus 20)
-                    stx       idleControlValue    ; reset 'idleControlValue' to -20
+                    ldx       $C1E3               ;data value is $FFEC (minus 20)
+                    stx       idleControlValue    ;reset 'idleControlValue' to -20
                     ldb       $0088
-                    andb      #$9F                ; clr 0088 bits 6:5
+                    andb      #$9F                ;clr 0088 bits 6:5
                     stb       $0088
                     ldb       #$64
-                    stb       unusedValue         ; (unused)
+                    stb       unusedValue         ;(unused)
                     ldb       $0087
-                    bitb      #$40                ; test 0087.6 (eng RPM GT idle threshold)
-                    bne       .LCD8F              ; branch ahead if RPM is high enough
+                    bitb      #$40                ;test 0087.6 (eng RPM GT idle threshold)
+                    bne       .LCD8F              ;branch ahead if RPM is high enough
 
-                    ldb       $C154               ; eng RPM is low (val is 40 dec)
-                    stb       idleSpeedDelta      ; reset to 40 if eng RPM is LT threshold
+                    ldb       $C154               ;eng RPM is low (val is 40 dec)
+                    stb       idleSpeedDelta      ;reset to 40 if eng RPM is LT threshold
 
 .LCD8F              ldb       bits_2059
-                    bitb      #$04                ; test bits_2059.2 (changed during RTs)
+                    bitb      #$04                ;test bits_2059.2 (changed during RTs)
                     bne       .LCDFC
-                    ldb       iacvValue2          ; zero for D90, for RR: zero with 4s and 10s
+                    ldb       iacvValue2          ;zero for D90, for RR: zero with 4s and 10s
                     bne       .LCDF4
                     ldb       $0087
-                    bitb      #$40                ; test 0087.6 (eng RPM GT threshold)
-                    beq       .LCDF4              ; branch ahead if eng RPM is low
+                    bitb      #$40                ;test 0087.6 (eng RPM GT threshold)
+                    beq       .LCDF4              ;branch ahead if eng RPM is low
 
                     ldb       ignPeriodFiltered
-                    cmpb      $C7CE               ; val is $0A (about 2700 RPM)
-                    bcs       .LCDFC              ; branch ahead if eng speed is GT 2700 RPM
+                    cmpb      $C7CE               ;val is $0A (about 2700 RPM)
+                    bcs       .LCDFC              ;branch ahead if eng speed is GT 2700 RPM
                     ldb       iacMotorStepCount
-                    bne       .LCDFC              ; branch ahead if iacMotorStepCount is not zero
+                    bne       .LCDFC              ;branch ahead if iacMotorStepCount is not zero
                     ldb       bits_2038
-                    bitb      #$20                ; test bits_2038.5
+                    bitb      #$20                ;test bits_2038.5
                     bne       .LCDFC
-                    ldd       throttlePotCounter  ; only code area that uses this
+                    ldd       throttlePotCounter  ;only code area that uses this
                     bne       .LCDD2
                     ldb       $008B
-                    bitb      #$01                ; test 008B.0 (road speed GT 4)
+                    bitb      #$01                ;test 008B.0 (road speed GT 4)
                     beq       .LCDD2
-                    ldd       ignPeriod           ; this code is ineffective
-                    subd      $C7CA               ; val is $10D6
+                    ldd       ignPeriod           ;this code is ineffective
+                    subd      $C7CA               ;val is $10D6
                     bcc       .LCDD2
-                    bra       .LCDD2              ; a later code change?
+                    bra       .LCDD2              ;a later code change?
 
 ; -------------------------------
 ; This is unused code
@@ -199,29 +199,29 @@ adcRoutine3         lda       $008B               ; load bits value
 
 ; -------------------------------
 .LCDD2              ldd       throttlePotCounter
-                    subd      $C7CC               ; value is $0001
+                    subd      $C7CC               ;value is $0001
                     bcc       .LCDDD
                     ldd       #$0000
 
-.LCDDD              std       throttlePotCounter  ; end use of throttlePotCounter
-                    lda       $0086               ; load 0086 into A
+.LCDDD              std       throttlePotCounter  ;end use of throttlePotCounter
+                    lda       $0086               ;load 0086 into A
                     ldb       $008A
-                    andb      #$FE                ; clr 008A.0 (stepper mtr direction bit, 0 = open)
+                    andb      #$FE                ;clr 008A.0 (stepper mtr direction bit, 0 = open)
                     stb       $008A
-                    ldb       $C161               ; value is $0A
-                    subb      iacvValue0          ; occasionally init to 6 and decremented to zero
+                    ldb       $C161               ;value is $0A
+                    subb      iacvValue0          ;occasionally init to 6 and decremented to zero
                     stb       iacMotorStepCount
                     stb       iacvValue2
                     clr       iacvValue0
 
 .LCDF4              ldb       bits_2059
-                    orb       #$04                ; set bits_2059.2
+                    orb       #$04                ;set bits_2059.2
                     stb       bits_2059
 
-.LCDFC              ora       #$81                ; set 0086.7 and 0086.0
-                    sta       $0086               ; store 0086
+.LCDFC              ora       #$81                ;set 0086.7 and 0086.0
+                    sta       $0086               ;store 0086
                     lda       bits_008C
-                    ora       #$04                ; set bits_008C.2
+                    ora       #$04                ;set bits_008C.2
                     sta       bits_008C
                     cli
                     bra       .LCE55
@@ -230,280 +230,280 @@ adcRoutine3         lda       $008B               ; load bits value
 ; Code jumps down to here when TPS is greater
 ; than TPmin by at least 7 counts.
 ; ------------------------------------------------
-.LCE09              subd      #$0005              ; subtract another 5 from TPS reading
-                    bcs       .LCE55              ; branch down if carry set
+.LCE09              subd      #$0005              ;subtract another 5 from TPS reading
+                    bcs       .LCE55              ;branch down if carry set
 
                     lda       bits_008D
-                    bita      #$10                ; test bits_008D.4 (usually zero)
+                    bita      #$10                ;test bits_008D.4 (usually zero)
                     beq       .LCE23
 
-                    anda      #$EF                ; clr bits_008D.4
+                    anda      #$EF                ;clr bits_008D.4
                     sta       bits_008D
                     ldd       #$0000
-                    std       purgeValveTimer2    ; set down counter to zero
+                    std       purgeValveTimer2    ;set down counter to zero
                     lda       $00DD
-                    anda      #$F7                ; clear 00DD.3
+                    anda      #$F7                ;clear 00DD.3
                     sta       $00DD
 
 .LCE23              lda       $0086
-                    bita      #$01                ; test 0086.0
+                    bita      #$01                ;test 0086.0
                     beq       .LCE30
 
                     clrb
-                    stb       tpsClosedLoopCntr   ; counts to 19, can be reset to zero or 255
+                    stb       tpsClosedLoopCntr   ;counts to 19, can be reset to zero or 255
                     ldx       throttlePotMinimum
-                    stx       throttlePot24bit    ; store as upper 16-bits of 24-bit value
+                    stx       throttlePot24bit    ;store as upper 16-bits of 24-bit value
 
-.LCE30              anda      #$7E                ; clr 0086.7 and 0086.0
-                    ora       #$04                ; set 0086.2
+.LCE30              anda      #$7E                ;clr 0086.7 and 0086.0
+                    ora       #$04                ;set 0086.2
                     sta       $0086
                     lda       bits_2059
-                    anda      #$FB                ; clr bits_2059.2
+                    anda      #$FB                ;clr bits_2059.2
                     sta       bits_2059
                     lda       tpsClosedLoopCntr
                     inca
-                    cmpa      $C13B               ; for 3360 code, value is $14 (20 dec)
-                    bcs       .LCE4C              ; branch ahead if value is LT 20
+                    cmpa      $C13B               ;for 3360 code, value is $14 (20 dec)
+                    bcs       .LCE4C              ;branch ahead if value is LT 20
                     lda       $0088
-                    anda      #$9F                ; clr 0088 bits 6:5
+                    anda      #$9F                ;clr 0088 bits 6:5
                     sta       $0088
 
 .LCE4C              lda       iacvValue2
                     beq       .LCE55
                     sei
-                    jsr       LEE12               ; deals with iacvValue2 and stepper mtr adj value
+                    jsr       LEE12               ;deals with iacvValue2 and stepper mtr adj value
                     cli
 
-.LCE55              jsr       LF423               ; 1 of 2 calls (other is in ICI) (sets bits according to TP)
+.LCE55              jsr       LF423               ;1 of 2 calls (other is in ICI) (sets bits according to TP)
 ; -----------------------------------------------------------
 ; This section executes even when eng is NOT running
 ;*** Adjust TPmin ***
 ; -----------------------------------------------------------
 ; <-- Eng Not Running (code above jumps here)
-.LCE58              jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
-                    cli                           ; clr interrupt mask
+.LCE58              jsr       LF0D5               ;update timers (returns 16-bit counter in A-B)
+                    cli                           ;clr interrupt mask
                     ldx       throttlePotMinimum
-                    cpx       #$0070              ; (X-M:M+1) (bhi test = C + Z = 0)
-                    bhi       .LCE6C              ; branch if TPMin is GT 112 dec (to set to min value of 17 dec)
+                    cpx       #$0070              ;(X-M:M+1) (bhi test = C + Z = 0)
+                    bhi       .LCE6C              ;branch if TPMin is GT 112 dec (to set to min value of 17 dec)
                     cpx       #$0011
-                    bcc       .LCE71              ; branch if TPMin is GT 17 dec (normal path)
+                    bcc       .LCE71              ;branch if TPMin is GT 17 dec (normal path)
 
 ; Note: Original code can only be duplicated this way.
-                    db        $CE,$00,$11,$8C     ; original locations: CE68 to CE6B
+                    db        $CE,$00,$11,$8C     ;original locations: CE68 to CE6B
 
-.LCE6C              ldx       #$0070              ; This clips TPMin to $70 max
-                    bra       .LCEA8              ; bra 37 (branch to CEA8)
+.LCE6C              ldx       #$0070              ;This clips TPMin to $70 max
+                    bra       .LCEA8              ;bra 37 (branch to CEA8)
 
 .LCE71              ldd       throttlePot
                     subd      #$0070
-                    bhi       .LCEAA              ; branch if measured value is higher than 112 dec
+                    bhi       .LCEAA              ;branch if measured value is higher than 112 dec
                     lda       $0085
-                    bita      #$20                ; test 0085.5
-                    beq       .LCEAA              ; branch if 0085.5 is zero
-                    lda       tpMinCounter        ; slows down TPmin adjustment
-                    cpx       throttlePot         ; X reg is still TPMin, cmpr with measured throttle pot value
-                    bhi       .LCE90              ; branch if TPMin is greater than measured value
+                    bita      #$20                ;test 0085.5
+                    beq       .LCEAA              ;branch if 0085.5 is zero
+                    lda       tpMinCounter        ;slows down TPmin adjustment
+                    cpx       throttlePot         ;X reg is still TPMin, cmpr with measured throttle pot value
+                    bhi       .LCE90              ;branch if TPMin is greater than measured value
                     ldb       ignPeriod
-                    cmpb      #$17                ; $1700 = 1274 RPM
-                    bls       .LCEAA              ; branch ahead if PW is LT $1700 (RPM GT 1274)
+                    cmpb      #$17                ;$1700 = 1274 RPM
+                    bls       .LCEAA              ;branch ahead if PW is LT $1700 (RPM GT 1274)
 
-                    inca                          ; increment tpMinCounter
-                    bne       .LCEB2              ; and branch to store tpMinCounter if not zero
-                    inx                           ; this is probably still TPMin being incremented
+                    inca                          ;increment tpMinCounter
+                    bne       .LCEB2              ;and branch to store tpMinCounter if not zero
+                    inx                           ;this is probably still TPMin being incremented
                     bra       .LCE94
 
 ; code above branches here if measured value is LT TPMin
-.LCE90              deca                          ; decrement value from tpMinCounter
-                    bne       .LCEB2              ; and branch to store tpMinCounter if not zero
-                    dex                           ; this is probably still TPMin being decremented
+.LCE90              deca                          ;decrement value from tpMinCounter
+                    bne       .LCEB2              ;and branch to store tpMinCounter if not zero
+                    dex                           ;this is probably still TPMin being decremented
 
 .LCE94              lda       bits_008C
-                    bita      #$40                ; test bits_008C.6 (indicates data corrupted or ram fail)
+                    bita      #$40                ;test bits_008C.6 (indicates data corrupted or ram fail)
                     bne       .LCEA8
-                    stx       $00C8               ; saved data is OK so store new TPMin at 00C8/C9 (temporary)
+                    stx       $00C8               ;saved data is OK so store new TPMin at 00C8/C9 (temporary)
                     lda       $00C9
-                    suba      $0054               ; the 8-bit TPMin working value??
-                    adda      $C1C0               ; for 3360 code, value is $08
-                    suba      $C1C2               ; for 3360 code, value is $10
+                    suba      $0054               ;the 8-bit TPMin working value??
+                    adda      $C1C0               ;for 3360 code, value is $08
+                    suba      $C1C2               ;for 3360 code, value is $10
                     bhi       .LCEAA
 ; -----------------
 
 .LCEA8              stx       throttlePotMinimum
 
 ; there are 4 branches (above) to here
-.LCEAA              lda       $0087               ; code jumps here from above if (todo)
-                    bita      #$08                ; test 0087.3
-                    bne       .LCEB4              ; if 0087.3 set, branch to store tpMinCounter instead of reinit
-                    lda       #$34                ; the tpMinCounter init value
+.LCEAA              lda       $0087               ;code jumps here from above if (todo)
+                    bita      #$08                ;test 0087.3
+                    bne       .LCEB4              ;if 0087.3 set, branch to store tpMinCounter instead of reinit
+                    lda       #$34                ;the tpMinCounter init value
 
-.LCEB2              sta       tpMinCounter        ; this slows down TPmin adjustment
+.LCEB2              sta       tpMinCounter        ;this slows down TPmin adjustment
 
-.LCEB4              lda       $008B               ; bits
-                    tst       bits_205B           ; bits_205B.7 is cleared at boot
-                    bmi       .LCECD              ; branch if bits_205B.7 is set
+.LCEB4              lda       $008B               ;bits
+                    tst       bits_205B           ;bits_205B.7 is cleared at boot
+                    bmi       .LCECD              ;branch if bits_205B.7 is set
                     ldb       $0085
-                    bitb      #$81                ; test 0085.7 and 0085.0
-                    bne       .LCECD              ; branch ahead if either bit is set
-                    ora       #$20                ; set 008B.5 (throttle is closing)
+                    bitb      #$81                ;test 0085.7 and 0085.0
+                    bne       .LCECD              ;branch ahead if either bit is set
+                    ora       #$20                ;set 008B.5 (throttle is closing)
                     sta       $008B
                     ldb       bits_205B
-                    orb       #$80                ; set bits_205B.7 (008B.5 and bits_205B.7 are set together)
+                    orb       #$80                ;set bits_205B.7 (008B.5 and bits_205B.7 are set together)
                     stb       bits_205B
 ; 2 branches and fall-thru
-.LCECD              bita      #$20                ; test 008B.5
-                    bne       .LCED4              ; branch to skip jump if 008B.5 is set
+.LCECD              bita      #$20                ;test 008B.5
+                    bne       .LCED4              ;branch to skip jump if 008B.5 is set
 ; ----------------------------
 ; 2 references below
-.backoffJmp         jmp       .notOpeningFast     ; jump to "Throttle is Closing, the same or LT $18"
+.backoffJmp         jmp       .notOpeningFast     ;jump to "Throttle is Closing, the same or LT $18"
 
 ; ----------------------------
 
 .LCED4              ldd       tpFastOpenThreshold
                     std       $00CE
-                    jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
-                    subd      tpsTimer            ; value may be zero
-                    subd      #$4E20              ; this is 20000 dec
+                    jsr       LF0D5               ;update timers (returns 16-bit counter in A-B)
+                    subd      tpsTimer            ;value may be zero
+                    subd      #$4E20              ;this is 20000 dec
                     bcc       .chkChangeRate
-                    jmp       .LCF98              ; near end of this routine
+                    jmp       .LCF98              ;near end of this routine
 
 .chkChangeRate      ldd       throttlePot
-                    subd      savedThrottlePot    ; previous throttle pot value (only saved when closing)
-                    bcs       .backoffJmp         ; throttle is closing (or only opening slowly)
-                    subd      $00CE               ; throttle value is same or higher (subtract $0018 from delta)
-                    bcs       .backoffJmp         ; throttle is opening quickly
+                    subd      savedThrottlePot    ;previous throttle pot value (only saved when closing)
+                    bcs       .backoffJmp         ;throttle is closing (or only opening slowly)
+                    subd      $00CE               ;throttle value is same or higher (subtract $0018 from delta)
+                    bcs       .backoffJmp         ;throttle is opening quickly
 
 ; ------------------------------------------------------------------------------
 ; Throttle has opened quickly since last call
 ; ------------------------------------------------------------------------------
-                    sei                           ; throttle is opening, set interrupt mask
+                    sei                           ;throttle is opening, set interrupt mask
                     lda       $008B
-                    anda      #$DF                ; clr 008B.5 (zero may indicate throttle opening rapidly)
+                    anda      #$DF                ;clr 008B.5 (zero may indicate throttle opening rapidly)
                     sta       $008B
                     lda       bits_201F
-                    ora       #$0C                ; set bits_201F.3 and bits_201F.2 to indicate TP is doing a fuel adjust
+                    ora       #$0C                ;set bits_201F.3 and bits_201F.2 to indicate TP is doing a fuel adjust
                     sta       bits_201F
                     lda       coolantTempCount
-                    ldb       #$0C                ; length of table is 12d
+                    ldb       #$0C                ;length of table is 12d
                     ldx       #accelPumpTable
                     jsr       indexIntoTable
                     clrb
-                    lda       $0C,x               ; load value fron 2nd row of table
-                    cmpa      #$03                ; compare value with #03
-                    bcs       .LCF8C              ; skip fueling adjustment if engine is cold
+                    lda       $0C,x               ;load value fron 2nd row of table
+                    cmpa      #$03                ;compare value with #03
+                    bcs       .LCF8C              ;skip fueling adjustment if engine is cold
 
-                    std       $00C8               ; store X00C8 = value from table, X00C9 = zero
+                    std       $00C8               ;store X00C8 = value from table, X00C9 = zero
 
 ; ------------------------------------
 ; Timer 1 (Right Bank, same polarity)
 ; ------------------------------------
-                    lda       timerCntrlReg1      ; Timer Control Reg 1
-                    anda      #$FE                ; clr OLVL1 (P21 --> Right or Even Injector Bank)
+                    lda       timerCntrlReg1      ;Timer Control Reg 1
+                    anda      #$FE                ;clr OLVL1 (P21 --> Right or Even Injector Bank)
                     sta       timerCntrlReg1
                     lda       timerStsReg
-                    bita      #$08                ; test output compare flag (OCF1) for right bank
-                    bne       .LCF32              ; branch ahead if OCF1 is high (injectors are open)
+                    bita      #$08                ;test output compare flag (OCF1) for right bank
+                    bne       .LCF32              ;branch ahead if OCF1 is high (injectors are open)
 
 ; ----------------------------
 ; Injectors are closed
 ; ----------------------------
-                    ldd       ocr1High            ; modify Output Compare Reg 1 by adding the
-                    addd      $00C8               ; value from the data table
+                    ldd       ocr1High            ;modify Output Compare Reg 1 by adding the
+                    addd      $00C8               ;value from the data table
                     std       ocr1High
                     lda       timerCntrlReg1
-                    ora       #$01                ; set OLVL1 (Output Level 1) to re-enable injector bank
+                    ora       #$01                ;set OLVL1 (Output Level 1) to re-enable injector bank
                     sta       timerCntrlReg1
                     cmpa      timerStsReg
                     ldd       ocr1High
-                    std       ocr1High            ; this sequence clears OCF1
-                    bra       .LCF4F              ; branch ahead to do left bank
+                    std       ocr1High            ;this sequence clears OCF1
+                    bra       .LCF4F              ;branch ahead to do left bank
 
 ; ----------------------------
 ; Injectors are open
 ; ----------------------------
-.LCF32              ldd       altCounterHigh      ; reading alternate avoids clearing TOF
-                    addd      #$0013              ; add 19d to the counter
-                    std       ocr1High            ; store in Output Compare Reg 1
+.LCF32              ldd       altCounterHigh      ;reading alternate avoids clearing TOF
+                    addd      #$0013              ;add 19d to the counter
+                    std       ocr1High            ;store in Output Compare Reg 1
                     cmpa      timerStsReg
-                    std       ocr1High            ; this sequence clears OCF1
-                    addd      $00C8               ; create new value by adding X00C8 (from data table)
-                    std       $00CE               ; save the value in X00CE/CF
+                    std       ocr1High            ;this sequence clears OCF1
+                    addd      $00C8               ;create new value by adding X00C8 (from data table)
+                    std       $00CE               ;save the value in X00CE/CF
                     lda       timerCntrlReg1
-                    ora       #$01                ; set OLVL1 (Output Level 1) to re-enable injector bank
+                    ora       #$01                ;set OLVL1 (Output Level 1) to re-enable injector bank
                     sta       timerCntrlReg1
-                    ldd       $00CE               ; reload the new timer value
-                    std       ocr1High            ; and store it in the output compare reg
+                    ldd       $00CE               ;reload the new timer value
+                    std       ocr1High            ;and store it in the output compare reg
                     cmpa      timerStsReg
-                    std       ocr1High            ; this sequence clears OCF1
+                    std       ocr1High            ;this sequence clears OCF1
 ; ---------------------------------------
 ; Timer 3 (Left Bank, reversed polarity)
 ; ---------------------------------------
 .LCF4F              lda       timerCntrlReg1
-                    ora       #$04                ; set OLVL3 (P12 --> Even Injector Bank)
+                    ora       #$04                ;set OLVL3 (P12 --> Even Injector Bank)
                     sta       timerCntrlReg1
                     lda       timerStsReg
-                    bita      #$20                ; test bit 5 in timerStsReg (OCF?)
+                    bita      #$20                ;test bit 5 in timerStsReg (OCF?)
                     bne       .LCF6F
 ; ----------------------------
 ; Injectors are closed
 ; ----------------------------
-                    ldd       ocr3high            ; modify Output Compare Reg 3 by adding the
-                    addd      $00C8               ; value from the data table
+                    ldd       ocr3high            ;modify Output Compare Reg 3 by adding the
+                    addd      $00C8               ;value from the data table
                     std       ocr3high
                     lda       timerCntrlReg1
-                    anda      #$FB                ; clr OLVL3 (P12 --> Even Injector Bank)
+                    anda      #$FB                ;clr OLVL3 (P12 --> Even Injector Bank)
                     sta       timerCntrlReg1
                     cmpa      timerStsReg
                     ldd       ocr3high
-                    std       ocr3high            ; this sequence clears OCF3
+                    std       ocr3high            ;this sequence clears OCF3
                     bra       .LCF8C
 
 ; ----------------------------
 ; Injectors are open
 ; ----------------------------
 ; code above branches here if OCF3 is high
-.LCF6F              ldd       altCounterHigh      ; reading alternate avoids clearing TOF
+.LCF6F              ldd       altCounterHigh      ;reading alternate avoids clearing TOF
                     addd      #$0013
                     std       ocr3high
                     cmpa      timerStsReg
-                    std       ocr3high            ; this sequence clears OCF3
-                    addd      $00C8               ; create new value by adding X00C8 (from data table)
-                    std       $00CE               ; save the value in X00CE/CF
+                    std       ocr3high            ;this sequence clears OCF3
+                    addd      $00C8               ;create new value by adding X00C8 (from data table)
+                    std       $00CE               ;save the value in X00CE/CF
                     lda       timerCntrlReg1
-                    anda      #$FB                ; clr OLVL3 (Output Level 3) to re-enable injector bank
+                    anda      #$FB                ;clr OLVL3 (Output Level 3) to re-enable injector bank
                     sta       timerCntrlReg1
-                    ldd       $00CE               ; reload the new timer value
-                    std       ocr3high            ; and store it in the output compare reg
+                    ldd       $00CE               ;reload the new timer value
+                    std       ocr3high            ;and store it in the output compare reg
                     cmpa      timerStsReg
-                    std       ocr3high            ; this sequence clears OCF1
+                    std       ocr3high            ;this sequence clears OCF1
 
 ; ----------------------------
-.LCF8C              cli                           ; clear interrupt mask
+.LCF8C              cli                           ;clear interrupt mask
                     bra       .LCF98
 
 ; ------------------------------------------------------------------------------
 ; Throttle is closing or not opening quickly
 ; ------------------------------------------------------------------------------
 .notOpeningFast     ldd       throttlePot
-                    std       savedThrottlePot    ; local value
-                    jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
-                    std       tpsTimer            ; value may be zero
+                    std       savedThrottlePot    ;local value
+                    jsr       LF0D5               ;update timers (returns 16-bit counter in A-B)
+                    std       tpsTimer            ;value may be zero
 
-.LCF98              ldb       $00DC               ; bits
-                    lda       $008B               ; bits
-                    bita      #$01                ; test 008B.0 (road speed GT 4)
-                    bne       .LCFB5              ; branch ahead if RS is GT 4
-                    lda       $0086               ; lda affects Negative and Zero flags
-                    bpl       .LCFB5              ; branch ahead if 0086.7 is zero
-                    bitb      #$02                ; test 00DC.1 (air flow init bit?)
+.LCF98              ldb       $00DC               ;bits
+                    lda       $008B               ;bits
+                    bita      #$01                ;test 008B.0 (road speed GT 4)
+                    bne       .LCFB5              ;branch ahead if RS is GT 4
+                    lda       $0086               ;lda affects Negative and Zero flags
+                    bpl       .LCFB5              ;branch ahead if 0086.7 is zero
+                    bitb      #$02                ;test 00DC.1 (air flow init bit?)
                     bne       .LCFB9
-                    orb       #$02                ; set 00DC.1
+                    orb       #$02                ;set 00DC.1
                     stb       $00DC
-                    ldd       #$8000              ; load init value
+                    ldd       #$8000              ;load init value
                     std       secondaryLambdaR
                     std       secondaryLambdaL
-                    bra       .LCFB9              ; branch to rts
+                    bra       .LCFB9              ;branch to rts
 
-.LCFB5              andb      #$F5                ; clr 00DC.3 and 00DC.1
+.LCFB5              andb      #$F5                ;clr 00DC.3 and 00DC.1
                     stb       $00DC
 
 .LCFB9              rts

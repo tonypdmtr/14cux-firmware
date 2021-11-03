@@ -17,20 +17,20 @@
 ; -------------------------------------------------------------------------------
 
 mpy16               ldx       #$00C8
-                    std       $00,x               ; store double at X00C8/C9
-                    ldb       $03,x               ; load 00CA into B
+                    std       $00,x               ;store double at X00C8/C9
+                    ldb       $03,x               ;load 00CA into B
                     mul
-                    std       $04,x               ; store double at X00CC/CD
-                    ldd       $01,x               ; load double from 00C9/CA
+                    std       $04,x               ;store double at X00CC/CD
+                    ldd       $01,x               ;load double from 00C9/CA
                     mul
-                    addb      $05,x               ; add value from 00CD
+                    addb      $05,x               ;add value from 00CD
                     adca      #$00
-                    sta       $05,x               ; store at 00CD
-                    lda       $00,x               ; load from 00C8
-                    ldb       $02,x               ; load from 00CA
+                    sta       $05,x               ;store at 00CD
+                    lda       $00,x               ;load from 00C8
+                    ldb       $02,x               ;load from 00CA
                     mul
-                    addb      $04,x               ; add from 00CC
+                    addb      $04,x               ;add from 00CC
                     adca      #$00
-                    addb      $05,x               ; add from 00CD
+                    addb      $05,x               ;add from 00CD
                     adca      #$00
                     rts

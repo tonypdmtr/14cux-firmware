@@ -17,54 +17,54 @@
 
 ; ------------------------------------------------------------------------------
 
-adcRoutine1         ldb       $0085               ; X0085.1 may indicate extra engine load
-                    andb      #$02                ; isolate X0085.1
-                    bne       .LD50E              ; branch ahead if X0085.1 is set
+adcRoutine1         ldb       $0085               ;X0085.1 may indicate extra engine load
+                    andb      #$02                ;isolate X0085.1
+                    bne       .LD50E              ;branch ahead if X0085.1 is set
 
-                    ldb       $00DD               ; if here, eng load bit is zero
-                    tsta                          ; A accum is 8-bit ADC reading
-                    bmi       .LD50A              ; branch ahead if ADC reading > $7F
+                    ldb       $00DD               ;if here, eng load bit is zero
+                    tsta                          ;A accum is 8-bit ADC reading
+                    bmi       .LD50A              ;branch ahead if ADC reading > $7F
 ; -----------------------------------------------------------
 ; Screen Heater is ON    (X0085.1 was 0)
 ; -----------------------------------------------------------
-                    andb      #$F9                ; clear the 2 bits
-                    orb       #$02                ; set X00DD to xxxx x01x
-                    bra       .LD529              ; branch to store X00DD and rtn
+                    andb      #$F9                ;clear the 2 bits
+                    orb       #$02                ;set X00DD to xxxx x01x
+                    bra       .LD529              ;branch to store X00DD and rtn
 
 ; -----------------------------------------------------------
 ; Screen Heater is OFF   (X0085.1 was 0)
 ; -----------------------------------------------------------
 ; ADC reading is < $80 (heater ON)
-.LD50A              orb       #$06                ; set X00DD to xxxx x11x
-                    bra       .LD529              ; store X00DD and return
+.LD50A              orb       #$06                ;set X00DD to xxxx x11x
+                    bra       .LD529              ;store X00DD and return
 
 ; -----------------------------------------------------------
 ; X0085.1 is 1
 ; -----------------------------------------------------------
 ; code branches here if X0085.1 is set (extra eng load)
 .LD50E              ldb       $00DD
-                    andb      #$06                ; isolate bits 00DD.2 and 00DD.1
-                    tsta                          ; A accum is 8-bit ADC reading
-                    bmi       .LD51F              ; branch ahead if ADC reading is high (heater OFF)
+                    andb      #$06                ;isolate bits 00DD.2 and 00DD.1
+                    tsta                          ;A accum is 8-bit ADC reading
+                    bmi       .LD51F              ;branch ahead if ADC reading is high (heater OFF)
 ; -----------------------------------------------------------
 ; Screen Heater is ON    (X0085.1 was 1)
 ; -----------------------------------------------------------
-                    cmpb      #$06                ; <-- heater is ON
-                    bne       .LD52B              ; rtn if not xxxxx11x
+                    cmpb      #$06                ;<-- heater is ON
+                    bne       .LD52B              ;rtn if not xxxxx11x
                     ldb       $00DD
-                    andb      #$F9                ; set X00DD to xxxx x00x
-                    bra       .LD529              ; branch to store and return
+                    andb      #$F9                ;set X00DD to xxxx x00x
+                    bra       .LD529              ;branch to store and return
 
 ; -----------------------------------------------------------
 ; Screen Heater is OFF   (X0085.1 was 1)
 ; -----------------------------------------------------------
 ; <-- heater is OFF
-.LD51F              cmpb      #$02                ; test for xxxx x01x
-                    bne       .LD52B              ; rtn if not equal
+.LD51F              cmpb      #$02                ;test for xxxx x01x
+                    bne       .LD52B              ;rtn if not equal
                     ldb       $00DD
                     orb       #$04
-                    andb      #$FD                ; set X00DD to xxxx x10x
+                    andb      #$FD                ;set X00DD to xxxx x10x
 
-.LD529              stb       $00DD               ; store X00DD
+.LD529              stb       $00DD               ;store X00DD
 
 .LD52B              rts

@@ -13,62 +13,62 @@
 
 ; ------------------------------------------------------------------------------
 
-purgeValveBits      lda       $00E2               ; load bits value
-                    bita      #$01                ; test X00E2.0
-                    bne       setCarry            ; set carry and return
+purgeValveBits      lda       $00E2               ;load bits value
+                    bita      #$01                ;test X00E2.0
+                    bne       setCarry            ;set carry and return
 
-                    tst       $0088               ; test X0088.7 (bank indicator bit)
-                    bmi       .leftBank           ; if set, left bank
+                    tst       $0088               ;test X0088.7 (bank indicator bit)
+                    bmi       .leftBank           ;if set, left bank
 
 ; -----------------------
 ; Right bank code
 ; -----------------------
-                    bita      #$04                ; test X00E2.2
-                    bne       clearCarry          ; if 1, clr carry and return
+                    bita      #$04                ;test X00E2.2
+                    bne       clearCarry          ;if 1, clr carry and return
 
-                    ldb       $00D4               ; right bank counter
-                    incb                          ; increment it
-                    bne       .LF3F1              ; branch if it hasn't wrapped to zero
+                    ldb       $00D4               ;right bank counter
+                    incb                          ;increment it
+                    bne       .LF3F1              ;branch if it hasn't wrapped to zero
 
-                    bita      #$02                ; test X00E2.1
-                    bne       .LF3EB              ; branch if bit is set
+                    bita      #$02                ;test X00E2.1
+                    bne       .LF3EB              ;branch if bit is set
 
-                    ora       #$12                ; set X00E2.4 and X00E2.1
-.LF3E7              sta       $00E2               ; store it
-                    bra       .LF3F1              ; branch ahead
+                    ora       #$12                ;set X00E2.4 and X00E2.1
+.LF3E7              sta       $00E2               ;store it
+                    bra       .LF3F1              ;branch ahead
 
-.LF3EB              ora       #$04                ; set X00E2.2
-                    anda      #$ED                ; clr X00E2.4 and X00E2.1
-                    bra       .LF3E7              ; branch back
+.LF3EB              ora       #$04                ;set X00E2.2
+                    anda      #$ED                ;clr X00E2.4 and X00E2.1
+                    bra       .LF3E7              ;branch back
 
-.LF3F1              stb       $00D4               ; store X00D4
-                    sec                           ; set carry flag
-                    rts                           ; return
+.LF3F1              stb       $00D4               ;store X00D4
+                    sec                           ;set carry flag
+                    rts                           ;return
 
 ; -----------------------
 ; Left bank code
 ; -----------------------
-.leftBank           bita      #$40                ; test X00E2.6
-                    bne       clearCarry          ; if 1, clr carry and return
+.leftBank           bita      #$40                ;test X00E2.6
+                    bne       clearCarry          ;if 1, clr carry and return
 
-                    ldb       $00D5               ; left bank counter
-                    incb                          ; increment it
-                    bne       .LF40E              ; branch if it hasn't wrapped to zero
+                    ldb       $00D5               ;left bank counter
+                    incb                          ;increment it
+                    bne       .LF40E              ;branch if it hasn't wrapped to zero
 
-                    bita      #$20                ; test X00E2.5
-                    bne       .LF408              ; branch if bit is set
+                    bita      #$20                ;test X00E2.5
+                    bne       .LF408              ;branch if bit is set
 
-                    ora       #$30                ; set X00E2.5 and X00E2.4
-.LF404              sta       $00E2               ; store it
-                    bra       .LF40E              ; branch ahead
+                    ora       #$30                ;set X00E2.5 and X00E2.4
+.LF404              sta       $00E2               ;store it
+                    bra       .LF40E              ;branch ahead
 
-.LF408              ora       #$40                ; set X00E2.6
-                    anda      #$CF                ; clr X00E2.5 and X00E2.4
-                    bra       .LF404              ; branch back
+.LF408              ora       #$40                ;set X00E2.6
+                    anda      #$CF                ;clr X00E2.5 and X00E2.4
+                    bra       .LF404              ;branch back
 
-.LF40E              stb       $00D5               ; store X00D5
-                    sec                           ; set carry flag
-                    rts                           ; return
+.LF40E              stb       $00D5               ;store X00D5
+                    sec                           ;set carry flag
+                    rts                           ;return
 
 ; -----------------------
 ; Clear carry and return

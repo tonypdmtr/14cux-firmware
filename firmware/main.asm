@@ -16,7 +16,7 @@
                     #CaseOn
                     #OptRelOff
 codeErrorWord       equ       0                   ;never initialized and otherwise unused (to be deleted)
-hiRpmAdcMux         equ       $C231               ; load address of special ADC table ($C231)
+hiRpmAdcMux         equ       $C231               ;load address of special ADC table ($C231)
           ;--------------------------------------
 ?                   macro
           #ifb ~1~
@@ -57,7 +57,7 @@ hiRpmAdcMux         equ       $C231               ; load address of special ADC 
                     @?                            ;check for any of the above
           ;--------------------------------------
                     #Uses     registers.mod
-                    #Uses     data.mod            ; RPM table is now included in data section file
+                    #Uses     data.mod            ;RPM table is now included in data section file
                     #Uses     ramLocations.mod
                     #Uses     mpy16.mod
                     #Uses     reset.mod

@@ -15,12 +15,12 @@
 ; ------------------------------------------------------------------------------
 
 LD49E               ldb       bits_008C
-                    tsta                          ; test bit 7 (pos or neg)
-                    bmi       .LD4A7              ; branch if minus (bit is set)
-                    andb      #$7F                ; clr bits_008C.7
+                    tsta                          ;test bit 7 (pos or neg)
+                    bmi       .LD4A7              ;branch if minus (bit is set)
+                    andb      #$7F                ;clr bits_008C.7
                     bra       .LD4A9
 
-.LD4A7              orb       #$80                ; set bits_008C.7
+.LD4A7              orb       #$80                ;set bits_008C.7
 
-.LD4A9              stb       bits_008C           ; store value
-                    rts                           ; and return to main loop
+.LD4A9              stb       bits_008C           ;store value
+                    rts                           ;and return to main loop

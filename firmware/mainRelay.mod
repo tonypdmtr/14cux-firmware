@@ -27,47 +27,47 @@
 
 ; ------------------------------------------------------------------------------
 
-adcRoutine8         psha                          ; push ADC value
-                    ldb       $008B               ; X008B.6 is set when voltage is OK
-                    cmpa      #$8F                ; low voltage threshold
-                    bcs       .lowVoltage         ; branch to clr bit if below thrshold
+adcRoutine8         psha                          ;push ADC value
+                    ldb       $008B               ;X008B.6 is set when voltage is OK
+                    cmpa      #$8F                ;low voltage threshold
+                    bcs       .lowVoltage         ;branch to clr bit if below thrshold
 
-                    orb       #$40                ; set X008B.6 (Voltage OK)
+                    orb       #$40                ;set X008B.6 (Voltage OK)
                     bra       .calcVoltageAdj
 
-.lowVoltage         andb      #$BF                ; clr X008B.6 (Low Voltage)
+.lowVoltage         andb      #$BF                ;clr X008B.6 (Low Voltage)
 
-.calcVoltageAdj     stb       $008B               ; store X008B
-                    ldb       voltageMultB        ; for R3526 tune, value is $BD
-                    mul                           ; mpy main voltage 'A' by multiplier 'B'
-                    std       $00CA               ; store in X00CA/CB
-                    pula                          ; pull original ADC reading
-                    tab                           ; xfer A to B
-                    mul                           ; square the value
-                    ldb       voltageMultA        ; for R3526 tune, value is $64
-                    mul                           ; mpy upper 8 by this value
-                    subd      $00CA               ; subtract earlier value
-                    addd      voltageOffset       ; for R3526, value is $6408 (add this)
+.calcVoltageAdj     stb       $008B               ;store X008B
+                    ldb       voltageMultB        ;for R3526 tune, value is $BD
+                    mul                           ;mpy main voltage 'A' by multiplier 'B'
+                    std       $00CA               ;store in X00CA/CB
+                    pula                          ;pull original ADC reading
+                    tab                           ;xfer A to B
+                    mul                           ;square the value
+                    ldb       voltageMultA        ;for R3526 tune, value is $64
+                    mul                           ;mpy upper 8 by this value
+                    subd      $00CA               ;subtract earlier value
+                    addd      voltageOffset       ;for R3526, value is $6408 (add this)
                     lsrd
-                    lsrd                          ; div by 4
-                    std       $00CA               ; store in X00CA/CB
+                    lsrd                          ;div by 4
+                    std       $00CA               ;store in X00CA/CB
                     lda       $008A
-                    bita      #$40                ; test X008A.6 (0 = startup timeout)
-                    bne       .LD0FF              ; branch ahead if bit is high
+                    bita      #$40                ;test X008A.6 (0 = startup timeout)
+                    bne       .LD0FF              ;branch ahead if bit is high
 
-                    lda       $00CA               ; reload A
-                    subd      mainVoltageAdj      ; subtract voltage ajustment
-                    bcs       .decVoltageAdj      ; branch if A is less
+                    lda       $00CA               ;reload A
+                    subd      mainVoltageAdj      ;subtract voltage ajustment
+                    bcs       .decVoltageAdj      ;branch if A is less
 
                     ldd       mainVoltageAdj
-                    addd      #$0001              ; increment main voltage adjustment value
+                    addd      #$0001              ;increment main voltage adjustment value
                     bra       .storeReturn
 
-.decVoltageAdj      ldd       mainVoltageAdj      ; load main voltage adjustment
-                    subd      #$0001              ; decrement it by 1
-                    bra       .storeReturn        ; and store it back
+.decVoltageAdj      ldd       mainVoltageAdj      ;load main voltage adjustment
+                    subd      #$0001              ;decrement it by 1
+                    bra       .storeReturn        ;and store it back
 
-.LD0FF              ldd       $00CA               ; load 16-bit value from X00CA/CB
+.LD0FF              ldd       $00CA               ;load 16-bit value from X00CA/CB
 
-.storeReturn        std       mainVoltageAdj      ; store as main voltage adjustment
+.storeReturn        std       mainVoltageAdj      ;store as main voltage adjustment
                     rts

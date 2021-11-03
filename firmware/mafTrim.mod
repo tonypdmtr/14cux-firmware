@@ -18,17 +18,17 @@
 
 ; ------------------------------------------------------------------------------
 
-adcRoutine9         ldd       $00C8               ; load 10-bit value from X00C8/C9
+adcRoutine9         ldd       $00C8               ;load 10-bit value from X00C8/C9
                     asld
                     asld
                     asld
                     asld
                     asld
                     asld
-                    asld                          ; shift MSB into carry
-                    bcc       .msbLow             ; return if MSB was low (normal cond.)
+                    asld                          ;shift MSB into carry
+                    bcc       .msbLow             ;return if MSB was low (normal cond.)
 
-                    ldd       #$FFFF              ; bad value, store $FFFF instead
+                    ldd       #$FFFF              ;bad value, store $FFFF instead
 
 .msbLow             std       longLambdaTrimR
                     std       longLambdaTrimL

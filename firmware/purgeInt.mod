@@ -35,49 +35,49 @@
 
 ; ------------------------------------------------------------------------------
 
-purgeValveInt       lda       timerCSR            ; OCF2 flag is reset by reading one of these two
-                    lda       timerStsReg         ; locations and then writing to ocr2 high or low
+purgeValveInt       lda       timerCSR            ;OCF2 flag is reset by reading one of these two
+                    lda       timerStsReg         ;locations and then writing to ocr2 high or low
                     lda       $00E2
-                    bita      #$10                ; test X00E2.4
-                    bne       .LDB24              ; branch ahead if bit is set
+                    bita      #$10                ;test X00E2.4
+                    bne       .LDB24              ;branch ahead if bit is set
 
-                    ldd       purgeValveTimer     ; load purge valve timer value
-                    subd      #4000               ; subtract 4000 dec
-                    bcs       .LDB24              ; branch to .LDB24 if value < 4000 dec
+                    ldd       purgeValveTimer     ;load purge valve timer value
+                    subd      #4000               ;subtract 4000 dec
+                    bcs       .LDB24              ;branch to .LDB24 if value < 4000 dec
 
-                    subd      #25000              ; subtract 25,000 dec
-                    bcc       .LDB2E              ; branch to .LDB2E if value > 29,000
+                    subd      #25000              ;subtract 25,000 dec
+                    bcc       .LDB2E              ;branch to .LDB2E if value > 29,000
 
                     lda       port1data
-                    eora      #$02                ; toggle P1.1 (purge control valve)
+                    eora      #$02                ;toggle P1.1 (purge control valve)
                     sta       port1data
-                    bita      #$02                ; and test it
-                    bne       .LDB34              ; branch to .LDB34 if bit is now set
+                    bita      #$02                ;and test it
+                    bne       .LDB34              ;branch to .LDB34 if bit is now set
 
-                    ldd       ocr2high            ; <-- bit is low, purge valve turns ON (timer is between 4K and 29K)
-                    addd      purgeValveTimer     ; (for between 4 and 29 ms)
+                    ldd       ocr2high            ;<-- bit is low, purge valve turns ON (timer is between 4K and 29K)
+                    addd      purgeValveTimer     ;(for between 4 and 29 ms)
                     std       ocr2high
                     rti
 
-.LDB24              lda       port1data           ; if here, X00E2.4 is set OR 'purgeValveTimer' is < 4000
-                    ora       #$02                ; set P1.1 to turn purge valve OFF
+.LDB24              lda       port1data           ;if here, X00E2.4 is set OR 'purgeValveTimer' is < 4000
+                    ora       #$02                ;set P1.1 to turn purge valve OFF
 
 .LDB28              sta       port1data
-                    ldd       ocr2high            ; just read ocr2 so we can write it back and clear the flag
-                    bra       .LDB3B              ; branch down to write it back to register and rti
+                    ldd       ocr2high            ;just read ocr2 so we can write it back and clear the flag
+                    bra       .LDB3B              ;branch down to write it back to register and rti
 
-.LDB2E              lda       port1data           ; if here, purgeValveTimer > 29,000
-                    anda      #$FD                ; clear P1.1 to turn it ON
+.LDB2E              lda       port1data           ;if here, purgeValveTimer > 29,000
+                    anda      #$FD                ;clear P1.1 to turn it ON
                     bra       .LDB28
 
 ; if here, bit is high, purge valve turns OFF
-.LDB34              ldd       ocr2high            ; purgeValveTimer is between 4K and 29K
-                    addd      #31250              ; 31250 dec (stay off for 31 minus ? ms)
-                    subd      purgeValveTimer     ; subtract purge valve timer value
+.LDB34              ldd       ocr2high            ;purgeValveTimer is between 4K and 29K
+                    addd      #31250              ;31250 dec (stay off for 31 minus ? ms)
+                    subd      purgeValveTimer     ;subtract purge valve timer value
 
-.LDB3B              std       ocr2high            ; write to 16-bit MPU register
+.LDB3B              std       ocr2high            ;write to 16-bit MPU register
 ; ------------------------------------------------------------------------------
 ; NMI and IRQ1 interrupts are not used
 ; ------------------------------------------------------------------------------
 
-nmiInterrupt        rti                           ; return from interrupt
+nmiInterrupt        rti                           ;return from interrupt

@@ -45,63 +45,63 @@
 
 LF04D               lda       timerStsReg
                     tst       $0088
-                    bmi       .LF05D              ; test bank indicator bit
+                    bmi       .LF05D              ;test bank indicator bit
 ; -------------------------------
 ; Left Bank Code (X0088.7 = 0)
 ; -------------------------------
-                    bita      #$20                ; test Output Compare Flag 3
-                    beq       .LF0A0              ; return if low (injector still closed)
+                    bita      #$20                ;test Output Compare Flag 3
+                    beq       .LF0A0              ;return if low (injector still closed)
 
-                    ldd       #$04FB              ; load two 8-bit mask values (bit 2)
-                    bra       .LF064              ; branch to common bank code
+                    ldd       #$04FB              ;load two 8-bit mask values (bit 2)
+                    bra       .LF064              ;branch to common bank code
 
 ; -------------------------------
 ; Right Bank Code (X0088.7 = 1)
 ; -------------------------------
-.LF05D              bita      #$08                ; test Output Compare Flag 1
-                    beq       .LF0A0              ; return if low (injector still closed)
+.LF05D              bita      #$08                ;test Output Compare Flag 1
+                    beq       .LF0A0              ;return if low (injector still closed)
 
-                    ldd       #$FE01              ; load two 8-bit mask values (bit 0)
+                    ldd       #$FE01              ;load two 8-bit mask values (bit 0)
 ; -------------------
 ; Common Bank Code (Injector Bank was recently fired)
 ; -------------------
-.LF064              std       $00C8               ; store mask values in 00C8/C9
-                    ldb       injectorPulseCntr   ; this is set to 20 dec when temp is colder than zero F
-                    beq       .LF0A0              ; return if counter is zero
-                    decb                          ; decrement the counter
-                    stb       injectorPulseCntr   ; and store it
+.LF064              std       $00C8               ;store mask values in 00C8/C9
+                    ldb       injectorPulseCntr   ;this is set to 20 dec when temp is colder than zero F
+                    beq       .LF0A0              ;return if counter is zero
+                    decb                          ;decrement the counter
+                    stb       injectorPulseCntr   ;and store it
                     lda       timerCntrlReg1
-                    tst       $0088               ; test bank indicator bit
-                    bmi       .LF0A1              ; branch ahead if X0088.7 is set (left bank)
+                    tst       $0088               ;test bank indicator bit
+                    bmi       .LF0A1              ;branch ahead if X0088.7 is set (left bank)
 ; -------------------------------------------------------------------------------
 ;*** Even (Left) Bank Cold Start Fuel Buzzing (port P12) ***
 ; Used when cranking under zero F or colder conditions.
 ; (The two bank controllers appear to be opposite polarities)
 ; -------------------------------------------------------------------------------
-                    lsrb                          ; A= timerCntrlReg1, B= injectorPulseCntr, 00C8/C9= $04FB
+                    lsrb                          ;A= timerCntrlReg1, B= injectorPulseCntr, 00C8/C9= $04FB
 ; test cntr lsb here (clr 1st time)
-                    bcc       .LF07B              ; branch ahead if the lsb was zero
+                    bcc       .LF07B              ;branch ahead if the lsb was zero
 
-                    ora       $00C8               ; set OLVL3 (P12 = even injector bank) (injector off??)
+                    ora       $00C8               ;set OLVL3 (P12 = even injector bank) (injector off??)
                     bra       .LF07D
 
-.LF07B              anda      $00C9               ; lsb= 1, clr OLVL3 (even side off??)
+.LF07B              anda      $00C9               ;lsb= 1, clr OLVL3 (even side off??)
 
-.LF07D              ora       #$01                ; set OLVL1 (to ensure only 1 bank is ON??)
+.LF07D              ora       #$01                ;set OLVL1 (to ensure only 1 bank is ON??)
                     sta       timerCntrlReg1
-                    ldd       ocr3high            ; load output compare reg 3
-                    addd      compedFuelInjValue  ; <-- ADD COMPENSATED FUELING VALUE
+                    ldd       ocr3high            ;load output compare reg 3
+                    addd      compedFuelInjValue  ;<-- ADD COMPENSATED FUELING VALUE
 
 ;*** Start Loop ***
-.LF085              cmpa      timerStsReg         ; part of resetting routine?
-                    std       ocr3high            ; store new value in ocr3
-                    subd      #1400               ; subtract 1400 dec
-                    std       ocr1High            ; store in ocr1
-                    jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
+.LF085              cmpa      timerStsReg         ;part of resetting routine?
+                    std       ocr3high            ;store new value in ocr3
+                    subd      #1400               ;subtract 1400 dec
+                    std       ocr1High            ;store in ocr1
+                    jsr       LF0D5               ;update timers (returns 16-bit counter in A-B)
                     subd      ocr3high
                     subd      #$4000
-                    bcc       .LF0A0              ; <-- return here
-                    jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
+                    bcc       .LF0A0              ;<-- return here
+                    jsr       LF0D5               ;update timers (returns 16-bit counter in A-B)
                     addd      #$0096
                     bra       .LF085              ;*** End Loop ***
 
@@ -113,29 +113,29 @@ LF04D               lda       timerStsReg
 ; (The two bank controllers appear to be opposite polarities)
 ; -------------------------------------------------------------------------------
 
-.LF0A1              lsrb                          ; B is injectorPulseCntr, A is timerCntrlReg1, 00C8/C9 = $FE01
-                    bcc       .LF0A8              ; branch ahead if the lsb was zero
-                    anda      $00C8               ; clr OLVL1 (P21 = odd injector bank)
+.LF0A1              lsrb                          ;B is injectorPulseCntr, A is timerCntrlReg1, 00C8/C9 = $FE01
+                    bcc       .LF0A8              ;branch ahead if the lsb was zero
+                    anda      $00C8               ;clr OLVL1 (P21 = odd injector bank)
                     bra       .LF0AA
 
-.LF0A8              ora       $00C9               ; cntr lsb was one, 00C9=$FB, set bit 0 (output level 1)
+.LF0A8              ora       $00C9               ;cntr lsb was one, 00C9=$FB, set bit 0 (output level 1)
 
-.LF0AA              anda      #$FB                ; clr bit 2 (output level 3) (to ensure only 1 bank is ON)
+.LF0AA              anda      #$FB                ;clr bit 2 (output level 3) (to ensure only 1 bank is ON)
                     sta       timerCntrlReg1
-                    ldd       ocr1High            ; load output compare reg 1
-                    addd      compedFuelInjValue  ; <-- ADD COMPENSATED FUELING VALUE
+                    ldd       ocr1High            ;load output compare reg 1
+                    addd      compedFuelInjValue  ;<-- ADD COMPENSATED FUELING VALUE
 
 ;*** Start Loop ***
-.LF0B2              cmpa      timerStsReg         ; part of resetting routine?
-                    std       ocr1High            ; store new value in ocr1
-                    subd      #1400               ; subtract 1400 dec
-                    std       ocr3high            ; store it in ocr3
-                    jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
+.LF0B2              cmpa      timerStsReg         ;part of resetting routine?
+                    std       ocr1High            ;store new value in ocr1
+                    subd      #1400               ;subtract 1400 dec
+                    std       ocr3high            ;store it in ocr3
+                    jsr       LF0D5               ;update timers (returns 16-bit counter in A-B)
                     subd      ocr1High
                     subd      #$4000
-                    bcc       .LF0A0              ; <-- return here
-                    jsr       LF0D5               ; update timers (returns 16-bit counter in A-B)
+                    bcc       .LF0A0              ;<-- return here
+                    jsr       LF0D5               ;update timers (returns 16-bit counter in A-B)
                     addd      #$0096
                     bra       .LF0B2              ;*** End Loop ***
 
-                    rts                           ; unused rts
+                    rts                           ;unused rts
