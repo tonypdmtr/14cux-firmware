@@ -22,7 +22,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "common.h"
+#define SREC_VER "1.51"
+#define HEADER2 "Copyright (c) 2000-2019 Ant Goffart - http://www.s-record.com/\n\n"
 
 #define HEADER1 "\nBINSPLIT " SREC_VER " - Split a binary file into 2 or 4 interleaved pieces.\n"
 

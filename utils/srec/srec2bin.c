@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "common.h"
+#include "common.c"
 
 #define HEADER1 "\nSREC2BIN " SREC_VER " - Convert Motorola S-Record to binary file.\n"
 
