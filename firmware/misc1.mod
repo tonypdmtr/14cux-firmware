@@ -1,11 +1,11 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Subroutine called from end of ICI
-
+;
 ; Called only at end of ICI (before partial reset)
 ; Alters values at 008E/8F, 0090/91
-; ------------------------------------------------------------------------------
 
-LF018               sei
+LF018               proc
+                    sei
                     lda       bits_0089
                     anda      #$03                ;test bits_0089.1 and bits_0089.0
                     beq       .LF04B              ;return if both bits are zero

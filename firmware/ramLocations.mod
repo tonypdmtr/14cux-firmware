@@ -1,41 +1,41 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013
-
+;
 ; Description:    RAM Variables
-
+;
 ; There are two areas of RAM.
-
+;
 ; MPU: $0040 to $00FF  (192 bytes)
 ; PAL: $2000 to $20FF  (128 bytes)
-
+;
 ; Of the MPU's 192 bytes of RAM, the first 32 bytes are battery-backed or
 ; preserved using a small amount of battery current. Of these 32 bytes, only
 ; the first 20 bytes are actually used in this way, the remainder is treated
 ; like normal RAM and cleared to zero on startup.
-
+;
 ; It should be noted that the MPU internal memory is actually faster than
 ; the external PAL memory. This is because the internal memory can be
 ; accessed using direct addressing instead of extended addressing. See the
 ; Motorola documentation for more info on this.
-
+;
 ; Explanation of codes:
 ; (R) RoverGauge reads this location periodically
 ; (W) RoverGauge writes this location for special functions
-
+;
 ; (F) Fast changing value (fuel map row & col)
 ; (M) Medium changing value (road speed)
 ; (S) Slow changing value (temperatures)
 ; (N) Non-changing value (changes only with map change, fuel map scalar, etc.)
-
+;
 ; = Moveable. All hard-codes references have been replaced with this variable
 ; x = Same as above but do NOT move for other reasons (indexing, 2-byte R/W, etc)
-
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 
 ; The 19 bytes of battery saved RAM are mirrored at location X2060. It's not
 ; clear why this was done or if it's even necessary.
+
 batteryBackedRAM    =         $0040
 externalRAMCopy     =         $2060
 sizeOfRAMBackup     =         $0013
@@ -68,7 +68,7 @@ tpsDirectionAndRate =         $005D               ;16-bit, throttle pot directio
 throttlePot         =         $005F               ;*(R) 16-bit, TPS value, X005F is end of actual preserved area
 
 throttlePot24bit    =         $0061               ;24-bit, looks like TPS value scaled up by 256
-tp24_Byte2          =         $0062               ;
+tp24_Byte2          =         $0062
 o2ReferenceSense    =         $0064               ;reference voltage for Lambda sensors (typically 23 or 24 decimal)
 shortLambdaTrimR    =         $0065               ;(R) 16-bit, short term trim ($8000 +/-)
 shortLambdaTrimL    =         $0067               ;(R) 16-bit, short term trim ($8000 +/-)
@@ -161,13 +161,13 @@ dualNibbleCounter   =         $00D6
 unused4             =         $00D7
 unused5             =         $00D8
 savedTpsValue       =         $00D9               ;16-bit, saved TPS value from last call
-purgeValveCounter   =         $00DB               ;
+purgeValveCounter   =         $00DB
 bits_00DC           =         $00DC
 bits_00DD           =         $00DD
 unused6             =         $00DE
 groupFaultCounter   =         $00DF               ;counter used in group code area
-misfireCounterEven  =         $00E0               ;
-misfireCounterOdd   =         $00E1               ;
+misfireCounterEven  =         $00E0
+misfireCounterOdd   =         $00E1
 bits_00E2           =         $00E2
 throttlePotTemp     =         $00E3               ;16-bit, temporary storage of TPS value
 sciIndex1           =         $00E5
@@ -183,13 +183,13 @@ topOfStack          =         $00FF               ;top of MPU stack (range $00FF
 ;*** External RAM (128 bytes) ***
 
 neutralSwitchVal    =         $2000               ;*(R) 0= Park, 255= Drive, 127= Manual
-timerOverflow2      =         $2001               ;
-vssStateCounter     =         $2002               ;
+timerOverflow2      =         $2001
+vssStateCounter     =         $2002
 roadSpeed           =         $2003               ;*(R) road speed in kilometers per hour
-bits_2004           =         $2004               ;
-unused7             =         $2005               ;
+bits_2004           =         $2004
+unused7             =         $2005
 fuelTempCount       =         $2006               ;*(R) fuel temperature sensor (FTS) count value
-unused8             =         $2007               ;
+unused8             =         $2007
 ; the following 9 values are index addressed
 fuelMapScaler       =         $2008               ;x 16-bits
 fuelMapRowScaler    =         $200A               ;x
@@ -212,7 +212,7 @@ lambdaBiasR         =         $201B
 lambdaBiasL         =         $201C
 closedLoopDelay     =         $201D               ;init to $10, decremented at 1Hz by Timer 2
 timer2Value         =         $201E               ;used by Timer 2, similar to X0084
-bits_201F           =         $201F               ;
+bits_201F           =         $201F
 startupTimerEven    =         $2020               ;right bank
 startupTimerOdd     =         $2021               ;left bank
 purgeValveVar1      =         $2022               ;16-bit
@@ -228,7 +228,7 @@ faultSlowDownCount  =         $2030               ;16-bit, general fault slowdow
 milTestDelay        =         $2032               ;16-bit, time delay for MIL (EFI lamp)
 dtc12Delay          =         $2034               ;delay counter for MAF fault (code 12)
 mpuReInitCounter    =         $2037               ;0 thru 20 counter used to re-init MPU register
-bits_2038           =         $2038               ;
+bits_2038           =         $2038
 
           #ifdef BUILD_R3383
 startupDownCount    =         $2039
@@ -245,9 +245,9 @@ unusedValue         =         $203E               ;this byte is init to $40 but 
 neutralSwitchDelay  =         $203F               ;16-bit, slowdown counter for neutral switch fault (DTC 69)
 romChecksum         =         $2041               ;this value should be $01
 throttlePotCounter  =         $2042               ;16-bit, init to 60,000 and decremented in TPS routine, may be unnecessary
-unused9             =         $2044               ;
+unused9             =         $2044
 unused10            =         $2045               ;this byte is init to $01 but otherwise unused
-unused11            =         $2046               ;
+unused11            =         $2046
 bits_2047           =         $2047               ;*(R) this byte contains idle mode bit
 iacvVariable        =         $2048               ;value is 128+/- and used for IACV fault detection
 faultCode26Counter  =         $2049               ;16-bit, possibly for unused very lean mixture fault
@@ -259,14 +259,14 @@ stepperMtrCounter   =         $2053               ;16-bit, must keep this with l
 stprMtrCntrLowByte  =         $2054               ;(used separately in stepperMtr2)
 bankCounterEven     =         $2055               ;16-bit
 bankCounterOdd      =         $2057               ;16-bit
-bits_2059           =         $2059               ;
+bits_2059           =         $2059
 acCounter           =         $205A               ;counter used by A/C routine
-bits_205B           =         $205B               ;
+bits_205B           =         $205B
 iciStartupCounter   =         $205C               ;upcounter used at start of ICI
 iciStartupValue     =         $205D               ;16-bit, timer value written once at start of ICI
 
           #ifdef BUILD_R3383
-startupDownCount1Hz =         $205F               ;
+startupDownCount1Hz =         $205F
           #else
 unused12            =         $205F
           #endif
@@ -275,16 +275,16 @@ unused12            =         $205F
 
 romChecksumMirror   =         $2069               ;(todo: rename this)
 
-unused13            =         $2073               ;
-unused14            =         $2074               ;
-unused15            =         $2075               ;
+unused13            =         $2073
+unused14            =         $2074
+unused15            =         $2075
 specialAdcControl   =         $2076               ;delay counter for special high RPM, high TPS ADC table
 tpFaultSlowdown     =         $2077               ;fault delay counter used in TPS routien
-unused16            =         $2078               ;
+unused16            =         $2078
 ectFaultCounter     =         $2079               ;should stay zero if ECT sensor is OK
 copyOfX00E0         =         $207A               ;value from X00E0 stored here but unused
 copyOfX00E1         =         $207B               ;value from X00E1 stored here but unused
-unused17            =         $207C               ;
+unused17            =         $207C
 vssFaultCounter     =         $207D               ;increments when road speed is non-zero
 zeroTo80Counter     =         $207E               ;counts zero to 80 for code path control, newer code only
-unused18            =         $207F               ;
+unused18            =         $207F

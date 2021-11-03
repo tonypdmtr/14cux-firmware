@@ -1,11 +1,11 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013
-
+;
 ; Description:
 ; This file contains a number of miscellaneous routines.
-
+;
 ; keepAlive
 ; LF0D5             (return timer value)
 ; indexIntoTable
@@ -20,26 +20,26 @@
 ; LF224
 ; absoluteValAB
 ; calcBatteryBackedChecksum
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Keep alive toggle
-
+;
 ; This needs to be called periodically to keep the board from resetting.
-; ------------------------------------------------------------------------------
-keepAlive           lda       port1data
+
+keepAlive           proc
+                    lda       port1data
                     eora      #$80
                     sta       port1data
                     rts
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Return Timer Value
-
+;
 ; This appears to be another routine that needs to be called periodically.
 ; It's called from a number of places in the code and returns the 16-bit
 ; timer value in the dual AB register.
-
+;
 ; The 16-bit counter (counterHigh/counterLow) is a free running counter
 ; incremented by the Enable clock. The Enable is the external clock divided
 ; by 4 (Frequency: 4 MHz/4 = 1 MHz). The overflow flag (TOF) is set when the
@@ -47,15 +47,14 @@ keepAlive           lda       port1data
 ; code, the cli op-code is used before the sei op-code. The mask must be
 ; cleared by other code eventually so that the ICI can again be triggered.
 ; This actually looks like a coding error.
-
+;
 ; The routine increments 'timerOverflow1' and 'timerOverflow2' every time
 ; the TOF is set (65 mSec).
 ; .timerOverflow1' is used for measurement of the ICI period (for engine speed)
 ; 'timerOverflow2' is used for periodic processing in the road speed routine
-
+;
 ; Note that reading CSR and then counterhigh will clear TOF
 
-; ------------------------------------------------------------------------------
 LF0D5               cli                           ;clear interrupt mask
                     nop
                     nop                           ;(this area is different than older R2419 code)
@@ -76,55 +75,52 @@ LF0D5               cli                           ;clear interrupt mask
 .LF0EE              ldd       counterHigh         ;clear TOF and return counter value
                     rts
 
-; ------------------------------------------------------------------------------
-
+;*******************************************************************************
 ; Index Into Table
-
+;
 ; This is used often to select a column of data from a table based on a
 ; comparison between a value (usually a temperature count) and the top row
 ; of the table. The values passed in are:
-
+;
 ; X = Index to start of table
 ; B = Number of columns in table
 ; A = Value to compare (usually coolant temp count)
-
+;
 ; The routine increments the index in a loop and returns the updated index
 ; when the table value exceeds the value in A (or when B becomes zero).
 
-; ------------------------------------------------------------------------------
-indexIntoTable      cmpa      $01,x               ;subtract table value from coolant temp
+indexIntoTable      proc
+                    cmpa      $01,x               ;subtract table value from coolant temp
                     bcs       .indexingRet        ;return if result is LT zero
                     decb                          ;decrement counter
                     beq       .indexingRet        ;return if counter is zero
                     inx                           ;increment index to next higher value in table
                     bra       indexIntoTable
-
 .indexingRet        rts
 
-; ------------------------------------------------------------------------------
-
+;*******************************************************************************
 ; This routine is called from two places in the ICI, right after the call to
 ; LF171 which is later in this file.
-
+;
 ; Coming into this routine, AB is the value from either X0040/41 (left) or
 ; X0044/45 (right) minus $8000 (converted to abs value if needed). In other
 ; words, this is the delta from the $8000 neutral point.
-
+;
 ; The index register (X) is preserved and used in this routine as a loop
 ; counter. The B accumulator is also preserved.
-
+;
 ; XC0A0 is a code control value which is $80 for both R3526 and TVR code.
 ; Bit field 2:0 from this value is used to right shift the AB value in a
 ; loop. Since the X register will be either $0001 or $0002, the AB value will
 ; be reduced to 1/2 or 1/4.
-
+;
 ; The bytes at XC0A0 is used as follows:
 ; XC0A0.7 = turns off fuel trim
 ; For code at F0FC, bits 2:0 are used
 ; For code at F119, bits 4:3 are used
 
-; ------------------------------------------------------------------------------
-LF0FC               pshx                          ;push X
+LF0FC               proc
+                    pshx                          ;push X
                     pshb                          ;push B
                     ldb       $C0A0               ;load code control byte ($80) into B
                     andb      #$07                ;B is now zero
@@ -151,42 +147,39 @@ LF0FC               pshx                          ;push X
                     pulx                          ;pull X
                     rts                           ;return
 
-; ------------------------------------------------------------------------------
-
+;*******************************************************************************
 ; This routine is called from two places in the ICI.
-
+;
 ; When entering, AB will be either left short term trim or right short term
 ; trim. X will be either $0040 or $0044. X is not used here but is preserved
 ; since it's used after the routine returns. Note that for each pass through
 ; the ICI, this routine is called twice for the same bank.
-
+;
 ; When called for left bank:
 ; AB = short term trim value X0065/66
 ; X  = $0040 (value is at X0040/41)
-
+;
 ; When called for right bank:
 ; AB = short term trim value X0067/68
 ; X  = $0044 (value is at X0044/45)
-
+;
 ; The bytes at XC0A0 is used as follows:
 ; XC0A0.7 = turns off fuel trim
 ; For code at F0FC, bits 2:0 are used
 ; For code at F119, bits 4:3 are used
 
-; ------------------------------------------------------------------------------
-LF119               pshx
+LF119               proc
+                    pshx
                     pshb
                     ldb       $C0A0               ;this value is $80
-                    lsrb                          ;shift out bit 0
-                    lsrb                          ;shift out bit 1
-                    lsrb                          ;shift out bit 2
+                    lsrb:3                        ;shift out bits 0..2
                     andb      #$03                ;mask bits 4:3 (B is now zero)
                     bra       .LF103
 
 ; ------------------------------------------------------------------------------
 ; This code was used for development and can be deleted
 ; ------------------------------------------------------------------------------
-                    #ifdef    OBSOLETE_CODE
+          #ifdef OBSOLETE_CODE
 shiftEngDebugData   stb       $00C8
                     ldd       $00,x
                     tst       $00C8
@@ -197,34 +190,32 @@ shiftEngDebugData   stb       $00C8
                     bne       .LF12E
 
 .LF134              rts
+          #endif
 
-                    #endif
-
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ;*** Countdown Timer 1 ***
-
+;
 ; This routine is called from two places in the ICI. It's used to decrement the
 ; two following variables at a rate of approximately 1 Hz. The variable's
 ; address is passed into the routine in X (the index register).
-
+;
 ; X009C - This is the value that's initialized from the 3rd row of the coolant
 ; table. The initial value range is about $06 to $2D ($44 for TVR and
 ; other markets).
-
+;
 ; startupTimerEven -This is an additional even (right) bank specific value which
 ; is initialized from the data value at XC1FF. This value is
 ; usually $03.
-
+;
 ; Both of these value are used for temporary additional fuel at startup.
-
+;
 ; The variable timer1value is used exclusively by this routine to maintain the timer
 ; and is comparable to timer2Value which is used in Countdown Timer 2 (below).
 
-; ------------------------------------------------------------------------------
-LF135               lda       timer1value         ;load timer maintenance variable
+LF135               proc
+                    lda       timer1value         ;load timer maintenance variable
                     ldb       ignPeriodFiltered   ;MSB is worth 512 uSec per count
-                    lsrb
-                    lsrb                          ;div by 4 (now 2.048 mSec/count)
+                    lsrb:2                        ;div by 4 (now 2.048 mSec/count)
                     incb                          ;add 1 (an adjustment factor?)
                     sba                           ;subtract B from A
                     bcc       .LF14E              ;branch if result < timer1value
@@ -241,27 +232,26 @@ LF135               lda       timer1value         ;load timer maintenance variab
 .LF14E              sta       timer1value         ;store maintenance variable
                     rts                           ;and return
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ;*** Countdown Timer 2 ***
-
+;
 ; This routine is called from two places in the ICI. It's used to decrement the
 ; two following variables at a rate of approximately 1 Hz. The variable's
 ; address is passed into the routine in X (the index register).
-
+;
 ; closedLoopDelay - This variable appears to prevent closed loop until it times
 ; out. It's initialized from the value in XC1FE (usually $10).
-
+;
 ; startupTimerOdd - This is the odd (left) bank equivalent to startupTimerEven
 ; which is serviced in Timer 1 above.
-
+;
 ; The variable timer2Value is used exclusively by this routine to maintain the
 ; timer and is comparable to timer1value which is used in Countdown Timer 1 (above).
 
-; ------------------------------------------------------------------------------
-LF151               lda       timer2Value         ;load timer maintenance variable
+LF151               proc
+                    lda       timer2Value         ;load timer maintenance variable
                     ldb       ignPeriodFiltered   ;MSB is worth 512 uSec per count
-                    lsrb
-                    lsrb                          ;div by 4 (now 2.048 mSec/count)
+                    lsrb:2                        ;div by 4 (now 2.048 mSec/count)
                     incb                          ;add 1 (an adjustment factor?)
                     sba                           ;subtract B from A
                     bcc       .LF16D              ;branch if result < timer2Value
@@ -278,28 +268,28 @@ LF151               lda       timer2Value         ;load timer maintenance variab
 .LF16D              sta       timer2Value         ;store maintenance variable
                     rts                           ;and return
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; This subroutine is called from the code area in the ICI that deals with the
 ; long-term Lambda trim.
-
+;
 ; There are two bank specific 16-bit values that are stored in the battery
 ; backed RAM area. They seem to loosely track the short term trim. It's not
 ; clear yet, which values control which.
-
+;
 ; X0040/41 = left bank
 ; X0044/45 = right bank
-
+;
 ; These values, like the trim values, have a neutral setting of $8000 and
 ; adjust up or down from there.
-
+;
 ; Coming into this routine, the 16-bit AB register is either of these values
 ; minus $8000 which means it will be a positive or negative number. The calling
 ; code knows the polarity and changes the negative number to it's absolute
 ; value. The passed in AB value is preserved by pushing to the stack and
 ; pulling before return.
 
-; ------------------------------------------------------------------------------
-LF171               psha                          ;push MSB
+LF171               proc
+                    psha                          ;push MSB
                     adda      #$02                ;add 2 to MSB ($0200 to value)
                     cmpa      #$04                ;this checks to within 512 counts of both ends
                     bhi       .LF1AB              ;if higher just branch to end and return
@@ -348,21 +338,20 @@ LF171               psha                          ;push MSB
 .LF1AB              pula                          ;pull A
                     rts                           ;return
 
-; ------------------------------------------------------------------------------
-
+;*******************************************************************************
 ; This subroutine is called from 2 places in the ICI. Once from rich condition
 ; code and once from lean condition code.
-
+;
 ; The passed in index value is:     rich condition  $0090
 ; lean condition  $008E
-
+;
 ; First, the signed counters at X0094 or X0095 are checked and, if zero, the
 ; routine simply returns.
-
+;
 ; bits_00A8 is only used here. Just bits 7 and 0 are used.
 
-; ------------------------------------------------------------------------------
-LF1AD               lda       $0088               ;test bank indicator bit
+LF1AD               proc
+                    lda       $0088               ;test bank indicator bit
                     bpl       .LF1BF              ;if 0088.7 is zero, branch to left side code
 
 ; ------------------
@@ -485,13 +474,13 @@ absoluteValAB       coma
 ; ------------------------------------------------------------------------------
 calcBatteryBackedChecksum
                     ldx       #batteryBackedRAM
-                    lda       $00,x
+                    lda       ,x
 
 .startChecksumCalcLoop
                     inx
                     cpx       #ramChecksum
                     beq       .doneWithChecksumCalc
-                    adda      $00,x
+                    adda      ,x
                     bra       .startChecksumCalcLoop
 
 .doneWithChecksumCalc
