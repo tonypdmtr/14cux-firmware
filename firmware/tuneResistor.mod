@@ -1,29 +1,29 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013
-
+;
 ; Description:
 ; ADC Routine - Tune resistor sense - Channel 10
-
+;
 ; ADC service routines are entered with the newly measured ADC value in
 ; X00C8/C9 (only X00C9 for 8-bit readings). The A accumulator also contains
 ; the 8-bit reading.
-
+;
 ; This routine determines which fuel map to use. Maps 0, 4 and 5 are closed
 ; loop. Maps 1, 2 and 3 are open loop.
-
+;
 ; Starting in the early 90's, USA spec vehicles had the fuel map locked to
 ; map 5. This was done by writing data byte $FF to location XC7C1. In this
 ; case, there was no need for an external resistor. In fact, the vehicle's
 ; wiring harness may be missing the necessary connection to the ECU.
-
+;
 ; faultBits_49 bit 7 is the actual fault code (lights MIL if not masked).
 ; Bit bits_2038.2 is the internal 'housekeeping' bit for this fault.
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-
-adcRoutine10        ldb       fuelMapLock         ;load fuel map lock value
+adcRoutine10        proc
+                    ldb       fuelMapLock         ;load fuel map lock value
                     beq       .LD552              ;branch ahead if zero
 
                     ldb       #$05                ;else...
@@ -33,18 +33,18 @@ adcRoutine10        ldb       fuelMapLock         ;load fuel map lock value
                     std       fuelMapPtr          ;map pointer for map 5
                     rts                           ;return
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; From Land-Rover Docs:
-
+;
 ; Cat
 ; 180 Ohms  Red     No    Australia and "the rest of the world."
 ; 470 Ohms  Green   No    UK and European vehicles without catalytic converters
 ; 910 Ohms  Yellow  No    Saudi vehicles (without catalytic converters)
-; 1800 Ohms  Blue    Yes   Saudi vehicles (with catalytic converters)
-; 3900 Ohms  White   Yes   USA and European vehicles with catalytic converters
+; 1800 Ohms Blue    Yes   Saudi vehicles (with catalytic converters)
+; 3900 Ohms White   Yes   USA and European vehicles with catalytic converters
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-; if here, lockout value is zero (unlocked)
+          ;-------------------------------------- ;if here, lockout value is zero (unlocked)
 .LD552              clrb
                     cmpa      #$0A                ;( 4%) less than $0A = map 0
                     bcs       .LD571
@@ -72,10 +72,7 @@ adcRoutine10        ldb       fuelMapLock         ;load fuel map lock value
 ; at this point B is the map number (0 through 5)
 .LD571              lda       $0085               ;X0085.7 indicates no or low eng RPM (eng not running)
                     bmi       .LD5B5              ;if set (engine not running) branch to fuel map selector code
-
-; ------------------------------------------------------------------------------
-; Engine is running
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;Engine is running
                     lda       bits_2038           ;if here, engine is running
                     bita      #$04                ;test bits_2038.2 (indicates fuel map resistor fault 21)
                     bne       .LD58F              ;branch if fault 21 is already set
@@ -90,15 +87,12 @@ adcRoutine10        ldb       fuelMapLock         ;load fuel map lock value
 
 .LD58B              clr       tuneResistorDelay   ;clear fault 21 delay counter
                     rts
-
-; ------------------------------------------------------------------------------
-; Engine is running (internal fault bit already set)
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;Engine is running (internal fault bit already set)
 .LD58F              cmpb      #$00                ;fuel map number equal to zero?
                     bne       .LD58B              ;if not, branch up to clr counter and return
-; ------------------------------------------------------------------------------
-; Engine is running (fuel map is zero or fuel map numbers don't agree)
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Engine is running (fuel map is zero or fuel map numbers don't agree)
+          ;--------------------------------------
 .LD593              lda       tuneResistorDelay   ;load fault 21 delay counter
                     cmpa      #$FF                ;compare with $FF
                     beq       .LD5A6              ;if counter = $FF, branch to set fault bit
@@ -109,10 +103,9 @@ adcRoutine10        ldb       fuelMapLock         ;load fuel map lock value
                     bita      #$04                ;test bits_2038.2 (internal fault bit)
                     beq       .LD5B5              ;if zero, branch to Fuel Map Selection
                     rts                           ;else, return
-
-; ------------------------------------------------------------------------------
-; Set Fault Code 21 here (masked out for later NAS tunes)
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Set Fault Code 21 here (masked out for later NAS tunes)
+          ;--------------------------------------
 .LD5A6              lda       faultBits_49
                     ora       #$80                ;<-- Set Fault Code 21
                     sta       faultBits_49
@@ -120,11 +113,10 @@ adcRoutine10        ldb       fuelMapLock         ;load fuel map lock value
                     ora       #$04                ;set bits_2038.2 internal fault code
                     sta       bits_2038
                     rts
-
-; ------------------------------------------------------------------------------
-; This selects Fuel Map addr ptr based on Fuel Map Number (which is in B accum)
-; B accumulator is decremented until zero to find correct pointer.
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; This selects Fuel Map addr ptr based on Fuel Map Number (which is in B accum)
+          ; B accumulator is decremented until zero to find correct pointer.
+          ;--------------------------------------
 .LD5B5              stb       fuelMapNumber       ;store fuel map number
                     ldb       fuelMapNumber       ;reload it (to set CCR flags)
                     beq       .LD5DB
@@ -148,5 +140,3 @@ adcRoutine10        ldb       fuelMapLock         ;load fuel map lock value
 
 .LD5DE              stx       fuelMapPtr
                     rts
-
-; ------------------------------------------------------------------------------

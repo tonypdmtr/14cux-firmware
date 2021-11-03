@@ -1,17 +1,18 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 06-Jan-2014
-
+;
 ; Description:
 ; This code is specific to R3365 (Defender). It is an abbreviated version
 ; of the comparator test. The triggering of the comparator measurement is
 ; done with in-line code. This saves 6 uSec by triggering the ADC before the
 ; "jump to subroutine" operation.
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
 
-LFA46               lda       $008B               ;bits value
+LFA46               proc
+                    lda       $008B               ;bits value
                     brn       LFA4A               ;branch never
 
 LFA4A               ldb       AdcStsDataHigh

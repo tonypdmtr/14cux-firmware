@@ -1,22 +1,21 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013
-
+;
 ; Description:    Code Reset Entry Point
-
+;
 ; This contains the reset entry code.
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Reset Entry Point
-
+;
 ; When ignition power is applied to the board the MPU reads the 16-bit value
 ; stored at 0xFFFE/FF. This is called the reset vector and tells the MPU where
 ; to start executing code. This value is 0xC861 for all 14CUX units. The first
 ; thing is to set up the MPU ports for both data direction and data level.
-
+;
 ; Port Direction   Level   Purpose
 ; --------------------------------
 ; P10   Output     High     MIL
@@ -27,29 +26,26 @@
 ; P15   Output     Low      Stepper Motor Drive 2
 ; P16   Output     Low      Fuel Pump Relay (defaults to ON)
 ; P17   Output     Low      Stay Alive Toggle
-
+;
 ; P20   Input      (n/a)    Ignition Coil (used as TIn1 timer)
 ; P21   Output     High     Odd Injector Bank (uses Timer 1 and T2 transistor)
 ; P22   Output     Low      A/C Compressor
 ; P23   Output     Low      RDATA (Serial Port)
 ; P24   Output     Low      TDATA (Serial Port)
-
+;
 ; Notes:
 ; 1) Transistor T4 may not be marked on older boards. It's the one nearest to
 ; R57 in the corner.
 ; 2) Programmed direction and level are ignored for P23 & P24 when in UART mode.
-
+;
 ; Added note 19-Dec-2013:
 ; All references to L & R are reversed.
 ; MPU Pin 9  (Port 2.1) is R bank (Same Polarity)
 ; MPU Pin 15 (Port 1.2) is L bank (Reversed Polarity)
 
-; ------------------------------------------------------------------------------
-
-; ----------------------------
-; Init MPU regs
-; ----------------------------
-reset               sei                           ;Set interrupt mask
+reset               proc
+                    sei                           ;Set interrupt mask
+          ;-------------------------------------- ;Init MPU regs
                     lds       #$00FF              ;reset stack pointer
                     ldd       #$FFFE
                     std       port1ddr            ;all P1 & P2 pins to out (exc P20 pin-8, ignition coil)
@@ -75,22 +71,16 @@ reset               sei                           ;Set interrupt mask
                     lda       ramControl          ;load RAM control
                     ora       #$40                ;set RAME bit (RAM at $40 to $FF)
                     sta       ramControl          ;write RAM control reg
-
-; ----------------------------
-; Clear internal memory
-; ----------------------------
+          ;-------------------------------------- ;Clear internal memory
                     clra
                     ldx       #$0054              ;*** Zero Memory $54 to $FA ***
                     ldb       #$A6
 
-.zeroRAM_0054       sta       $00,x
+.zeroRAM_0054       sta       ,x
                     inx
                     decb
                     bne       .zeroRAM_0054       ;*** End Zero Memory ***
-
-; ----------------------------
-; Init more regs and vars
-; ----------------------------
+          ;-------------------------------------- ;Init more regs and vars
                     lda       #$20                ;init ADC (S&H mode, settling time avail., no IRQ)
                     sta       AdcControlReg0      ;write ADC control reg
                     lda       #$87
@@ -99,22 +89,16 @@ reset               sei                           ;Set interrupt mask
                     stb       $0086               ;set X0086.5 (clrd when RPM exceeds limit from fuel map)
                     ldb       #$01
                     stb       bits_008C           ;set bits_008C.0 (TP vs MAF in ICI, set for TP)
-
-; ----------------------------
-; Clear external memory
-; ----------------------------
+          ;-------------------------------------- ;Clear external memory
                     clra                          ;*** Start Zero Mem (2000h to 207F) ***
                     ldx       #$2000
                     ldb       #$80
 
-.zeroRAM_2000       sta       $00,x
+.zeroRAM_2000       sta       ,x
                     inx
                     decb
                     bne       .zeroRAM_2000       ;*** End Zero Memory ***
-
-; ----------------------------
-; Init external memory
-; ----------------------------
+          ;-------------------------------------- ;Init external memory
                     lda       $C1FE               ;for R3526. value is $10
                     sta       closedLoopDelay     ;this is a 1Hz startup count-down timer
                     lda       $C1C9               ;for R3526, value is $B2 (178 dec)
@@ -146,10 +130,7 @@ reset               sei                           ;Set interrupt mask
                     sta       tpMinCounter        ;slows down TPmin adjustment
                     lda       #$64
                     sta       unusedValue         ;(unused)
-
-; ----------------------------
-; Check for locked map & init
-; ----------------------------
+          ;-------------------------------------- ;Check for locked map & init
                     lda       fuelMapLock         ;load fuel map lock value
                     beq       .LC92F              ;branch if unlocked (zero)
 
@@ -161,21 +142,14 @@ reset               sei                           ;Set interrupt mask
                     ldd       #fuelMap5           ;load address ptr to fuel map 5
                     std       fuelMapPtr          ;store as fuel map base pointer
                     bra       .LC934              ;branch
-
-; ----------------------------
-; Init map 0 ADC table                          ;code branches here when fuel map is unlocked
-; ----------------------------
+          ;--------------------------------------
+          ; Init map 0 ADC table                  ;code branches here when fuel map is unlocked
+          ;--------------------------------------
 .LC92F              ldx       #$C082              ;default ADC control table
                     stx       adcMuxTableStart
-
-; ----------------------------
-; Call init routine below
-; ----------------------------
+          ;-------------------------------------- ;Call init routine below
 .LC934              jsr       reInitVars          ;call memory init subroutine below (inits external memory)
-
-; ----------------------------
-; Verify Battery-Backed RAM
-; ----------------------------
+          ;-------------------------------------- ;Verify Battery-Backed RAM
                     ldb       ramControl          ;check reliability of RAM (see mpu doc)
                     bpl       .ramUnreliable      ;branch ahead if battery-backed RAM is no good
 
@@ -190,17 +164,11 @@ reset               sei                           ;Set interrupt mask
                     addd      $C1BD               ;for R3526, value is $0A, add to TPmin
                     std       throttlePotMinimum
                     bra       .i2cDispFault
-
-; ----------------------------
-; RAM is bad, set DTC 02
-; ----------------------------
+          ;-------------------------------------- ;RAM is bad, set DTC 02
 .ramUnreliable      lda       faultBits_4E
                     ora       #$40                ;<-- Set Fault Code 02 (RAM Fail, battery or ECU disconnected)
                     sta       faultBits_4E
-
-; ----------------------------
-; Reinitialize RAM values
-; ----------------------------
+          ;-------------------------------------- ;Reinitialize RAM values
 .initDefaults       ldd       #$0070              ;branches here is bad RAM checksum; init default values
                     std       throttlePotMinimum  ;init throttle pot minimum to #$0070 (547 mV)
                     std       throttlePotMinCopy
@@ -213,10 +181,7 @@ reset               sei                           ;Set interrupt mask
                     stb       iacvObsolete        ;this value is added to 'iacvEctValue' but it's always zero anyway
                     lda       $C242               ;data value is $6C (108 dec)
                     sta       stprMtrSavedValue   ;init stprMtrSavedValue to $6C
-
-; ----------------------------
-; Check for locked fuel map
-; ----------------------------
+          ;-------------------------------------- ;Check for locked fuel map
                     lda       fuelMapLock         ;load data value from XC7C1
                     beq       .mapNotLocked       ;zero means unlocked
 
@@ -226,12 +191,8 @@ reset               sei                           ;Set interrupt mask
 
 .mapNotLocked       ldd       #fuelMap1           ;unlocked, load map 1
                     std       fuelMapPtr          ;fuel map resistor will override this
-
-; ----------------------------
-; RAM is bad, so clear faults
-; ----------------------------
-.clearFaults        clra
-                    clrb
+          ;-------------------------------------- ;RAM is bad, so clear faults
+.clearFaults        clrd
                     sta       fuelMapNumberBackup  ;set fuel map backup number to zero
                     std       faultBits_49
                     std       faultBits_4B
@@ -245,10 +206,9 @@ reset               sei                           ;Set interrupt mask
                     lda       faultBits_4E
                     ora       #$80                ;<-- Set Fault Code 03 (bad battery backed checksum)
                     sta       faultBits_4E
-
-; ----------------------------
-; Display stored fault                              ;branches here if battery backed RAM is good
-; ----------------------------
+          ;--------------------------------------
+          ; Display stored fault                  ;branches here if battery backed RAM is good
+          ;--------------------------------------
 .i2cDispFault       jsr       faultCodeScan
                     lda       tmpFaultCodeStorage
                     jsr       i2c                 ;I2C routine (display 1st digit)
@@ -257,20 +217,14 @@ reset               sei                           ;Set interrupt mask
                     lda       faultBits_4E
                     anda      #$3F                ;clr fault codes 02 and 03 (data corrupt / RAM fail)
                     sta       faultBits_4E
-
-; ----------------------------
-; Init some hardware regs
-; ----------------------------
+          ;-------------------------------------- ;Init some hardware regs
                     ldd       #$050A
                     std       sciModeControl      ;init SCI for 7812 baud (1 MHz/128)
                     lda       #$FE
                     sta       port2ddr            ;set port 2 data dir (again)
                     lda       timerStsReg
                     ldd       icrHigh             ;clears something?
-
-; ----------------------------
-; Copy RAM to ext. mirror
-; ----------------------------
+          ;-------------------------------------- ;Copy RAM to ext. mirror
                     ldx       #externalRAMCopy-1  ;Loop: Copy battery backed to external memory
                     lds       #batteryBackedRAM-1
 
@@ -279,30 +233,26 @@ reset               sei                           ;Set interrupt mask
                     sta       $00,x
                     cpx       #externalRAMCopy+sizeOfRAMBackup
                     bne       .copyToExternal
-
-; ----------------------------
-; Init stack and enter loop
-; ----------------------------
+          ;-------------------------------------- ;Init stack and enter loop
                     lds       #$00FF              ;Reset stack ptr to FFh
                     cli                           ;Clear interrupt mask
                     bra       preMainLoop
 
-; ------------------------------------------------------------------------------
-
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Reinitialize Variables
-
+;
 ; This seems to be reinitializing variables to the ignition-ON state. It is
 ; called during startup, by the Inertia Sense routine and by the Coolant
 ; Temperature routine.
-; ------------------------------------------------------------------------------
-reInitVars          lda       #$FF                ;init engine PW values to $FFFF
+
+reInitVars          proc
+                    lda       #$FF                ;init engine PW values to $FFFF
                     tab                           ;transfer a to b
                     std       ignPeriod           ;init to $FFFF
                     std       ignPeriodFiltered   ;init to $FFFF
                     lda       #$11
                     sta       $0085               ;set X0085.4 (0 = end of ADC list)
-; set X0085.0 (1 = RPM < 505 or 375 for CWC)
+          ;-------------------------------------- ;set X0085.0 (1 = RPM < 505 or 375 for CWC)
                     ldd       #192                ;192 decimal (double inj rate for 192 sparks)
                     std       doubleInjecterRate  ;note that this does not need to be 2-bytes
                     clra
@@ -346,5 +296,3 @@ reInitVars          lda       #$FF                ;init engine PW values to $FFF
                     sta       bits_2059
                     clr       iciStartupCounter   ;used at start of ICI
                     rts
-
-; ------------------------------------------------------------------------------

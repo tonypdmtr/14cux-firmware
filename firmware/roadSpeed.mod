@@ -1,15 +1,15 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013  Initial file.
 ; 09-Mar-2014  Deleted old, incorrect comments, added new comments.
-
+;
 ; Description:
 ; There are two independent routines in this file. They are both
 ; described in detail below.
-
+;
 ; 1) ADC Road Speed Service, Channel 7 (8-bit convert) adcRoutine7
-
+;
 ; This is the main road speed service routine. It conditions the 4 KPH
 ; idle bit (for control of IACV), periodically writes the road speed, resets
 ; the overflow counter and tests for bad VSS (fault code 68). Oddly, the
@@ -18,9 +18,9 @@
 ; it was probably done this way to fit in with existing round-robin ADC
 ; servicing scheme. It is actually the comarator test, described below, that
 ; that samples the VSS level often enough to determine road speed.
-
+;
 ; 2) Road Speed Signal Comparator Test (rdSpdCompTest)
-
+;
 ; This is called numerous times from many places in the ICI. Its
 ; purpose is to catch or sample every VSS signal transition in order to
 ; determine the VSS signal frequency and, thereby, the road speed. The
@@ -29,7 +29,7 @@
 ; if it's high or low. The Hitachi ADC's comparator option is used because
 ; it is much faster than the successive approximation technique used to
 ; resolve signals to 8 or 10 bits.
-
+;
 ; This is a basic description of road speed function.
 ; The intent is to sample the level of the VSS signal often enough to
 ; catch every high to low transition. To do this, a routine which does a
@@ -46,9 +46,9 @@
 ; vssStateCounter into the actual road speed variable (roadSpeed). At this
 ; time, the state counter is reset to zero and the process repeats. Note
 ; that this means that the road speed is only updated once per second.
-
+;
 ; There are problems with measuring road speed this way.
-
+;
 ; 1)  Strobing effects (aliasing) can happen at certain combinations of
 ; frequencies.
 ; 2)  High engine RPM causes the spark interrupt to hog the processor and
@@ -56,20 +56,20 @@
 ; service routines may not complete.
 ; 3)  High engine RPM also puts proportionally increasing burden on the spark
 ; interrupt, which limits the effective RPM limit of the 14CUX.
-
+;
 ; The main road speed variables are listed here. The names will be used in
 ; future versions of code instaed of hard-codes addresses. This means that,
 ; at some point in the future, the addresses will be subject to change.
-
+;
 ; Original
 ; Variable            Address      Description
 ; ----------------------------------------------------------------
 ; timerOverflow2      X2001       timer overflow counter
 ; vssStateCounter     X2002       VSS signal transition counter
 ; roadSpeed           X2003       road speed in KPH
-
+;
 ; The following is from a Land Rover document:
-
+;
 ; "The Vehicle Speed Sensor is located on the left hand side of the frame
 ; on early models, and on the left hand side of the transfer case on later
 ; models. It informs the ECM when vehicle speed is above or below 3 mph.
@@ -77,23 +77,21 @@
 ; valve (IACV) is moved to a position to prevent a stall when the vehicle
 ; comes to a stop. DTC 68 will be displayed if the MAF is greater than 3V
 ; at 2000-3000 RPMs".
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-
-; ------------------------------------------------------------------------------
-
+;*******************************************************************************
 ; Main Road Speed Service Routine
 ; This routine is called in the main loop when $87 comes up in the round
 ; robin ADC control list.
-
+;
 ; Road speed related variables are:
-
+;
 ; timerOverflow2  - Road Speed latch counter (reset when > 13, takes approx 1 sec)
 ; vssStateCounter - VSS signal transition counter
 ; roadSpeed       - Road Speed in KPH
 
-; ------------------------------------------------------------------------------
-adcRoutine7         sta       $00C8               ;now both C8 and C9 hold the 8-bit value
+adcRoutine7         proc
+                    sta       $00C8               ;now both C8 and C9 hold the 8-bit value
                     ldb       timerOverflow2      ;latch counter, increments every 65 ms
                     cmpb      #$0D                ;compare with 13
                     bhi       .resetCounters      ;branch if timerOverflow2 > 13
@@ -292,5 +290,3 @@ rdSpdCompTest       lda       #$27                ;[2] SC=0 PC=1 Set comparator 
 .loadO2AndRet       ldb       lambdaReading       ;[4] load O2 sensor before returning
 
 .rsReturn           rts                           ;[5]
-
-; ------------------------------------------------------------------------------

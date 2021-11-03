@@ -1,34 +1,35 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013
-
+;
 ; Description:
 ; The 14CUX ECU talks to the On-Board Diagnostic Display (OBDD) through
 ; a Philips Inter-Integrated Circuit protocol (usually called IIC or I2C and
 ; pronounced "eye-squared-see"). This is a very simple, synchronous serial
 ; protocol that can be implemented in software by toggling the lines going
 ; to to OBDD. This is often called a "bit bang" interface.
-
+;
 ; The discrete lines that are used for this interface come through an output
 ; port at address X4004 in the PAL (MVA5033).
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; I2C routine (below) branches here if fault code is zero
-; ------------------------------------------------------------------------------
-.faultCodeIs00      lda       #$FF
+
+.faultCodeIs00      proc
+                    lda       #$FF
                     sta       $00CD
                     sta       $00CC               ;set data digits to $FFFF
                     lda       #$20
                     sta       tmpFaultCodeStorage  ;fault code - set X0067 to $20
                     jmp       .sendI2CStart
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; I2C routine (below) branches here if fault code is $20
-; ------------------------------------------------------------------------------
-.faultCodeIs20      lda       #$00
+
+.faultCodeIs20      proc
+                    lda       #$00
                     sta       $00CD
                     sta       $00CC               ;set data digits to $0000
                     lda       tmpFaultCodeStorage
@@ -36,30 +37,29 @@
                     sta       tmpFaultCodeStorage  ;fault code - clr X0067.5
                     jmp       .sendI2CStart
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; This routine is called twice (one for each digit) during startup.
 ; This is the I2C routine for the OBDD (7-segment display, part number SAA1064)
 ; The I2C port is at X4004.
-
+;
 ; X00C8 - 00 (counter, not transmitted)
-
+;
 ; These are transmitted (msb first):
 ; X00C9 - 70 (slave addr, lsb zero means wrt to slave)
 ; X00CA - 00 (instruction byte, start wrt at control reg)
 ; X00CB - 26 (control byte, 6 ma output, blank other digit)
 ; X00CC - 8-bit, 7-segment code for low  nibble of fault code
 ; X00CD - 8-bit, 7-segment code for high nibble of fault code
-
+;
 ; 40-Pin          PLCC44
 ; ------------------------------------------
 ; 30 (pink)         11 (non-invert)   Clk
 ; 38 (brwn/pnk)     10 (invert)       Data
-
+;
 ; TODO: PLC44 pin numbers may be incorrect!!
 
-; ------------------------------------------------------------------------------
-
-i2c                 sei                           ;set interrupt mask
+i2c                 proc
+                    sei                           ;set interrupt mask
                     ldd       #$0500              ;disables SCI xmt and rcv
                     std       sciModeControl
                     clr       $00C8               ;used as counter
@@ -75,20 +75,15 @@ i2c                 sei                           ;set interrupt mask
                     andb      #$0F                ;isolate low nibble
                     ldx       #.displayCodes      ;Addr of 7-segment codes
                     abx
-                    ldb       $00,x               ;get code from table
+                    ldb       ,x                  ;get code from table
                     stb       $00CC               ;store code for low nibble
                     ldb       tmpFaultCodeStorage  ;load fault code again
-                    lsrb
-                    lsrb
-                    lsrb
-                    lsrb                          ;isolate high nibble
+                    lsrb:4                        ;isolate high nibble
                     ldx       #.displayCodes
                     abx
-                    ldb       $00,x
+                    ldb       ,x
                     stb       $00CD               ;store code for high nibble
-; ------------------------------------------------------------------------------
-; send start condition (data goes low while clk is high)
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;send start condition (data goes low while clk is high)
 .sendI2CStart       lda       i2cPort
                     ora       #$20                ;4004.5 high (data high to start)
                     anda      #$BF                ;4004.6 low (inverted clk high)
@@ -96,9 +91,7 @@ i2c                 sei                           ;set interrupt mask
                     nop
                     anda      #$DF                ;4004.5 low (data low for start cond.)
                     sta       i2cPort
-; ------------------------------------------------------------------------------
-; transmit loop
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;transmit loop
 .i2cXmit            nop
                     lda       i2cPort
                     ora       #$40                ;4004.6 high (what is this??)
@@ -118,9 +111,7 @@ i2c                 sei                           ;set interrupt mask
                     beq       .i2cAckClk          ;clk ack after 5th byte
                     cmpa      #$29
                     beq       .sendI2CStop        ;leave loop
-; ------------------------------------------------------------------------------
-; ACK code returns here
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;ACK code returns here
 .LF2C4              clc                           ;clr carry
                     rol       $00CD               ;rol involves the carry bit so this
                     rol       $00CC               ;is acting like a 40-bit rotation
@@ -144,10 +135,11 @@ i2c                 sei                           ;set interrupt mask
                     nop
                     bra       .i2cXmit
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; send stop condition (data transitions high while clk is high)
-; ------------------------------------------------------------------------------
-.sendI2CStop        lda       i2cPort
+
+.sendI2CStop        proc
+                    lda       i2cPort
                     ora       #$20                ;4004.5 high
                     nop
                     anda      #$BF                ;4004.6 low
@@ -169,9 +161,9 @@ i2c                 sei                           ;set interrupt mask
                     nop
                     rts
 
-; ------------------------------------------------------------------------------
-; ;I2C ack (clk the slave's active low ack, probably not read)
-; ------------------------------------------------------------------------------
+;*******************************************************************************
+; I2C ack (clk the slave's active low ack, probably not read)
+
 .i2cAckClk          lda       i2cPort
                     ora       #$20                ;4004.5 high (to release data bus)
                     nop
@@ -182,17 +174,29 @@ i2c                 sei                           ;set interrupt mask
                     sta       i2cPort             ;write to port
                     jmp       .LF2C4
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; This data table consists of the codes to send to the OBDD to illuminate
 ; the 7-segment display. The table is 16 bytes long since it contains the
 ; codes for hexadecimal characters. The hex part is unused.
-; ------------------------------------------------------------------------------
-
+;*******************************************************************************
 ; 0  1  2  3  4  5  6  7  8  9                    <-- the digit to display
-; FC 60 DA F2 66 B6 BE E0 FE E6 EE 3E 9C 7A 9E 8E  <-- corresponding 7-segment code
+; FC 60 DA F2 66 B6 BE E0 FE E6 EE 3E 9C 7A 9E 8E <-- corresponding 7-segment code
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-.displayCodes       db        $FC,$60,$DA,$F2
-                    db        $66,$B6,$BE,$E0
-                    db        $FE,$E6,$EE,$3E
-                    db        $9C,$7A,$9E,$8E
+.displayCodes       db        $FC                 ;0
+                    db        $60                 ;1
+                    db        $DA                 ;2
+                    db        $F2                 ;3
+                    db        $66                 ;4
+                    db        $B6                 ;5
+                    db        $BE                 ;6
+                    db        $E0                 ;7
+                    db        $FE                 ;8
+                    db        $E6                 ;9
+
+                    db        $EE                 ;A
+                    db        $3E                 ;B
+                    db        $9C                 ;C
+                    db        $7A                 ;D
+                    db        $9E                 ;E
+                    db        $8E                 ;F

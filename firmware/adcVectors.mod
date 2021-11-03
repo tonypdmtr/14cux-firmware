@@ -1,16 +1,15 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013
-
+;
 ; Description:
 ; This is a vector table consisting of 16 pointers to service routines.
 ; They are indexed by the channel number in the ADC control list. The O2
 ; sensors are not in the ADC control list (even for closed loop) because they
 ; are measured in the ICI. The "o2sense" vector in this list simply points
 ; to an RTS instruction.
-
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 
 adcVectors          dw        adcRoutine0         ;Inertia switch
                     dw        adcRoutine1         ;Heated screen sense
