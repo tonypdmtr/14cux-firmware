@@ -728,13 +728,12 @@ inputCapInt         proc
 
                     addd      #$0400              ;AB is now a pos or neg value to be added to the 1024 base value
                     std       tpsDirectionAndRate ;store TPS Dir & Rate (1024 +/-)
-
-; -------------------------------------------------------------------------------
-; Calculate 24-bit Throttle Pot Value
-
-; throttlePot24bit is a 24-bit value that looks very much like the throttle pot
-; value but scaled up by 256
-; -------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Calculate 24-bit Throttle Pot Value
+          ;
+          ; throttlePot24bit is a 24-bit value that looks very much like the throttle pot
+          ; value but scaled up by 256
+          ;--------------------------------------
                     ldb       $00CC               ;still the MSB of the signed throttle delta
                     bpl       .LDE1F              ;branch if plus (throttle opening)
 
@@ -748,15 +747,13 @@ inputCapInt         proc
                     ldd       tp24_Byte2          ;load bottom 16 bits of 24-bit TP value
                     tst       $00CC               ;check if TPS delta is pos or neg
                     bpl       .LDE37              ;branch if positive
-
-; <-- TP delta is negative
+          ;-------------------------------------- ;<-- TP delta is negative
                     subd      $00C8               ;subtract the just calculated value
                     std       tp24_Byte2          ;store the bottom 16 bits
                     lda       throttlePot24bit    ;load the top byte of 24-bit value
                     sbca      #$00                ;subtract carry from top byte
                     bra       .LDE3F
-
-; <-- TP delta is positive
+          ;-------------------------------------- ;<-- TP delta is positive
 .LDE37              addd      $00C8               ;add the just calculated value
                     std       tp24_Byte2          ;store the bottom 16 bits
                     lda       throttlePot24bit    ;load the top byte of 24-bit value
@@ -773,9 +770,9 @@ inputCapInt         proc
 .LDE4B              anda      #$F7                ;clr X0085.3
 
 .LDE4D              sta       $0085               ;store bits value
-; -------------------------------------------------------------------------------
-; Do stuff based on eng RPM and TP direction
-; -------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Do stuff based on eng RPM and TP direction
+          ;--------------------------------------
                     lda       ignPeriod           ;load ignition period MSB
                     cmpa      #$09                ;compare with $09
                     bcc       .LDE62              ;branch ahead if engine speed < 3255 RPM
@@ -787,41 +784,32 @@ inputCapInt         proc
                     bcc       .LDE79              ;branch if > 1024 (opening)
           #endif
                     bra       .LDE70              ;else branch down (closing)
-
-; -------------
-; Unused code
-; -------------
+          ;-------------------------------------- ;Unused code
                     ldd       throttlePot
                     std       throttlePot24bit    ;store as upper 2 bytes of 24-bit value
-
-; --------------------------------------------------------
-; branches here if eng speed < 3255 RPM
+          ;-------------------------------------- ;branches here if eng speed < 3255 RPM
 .LDE62              ldd       throttlePot         ;load 10-bit TPS value
-                    subd      #$0267              ;subtract 615 (60% or 3.0 volts)
+                    subd      #615                ;subtract 615 (60% or 3.0 volts)
 
           #ifdef BUILD_R3365
                     bcs       .LDE70A
           #else
                     bcs       .LDE79              ;branch TPS D&R > 1024 (throttle opening)
           #endif
-                    ldd       tpsDirectionAndRate  ;load TPS Direction & Rate (1024 +/-)
-                    subd      #$0400              ;subtract 1024
+                    ldd       tpsDirectionAndRate ;load TPS Direction & Rate (1024 +/-)
+                    subd      #1024               ;subtract 1024
           #ifdef BUILD_R3365
                     bcc       .LDE70A
           #else
                     bcc       .LDE79              ;branch TPS D&R > 1024 (throttle opening)
           #endif
-; --------------------------------------------------------
-.LDE70              ldd       #$0400
+          ;--------------------------------------
+.LDE70              ldd       #1024
                     std       tpsDirectionAndRate  ;reset TPS D&R to 1024
                     ldd       throttlePot         ;load TPS value
                     std       throttlePot24bit    ;store as top 16 bits of 24-bit value
 
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
-
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
 .LDE70A             lda       ignPeriod           ;load ignition period MSB
                     cmpa      #$08                ;about 3662 RPM
                     bcc       .LDE79              ;branch ahead if LT 3662 RPM
@@ -831,9 +819,7 @@ inputCapInt         proc
                     sta       AdcDataLow
                     jsr       LFA46
           #endif
-; ---------------------------------------------------------------------------------------------
-; Trigger ADC Conversion on O2 Sensor
-; ---------------------------------------------------------------------------------------------
+          ;-------------------------------------- ;Trigger ADC Conversion on O2 Sensor
 .LDE79              lda       #$8C                ;load ADC control value for even (right) O2 sensor
                     tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
                     bpl       .LDE82              ;branch ahead if 0 (even)
@@ -843,28 +829,25 @@ inputCapInt         proc
                     ldd       mafDirectHi         ;load MAF high
                     addd      mafDirectLo         ;add MAF low
                     std       $00C8               ;X00C8/C9 = MAF sum
-
-; ------------------------------------------------------------------------------
-; Test for TPS or MAF Failure (Fault Codes 12, 18 & 19)
-
-; This code section starts executing after bits_008C.1 is set. This bit is set
-; after 'doubleInjecterRate' counts down to zero. This 16-bit location is
-; initialized to $C0 (192 decimal) and counts down at the rate of spark
-; interrupts, which is just 2 or 3 seconds.
-
-; This uses engine speed, throttle pot and air flow to determine either TPS
-; or MAF fault. Note that later versions of this code have had the thresholds
-; adjusted (desensitized) so the following LR quote is not totally accurate.
-
-; According to Land Rover Document:
-
-; Typical MAF output voltage at idle is between 1.3 and 1.5 VDC (roughly 30%)
-; A diagnostic trouble code (12) is produced if MAF voltage is:
-; less than 122 mV with RPM in excess of crank speed.
-; greater than 4.96 V with RPM less than 976 for more than 160 mSec
-
-; ------------------------------------------------------------------------------
-
+          ;--------------------------------------
+          ; Test for TPS or MAF Failure (Fault Codes 12, 18 & 19)
+          ;
+          ; This code section starts executing after bits_008C.1 is set. This bit is set
+          ; after 'doubleInjecterRate' counts down to zero. This 16-bit location is
+          ; initialized to $C0 (192 decimal) and counts down at the rate of spark
+          ; interrupts, which is just 2 or 3 seconds.
+          ;
+          ; This uses engine speed, throttle pot and air flow to determine either TPS
+          ; or MAF fault. Note that later versions of this code have had the thresholds
+          ; adjusted (desensitized) so the following LR quote is not totally accurate.
+          ;
+          ; According to Land Rover Document:
+          ;
+          ; Typical MAF output voltage at idle is between 1.3 and 1.5 VDC (roughly 30%)
+          ; A diagnostic trouble code (12) is produced if MAF voltage is:
+          ; less than 122 mV with RPM in excess of crank speed.
+          ; greater than 4.96 V with RPM less than 976 for more than 160 mSec
+          ;--------------------------------------
                     lda       bits_008C
                     bita      #$02                ;test bits_008C.1 (timeout bit)
                     beq       .linearizeMaf       ;branch to skip test if still zero
@@ -951,25 +934,25 @@ inputCapInt         proc
                     jsr       setTempTPFaults
                     bra       .calcFilteredPW     ;branch down to skip linearizeMaf
           #endif
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; MAF Sensor Linearization
-
+;
 ; This section executes unless the MAF failure bit is set. It linearizes the
 ; MAF output and stores the 16-bit result (normally in X204D/4E) for later use
 ; in determining the fuel map row (load based) index.
-
+;
 ; The MAF reads about 300 decimal at idle and the maximum possible value is
 ; 1023 decimal (10 bits). This results in a linearized range of approximately
 ; 600 at idle to slightly over 17,000 decimal.
-
+;
 ; The loop part of this code is a squaring function:
 ; Input:      16-bit value in AB
 ; Output:     (AB * AB) / 0x10000
-
+;
 ; When entering this section of code, 0x00C8/C9 holds the sum of MAF Low and
 ; MAF High. The squaring loop is run twice. The 'C' code equivalent of the
 ; whole code section is listed here:
-
+;
 ; x = 8 * mafSum + 8797;
 ; x = (UINT16)((x * x) / 0x10000);
 ; x = (UINT16)(2 * (2 * x - 2496));
@@ -977,13 +960,11 @@ inputCapInt         proc
 ; Store result in 00CA/CB for use in 16-bit mpy (for FM row index calc)
 ; Store result in 204D/4E for use elsewhere
 
-; ------------------------------------------------------------------------------
+.linearizeMaf       proc
           #ifdef BUILD_R3360_AND_LATER
-.linearizeMaf       clr       dtc12Delay          ;clear fault delay counter (newer code))
-                    ldd       $00C8               ;reload MAF sum
-          #else
-.linearizeMaf       ldd       $00C8               ;reload MAF sum
+                    clr       dtc12Delay          ;clear fault delay counter (newer code))
           #endif
+                    ldd       $00C8               ;reload MAF sum
                     asld:3                        ;8x
                     addd      $C1C3               ;data value is $225D (8797 dec)
 
@@ -1010,20 +991,18 @@ inputCapInt         proc
 
 .LDF30              std       $00CA               ;store it here for 16-bit mpy
                     std       mafLinear           ;also store it in normal location
-
-; ---------------------------------------------------------------------------------------------------
-; Calculate Filtered Ignition Period
-
-; The filtered value is calculated by summing 1 part instantaneous and 3 parts filtered, then
-; dividing by 4. The code below also guards against 16-bit rollovers by incrementing X00CC and then
-; shifting these bits back in. Normally there is no rollover since we need to be below 500 RPM for
-; this to happen.
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Calculate Filtered Ignition Period
+          ;
+          ; The filtered value is calculated by summing 1 part instantaneous and 3 parts filtered, then
+          ; dividing by 4. The code below also guards against 16-bit rollovers by incrementing X00CC and then
+          ; shifting these bits back in. Normally there is no rollover since we need to be below 500 RPM for
+          ; this to happen.
+          ;--------------------------------------
 .calcFilteredPW     ldd       #$0003              ;load double value $0003
                     std       $00CC               ;X00CC = $00, X00CD = $03
                     ldd       ignPeriod           ;load 16-bit ignition period (instantaneous)
-
-; start 3X loop *
+          ;-------------------------------------- ;start 3X loop *
 .LDF3C              addd      ignPeriodFiltered   ;add 16-bit ignition period (filtered)
                     bcc       .LDF43              ;branch ahead if sum did not roll over
                     inc       $00CC               ;increment X00CC when rollover happened
@@ -1031,25 +1010,21 @@ inputCapInt         proc
                     bne       .LDF3C              ;end 3X loop *
 
                     lsr       $00CC               ;lsb into carry
-                    rora                          ;carry into msb, lsb into carry
-                    rorb                          ;carry into msb
+                    rord                          ;carry into msb, lsb into carry
                     lsr       $00CC               ;lsb into carry
-                    rora                          ;carry into msb, lsb into carry
-                    rorb                          ;lsb into carry
+                    rord                          ;carry into msb, lsb into carry
                     std       ignPeriodFiltered   ;store filtered ignition period
-
-; ---------------------------------------------------------------------------------------------------
-;*** Calculate Fuel Map Load Value (Row Index) ***
-
-; This value is calculated from both air flow and engine speed.
-
-; The Linearized MAF is calculated above and is stored in the normal X204D/4E locations and the
-; X00CA/CB temporary location.
-
-; The row index value is clipped low at 0x00 and high at 0x70 so that it is confined to the range
-; of the 8 row fuel map table.
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ;*** Calculate Fuel Map Load Value (Row Index) ***
+          ;
+          ; This value is calculated from both air flow and engine speed.
+          ;
+          ; The Linearized MAF is calculated above and is stored in the normal X204D/4E locations and the
+          ; X00CA/CB temporary location.
+          ;
+          ; The row index value is clipped low at 0x00 and high at 0x70 so that it is confined to the range
+          ; of the 8 row fuel map table.
+          ;--------------------------------------
                     ldd       ignPeriod           ;load 16-bit ignition period (instantaneous)
                     jsr       mpy16               ;call 16-bit mpy routine, mpy ignPeriod by mafLinear
                     subd      $C1C7               ;data value is $001E (subtract this)
@@ -1068,29 +1043,27 @@ inputCapInt         proc
 .LDF6D              lda       #$70                ;else store $70
 
 .LDF6F              sta       fuelMapLoadIdx      ;store value as 'fuelMapLoadIdx'
-
-; ---------------------------------------------------------------------------------------------------
-; Check for Neutral Switch Fault
-
-; This is done by first making sure that the vehicle is not a manual transmission, then if the
-; engine RPM and air flow both indicate that the vehicle should be moving and park is indicated,
-; a counter is incremented. After 500 counts, the Neutral Switch Fault Bit is set.
-
-; The following is the from Land-Rover document titled "13/14CU AND 14CUX SYSTEMS"
-
-; "A diagnostic trouble code (69 [14CUX only]) is set when sensor voltage is 5 V during cranking
-; or 0 V with RPM above 2663 and MAFS voltage above 3V."
-
-; Note that although this document was written late (1995 or later) and mentions the fact that
-; fault trigger thresholds were frequently changed, the actual quoted thresholds were never
-; updated. For example, very old PROMs (such as R2157) initially used $0B00 for the RPM threshold.
-; This agrees with the value 2663 mentioned above. However, this threshold was later changed to
-; $0E00 (2093 RPM), which appears in TVR PROMs, and then to $1000 (1831 RPM) in the latest code.
-
-; X008A.5 is 0 for neutral/park/manual and 1 for automatic in drive (ADC service)
-; bits_2004.1 is set to 1 for manual gearbox (mid-level value at ADC) (idleControl)
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Check for Neutral Switch Fault
+          ;
+          ; This is done by first making sure that the vehicle is not a manual transmission, then if the
+          ; engine RPM and air flow both indicate that the vehicle should be moving and park is indicated,
+          ; a counter is incremented. After 500 counts, the Neutral Switch Fault Bit is set.
+          ;
+          ; The following is the from Land-Rover document titled "13/14CU AND 14CUX SYSTEMS"
+          ;
+          ; "A diagnostic trouble code (69 [14CUX only]) is set when sensor voltage is 5 V during cranking
+          ; or 0 V with RPM above 2663 and MAFS voltage above 3V."
+          ;
+          ; Note that although this document was written late (1995 or later) and mentions the fact that
+          ; fault trigger thresholds were frequently changed, the actual quoted thresholds were never
+          ; updated. For example, very old PROMs (such as R2157) initially used $0B00 for the RPM threshold.
+          ; This agrees with the value 2663 mentioned above. However, this threshold was later changed to
+          ; $0E00 (2093 RPM), which appears in TVR PROMs, and then to $1000 (1831 RPM) in the latest code.
+          ;
+          ; X008A.5 is 0 for neutral/park/manual and 1 for automatic in drive (ADC service)
+          ; bits_2004.1 is set to 1 for manual gearbox (mid-level value at ADC) (idleControl)
+          ;--------------------------------------
                     ldb       bits_2004
                     bitb      #$02                ;test bits_2004.1 (bit is set for manual gearbox)
                     bne       .LDFA3              ;if set, branch to clear counter and return
@@ -1124,18 +1097,16 @@ inputCapInt         proc
                     sta       faultBits_4C
                     bra       .LDFA8
 
-.LDFA3              clra
-                    clrb
+.LDFA3              clrd
                     std       neutralSwitchDelay  ;reset counter to zero
-
-; ---------------------------------------------------------------------------------------------------
-; This section of code is still a mystery
-
-; 'misfireCounterEven' is related to 'bankCounterEven' (right bank)
-; 'misfireCounterOdd'  is related to 'bankCounterOdd' (left bank)
-
-; 'bankCounterEven' and 'bankCounterOdd' are referenced only here
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; This section of code is still a mystery
+          ;
+          ; 'misfireCounterEven' is related to 'bankCounterEven' (right bank)
+          ; 'misfireCounterOdd'  is related to 'bankCounterOdd' (left bank)
+          ;
+          ; 'bankCounterEven' and 'bankCounterOdd' are referenced only here
+          ;--------------------------------------
 .LDFA8              lda       misfireCounterEven  ;load right bank value
                     bne       .LDFB2              ;branch if not zero
 
@@ -1145,17 +1116,16 @@ inputCapInt         proc
 .LDFB2              lda       misfireCounterOdd   ;load left bank value
                     bne       .LDFBC              ;branch if not zero
 
-                    ldd       #$0000              ;reset 'bankCounterOdd' to zero
+                    ldd       #0                  ;reset 'bankCounterOdd' to zero
                     std       bankCounterOdd
 
 .LDFBC              ldd       bankCounterOdd      ;load 16-bit value
-                    addd      #$0001              ;add 1
+                    incd
                     std       bankCounterOdd      ;store it
                     ldd       bankCounterEven     ;load 16-bit value
-                    addd      #$0001              ;add 1
+                    incd
                     std       bankCounterEven     ;store it
-
-; data value at XC25D is $0258 (600 decimal)
+          ;-------------------------------------- ;data value at XC25D is $0258 (600 decimal)
                     subd      $C25D               ;subtract 600 from bankCounterEven
                     bcs       .LDFD6              ;branch if value is less than 600
 
@@ -1170,27 +1140,23 @@ inputCapInt         proc
           #endif
                     clr       misfireCounterOdd   ;else reset counter
 
-          #ifdef BUILD_TVR_CODE
-; nothing
-          #else
-; NOTE: This whole section is missing from older code.
-; ---------------------------------------------------------------------------------------------------
-; In this section, a couple of bits are managed that can prevent closed loop operation
-
-; bits_205B.2 is set when:
-; - Road speed is greater than 4 KPH, AND
-; - X0086.7 is set (set & clrd in TPS routine) AND
-; - Coolant temperature is cooler than 83 degrees C
-; Bit is cleared if any 1 condition is not met
-
-; bits_205B.5 is set when:
-; - X0086.7 is set (set & clrd in TPS routine) AND
-; - X008A.5 is clr (neutral or D90, not drive) AND
-; - Road speed is less than 4 KPH, AND
-; - Coolant temperature is cooler than 40 degrees C
-; Bit is cleared if any 1 condition is not met
-
-; ---------------------------------------------------------------------------------------------------
+          #ifndef BUILD_TVR_CODE                  ;NOTE: This whole section is missing from older code.
+          ;--------------------------------------
+          ; In this section, a couple of bits are managed that can prevent closed loop operation
+          ;
+          ; bits_205B.2 is set when:
+          ; - Road speed is greater than 4 KPH, AND
+          ; - X0086.7 is set (set & clrd in TPS routine) AND
+          ; - Coolant temperature is cooler than 83 degrees C
+          ; Bit is cleared if any 1 condition is not met
+          ;
+          ; bits_205B.5 is set when:
+          ; - X0086.7 is set (set & clrd in TPS routine) AND
+          ; - X008A.5 is clr (neutral or D90, not drive) AND
+          ; - Road speed is less than 4 KPH, AND
+          ; - Coolant temperature is cooler than 40 degrees C
+          ; Bit is cleared if any 1 condition is not met
+          ;--------------------------------------
 .LDFE1              ldb       bits_205B           ;bits value
                     lda       $008B               ;slao a bits value
                     bita      #$01                ;test X008B.0 (road speed > 4 KPH)
@@ -1209,8 +1175,7 @@ inputCapInt         proc
 .LDFFA              andb      #$FB                ;clr bits_205B.2 (allows closed loop)
 
 .LDFFC              stb       bits_205B           ;store bits value
-
-; ---------------------------------------
+          ;--------------------------------------
             #ifndef BUILD_R3383
                     ldb       bits_205B           ;reload to set CCR
                     tst       $0086               ;test X0086.7
@@ -1236,18 +1201,16 @@ inputCapInt         proc
 .LE020              stb       bits_205B           ;store bits value
             #endif
           #endif
-
-; ---------------------------------------------------------------------------------------------------
-; Prepare Variables for Bank-Specific Processing
-
-; X00BE is a right bank value
-; X00BF is a left bank value
-; X00BD is a temporary "working" value for either value above
-
-; This section loads X00BD with the correct bank variable and also loads the general purpose
-; memory location X00C8/C9 with the short term trim value for the same bank.
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Prepare Variables for Bank-Specific Processing
+          ;
+          ; X00BE is a right bank value
+          ; X00BF is a left bank value
+          ; X00BD is a temporary "working" value for either value above
+          ;
+          ; This section loads X00BD with the correct bank variable and also loads the general purpose
+          ; memory location X00C8/C9 with the short term trim value for the same bank.
+          ;--------------------------------------
 .LDF0B              clrd
                     std       $00CE               ;clear X00CE/CF to $0000
                     lda       bits_0089           ;bits value
@@ -1278,28 +1241,23 @@ inputCapInt         proc
                     ldd       shortLambdaTrimL    ;load left side short term trim value
 
 .LE050              std       $00C8               ;this will be either right or left short term trim
-
-; ---------------------------------------------------------------------------------------------------
-; Read HO2 Sensor Measurement from ADC
-
-; Read HO2 Sensor voltage (conversion was triggered earlier) then do numerous checks (including
-; fuel map number, coolant temp, eng speed, eng load, etc.) to make sure we can do a closed loop
-; adjustment. If yes, compare the HO2 reading with the reference value and branch to rich or lean.
-
-; Oddly, the triggering and measurement of the HO2 (Lambda) sensors is also done for open loop
-; maps. The difference is that open loop maps (1, 2 and 3) branch down to a jump instruction at
-; LE0C6 which causes a lot of code to be bypassed.
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Read HO2 Sensor Measurement from ADC
+          ;
+          ; Read HO2 Sensor voltage (conversion was triggered earlier) then do numerous checks (including
+          ; fuel map number, coolant temp, eng speed, eng load, etc.) to make sure we can do a closed loop
+          ; adjustment. If yes, compare the HO2 reading with the reference value and branch to rich or lean.
+          ;
+          ; Oddly, the triggering and measurement of the HO2 (Lambda) sensors is also done for open loop
+          ; maps. The difference is that open loop maps (1, 2 and 3) branch down to a jump instruction at
+          ; LE0C6 which causes a lot of code to be bypassed.
+          ;--------------------------------------
                     ldb       AdcDataLow          ;read 8-bit HO2 sensor voltage here
-          #ifdef    SIMULATION_MODE
+          #ifdef SIMULATION_MODE
                     jsr       o2Simulation        ;for simulation
           #endif
-          #ifdef    BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365) (SIMULATION WON'T WORK WITH R3365)
-; -----------------------------------------------------------
                     stb       lambdaReading       ;the current HO2 sensor reading
+          #ifdef BUILD_R3365                      ;Defender Only (R3365) (SIMULATION WON'T WORK WITH R3365)
 
                     lda       #$27
                     sta       AdcControlReg1
@@ -1309,20 +1267,15 @@ inputCapInt         proc
 
                     ldb       lambdaReading
           #else
-                    stb       lambdaReading
                     jsr       rdSpdCompTest       ;road speed test, reloads lambdaReading in B before returning
           #endif
-; -----------------------------------------------------------
-
+          ;--------------------------------------
                     lda       fuelMapNumber       ;load fuel map number
                     beq       .LE064              ;branch if fuel map number is zero
 
                     cmpa      #$04
                     bcs       .LE0C6              ;branch if fuel map number is less than 4
-
-; ------------------------------------
-; Closed loop maps only (0, 4 and 5)
-; ------------------------------------
+          ;-------------------------------------- ;Closed loop maps only (0, 4 and 5)
 .LE064              lda       closedLoopDelay     ;counts down from $10 to zero (at about 1 Hz)
                     bne       .LE0C6              ;if not zero, branch to same place as open loop maps
 
@@ -1332,8 +1285,7 @@ inputCapInt         proc
 
                     cmpa      $C1F8               ;this data value varies a lot (can be $CE or $7A)
                     bcc       .LE0C6              ;if engine is cooler than this, branch to the same place as
-; open maps ($CE = -5 deg C, $7A = 30 deg C)
-
+          ;-------------------------------------- ;open maps ($CE = -5 deg C, $7A = 30 deg C)
                     lda       $0086
                     bita      #$04                ;test X0086.2 (1 allows closed loop, 0 forces open loop)
                     beq       .LE0C6              ;if zero, branch down like an open loop map
