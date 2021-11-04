@@ -207,7 +207,7 @@ idleControl         ldd       baseIdleSetting
                     bcc       .LD6D9              ;branch ahead if coolant temp is GT (cooler than) $23
 
 .LD6CE              ldx       $C0B0               ;for 3360, value is #0002
-                    ldd       hotFuelAdjustmment
+                    ldd       hotFuelAdjustment 
 
 .LD6D3              dex
                     beq       .LD6DA              ;this loops and does one asld (it's probably zero anyway)

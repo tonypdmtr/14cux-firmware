@@ -32,58 +32,58 @@
 adcRoutine14        proc
                     ldb       $0086
                     bitb      #$10                ;test X0086.4 (1 means diag display already updated)
-                    bne       .LD4BF              ;return if high (already updated)
+                    bne       _1@@                ;return if high (already updated)
 
                     cmpa      #$80                ;cmpr ADC reading with $80
                     lda       $00DD               ;bits value (lda does not affect carry flag)
-                    bcc       .LD4C0              ;branch ahead if reading GT $80 (meaning display present)
+                    bcc       _2@@                ;branch ahead if reading GT $80 (meaning display present)
 
                     bita      #$01                ;test 00DD.0
-                    bne       .LD4DC              ;if bit is set, branch to check for errors
+                    bne       _5@@                ;if bit is set, branch to check for errors
                     clr       obddDelayCounter    ;clear up-counter (used for delay)
 
-.LD4BF              rts                           ;code rtns from here if no display or display already updated
+_1@@                rts                           ;code rtns from here if no display or display already updated
           ;-------------------------------------- ;branches here if display is present
-.LD4C0              ldb       port1data
+_2@@                ldb       port1data
                     bitb      #$40                ;test P1.6 (fuel pump relay)
-                    beq       .LD4D5              ;branch ahead if low (fuel pump ON)
+                    beq       _4@@                ;branch ahead if low (fuel pump ON)
 
                     ldb       obddDelayCounter
                     incb                          ;increment delay counter
-                    beq       .LD4D0              ;branch ahead if counter wraps to zero
+                    beq       _3@@                ;branch ahead if counter wraps to zero
 
                     stb       obddDelayCounter
                     rts                           ;if here, delay is still active, so return
           ;-------------------------------------- ;branches here after delay (when counter wraps)
-.LD4D0              ora       #$01
+_3@@                ora       #$01
                     sta       $00DD               ;set X00DD.0
                     rts
           ;-------------------------------------- ;branch here when fuel pump is ON (or from below)
-.LD4D5              ldb       $0086
+_4@@                ldb       $0086
                     orb       #$10                ;set X0086.4
                     stb       $0086
                     rts
           ;-------------------------------------- ;branches here if X00DD.0 is high
-.LD4DC              clrb
+_5@@                clrb
                     ldx       #faultBits_49-1     ;this loop checks for fault bits
                                                   ;(scans the 6 fault bytes for non-zero values)
-.LD4E0              inx                           ;Start Loop *
+Loop@@              inx                           ;Start Loop *
                     lda       $00,x
-                    bne       .LD4EC              ;branch ahead if fault found (non-zero)
+                    bne       _6@@                ;branch ahead if fault found (non-zero)
                     incb
                     cmpb      #$06
-                    bne       .LD4E0              ;End Loop *
-                    bra       .LD4D5              ;no faults found, branch up, set X0086.4 high and rtn
+                    bne       Loop@@              ;End Loop *
+                    bra       _4@@                ;no faults found, branch up, set X0086.4 high and rtn
           ;-------------------------------------- ;Fault bit found!
-.LD4EC              clrb                          ;B used as counter
+_6@@                clrb                          ;B used as counter
           ;-------------------------------------- ;Start Loop* (right shift to get fault bit into carry)
-.LD4ED              incb                          ;increment B
+_7@@                incb                          ;increment B
                     lsra                          ;shift LSB into carry (LSB is highest priority, code 29 is first)
-                    bcc       .LD4ED              ;End Loop *
+                    bcc       _7@@                ;End Loop *
 
-.LD4F1              asla                          ;Start Loop * Clear fault bit. (left shift loop to replace the 1 with a 0)
+_8@@                asla                          ;Start Loop * Clear fault bit. (left shift loop to replace the 1 with a 0)
                     decb
-                    bne       .LD4F1              ;End Loop *
+                    bne       _8@@                ;End Loop *
 
                     sta       $00,x               ;store it back
-                    bra       .LD4D5              ;branch to set X0086.4 and return
+                    bra       _4@@                ;branch to set X0086.4 and return

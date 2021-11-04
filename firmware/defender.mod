@@ -13,25 +13,25 @@
 
 LFA46               proc
                     lda       $008B               ;bits value
-                    brn       LFA4A               ;branch never
+                    brn       _1@@                ;branch never
 
-LFA4A               ldb       AdcStsDataHigh
+_1@@                ldb       AdcStsDataHigh
                     bitb      #$40                ;test ADC busy flag
-                    bne       LFA4A               ;branch back if busy
+                    bne       _1@@                ;branch back if busy
                     bitb      #$20                ;test comparator flag
-                    beq       LFA5B               ;0 means Vin < Vp, 1 means Vin > Vp
+                    beq       _2@@                ;0 means Vin < Vp, 1 means Vin > Vp
 
                     ora       #$80
                     sta       $008B               ;set 008B.7
-                    bra       LFA71
+                    bra       Done@@
 
-LFA5B               bita      #$80
-                    beq       LFA71
+_2@@                bita      #$80
+                    beq       Done@@
                     anda      #$7F                ;clear 008B.7
                     sta       $008B
                     inc       vssStateCounter
                     ldd       faultCode26Counter  ;increm in RS comp s/r (ramp 0 to FFFF)
                     addd      #$0001
-                    bcs       LFA71               ;...but stop at $FFFF
+                    bcs       Done@@              ;...but stop at $FFFF
                     std       faultCode26Counter
-LFA71               rts
+Done@@              rts

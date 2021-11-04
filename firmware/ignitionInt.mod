@@ -1,16 +1,16 @@
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; 14CUX Firmware Rebuild Project
-
+;
 ; File Date: 14-Nov-2013
 ; 26-Mar-2014  Corrected a few comments.
 ; Replaced hard addresses with labels.
-
+;
 ; Description:    Input Capture Interrupt
-
+;
 ; This is the spark interrupt which is often referred to in this code as
 ; the ICI (Input Capture Interrupt). It is called every time a spark plug
 ; fires and it contains the heart of the 14CUX fuel control.
-
+;
 ; It is entered like a normal interrupt. In other words, the state of the
 ; microprocessor is automatically saved to the stack (program counter,
 ; index register, A accumulator, B accumulator, and condition code register).
@@ -18,18 +18,18 @@
 ; instruction, which restores all the registers. However, this interrupt,
 ; when terminating, resets the stack pointer (erasing all memory of it's
 ; past) and jumps to a re-entry point.
-
+;
 ; There are 4 possible states for this interrupt and there are two bits
 ; that are toggled in the ICI to keep track of the state.
-
+;
 ; X0088.7   bits_008C.0
 ; 1) Right (even) bank fueling        0          0
 ; 2) Right (even) bank non-fueling    0          1
 ; 3) Left (odd) bank fueling          1          0
 ; 4) Left (odd) bank non-fueling      1          1
-
+;
 ; This results in firing one injector bank for each engine revolution.
-
+;
 ; Eng.
 ; RPM   ICI Rate   ICI Period
 ; ---------------------------------
@@ -42,38 +42,35 @@
 ; 5000   333.3 Hz      3.00 ms
 ; 5502   366.8 Hz      2.73 ms
 ; 6188   412.5 Hz      2.42 ms  <--Griff limit
-
+;
 ; Profiling Code
 ; Code has been added to the entry and exit points for this interrupt
 ; that toggles a PAL output. This output can be viwed with an oscilloscope
 ; time analysis. This option is controlled in 'config.asm' and is normally
 ; turned off. Although this additional code changes the timing, there is
 ; a block of obsolete code (at LDCD2) that can be used to compensate.
-
+;
 ; Update 04-Mar-14
 ; According to the Land Rover shop manual, the distributor is physically
 ; closest to the number 1 cylinder. This is the left side from the driver's
 ; perspective. I modified the injector pulse when the bank bit was zero and
 ; the right (even numbered) bank was affected. So I'm quite sure that the
 ; following is correct:
-
+;
 ; X0088.7 = 0 means right (even) bank
 ; X0088.7 = 1 means left  (odd)  bank
+;*******************************************************************************
 
-; ------------------------------------------------------------------------------
-
+inputCapInt         proc
           #ifdef USE_4004_BIT4_FOR_ICI
-inputCapInt         lda       i2cPort             ;[4] profiling code
+                    lda       i2cPort             ;[4] profiling code
                     ora       #$10                ;[2] 4004.4 high
                     sta       i2cPort             ;[4]
-
-                    ldb       bits_2059           ;bits_2059.5 controls 1-time startup code
-          #else
-inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time startup code
           #endif
+                    ldb       bits_2059           ;bits_2059.5 controls 1-time startup code
                     bitb      #$20                ;test bits_2059.5
                     bne       .LDB73
-;*** Start: 1-time startup code ***
+          ;-------------------------------------- ;*** Start: 1-time startup code ***
                     lda       iciStartupCounter   ;this is the only area this var is used
                     inca                          ;counter usually just counts from 0 to 1
                     cmpa      #$08                ;compare with 8
@@ -87,8 +84,7 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     ora       #$40                ;set bits_2059.6
                     sta       bits_2059
                     bra       .LDB73
-
-; this jumps back to reset
+          ;-------------------------------------- ;this jumps back to reset
 .LDB63              lds       #$00FF              ;reset stack pointer
                     lda       timerCSR            ;resets timer?
                     ldd       icrHigh             ;input capture reg (clears or resets)
@@ -97,18 +93,12 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
 .LDB6E              orb       #$20                ;set bits_2059.5
                     stb       bits_2059           ;*** End: 1-time startup code ***
-
-; -----------------------------------------------------------
-; Code branches here after startup
-; Turn off PROM Checksum Test
-; (plus sets unused bit 008B.1, can delete)
-; -----------------------------------------------------------
-
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
-
+          ;--------------------------------------
+          ; Code branches here after startup
+          ; Turn off PROM Checksum Test
+          ; (plus sets unused bit 008B.1, can delete)
+          ;--------------------------------------
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
 .LDB73              lda       ignPeriod           ;load ignition period MSB
                     cmpa      #$08                ;about 3662 RPM
                     bcc       .LDB73A             ;branch ahead if LT 3662 RPM
@@ -132,10 +122,7 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
                     orb       #$02                ;set X008B.1 (unused)
                     stb       $008B
-
-; -----------------------------------------------------------
-; If fuel map is locked, re-assert Map 5
-; -----------------------------------------------------------
+          ;-------------------------------------- ;If fuel map is locked, re-assert Map 5
 .reassertMap5       ldb       fuelMapLock
           #ifdef BUILD_R3360_AND_LATER
                     beq       .LDB95
@@ -147,15 +134,11 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     stb       fuelMapNumberBackup
                     ldd       #fuelMap5
                     std       fuelMapPtr
-
-; -----------------------------------------------------------
-; This section is not found in later code. In older code,
-; bits_201F.5 can be cleared in idleControl.
-; -----------------------------------------------------------
-          #ifdef BUILD_R3360_AND_LATER
-; nothing
-          #else
-
+          ;--------------------------------------
+          ; This section is not found in later code. In older code,
+          ; bits_201F.5 can be cleared in idleControl.
+          ;--------------------------------------
+          #ifndef BUILD_R3360_AND_LATER
 .LDAB7              ldb       dtc12Delay          ;a counter
                     cmpb      #$03                ;compare with 3
                     bcc       .LDB95              ;branch when counter reaches 3
@@ -173,13 +156,12 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 .LDAD1              incb                          ;increment the counter
                     stb       dtc12Delay          ;and store it
           #endif
-
-; -----------------------------------------------------------
-; Select TPS or MAF for measurement in ICI
-
-; Below 4883 RPM, TPS is always measured
-; Above 4883 RPM, MAF and TPS alternate
-; -----------------------------------------------------------
+          ;--------------------------------------
+          ; Select TPS or MAF for measurement in ICI
+          ;
+          ; Below 4883 RPM, TPS is always measured
+          ; Above 4883 RPM, MAF and TPS alternate
+          ;--------------------------------------
 .LDB95              ldb       bits_201F           ;bits value
                     lda       ignPeriod           ;load ignition period MSB
           #ifdef BUILD_R3365
@@ -202,22 +184,20 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
 .LDBAE              sta       AdcControlReg1      ;store ADC channel and trigger measurement
                     stb       bits_201F           ;store bits_201F, bit 6 = 1 (MAF) or 0 (TPS)
-
-; ------------------------------------------------------------------------------
-; Measure and save engine ignition period
-
-; The MPU's Input Capture Register latches the 1 MHz free running counter on
-; the Input Capture transition. Since the counter often wraps (or overflows)
-; which results in Timer Overflow Flag (TOF) being set, there is an additional
-; variable (timerOverflow1) which is used to keep track of this.
-
-; Software uses this value to measure the spark to spark time. The value is
-; right shifted 1 bit before storage and use, which reduces the resolution to
-; 2 uSec units. This is probably done to facilitate the math since this avoids
-; perceived negative numbers. The 16-bit timer value is saved in sparkPeriodTimer
-; to be used in the next interrupt.
-
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Measure and save engine ignition period
+          ;
+          ; The MPU's Input Capture Register latches the 1 MHz free running counter on
+          ; the Input Capture transition. Since the counter often wraps (or overflows)
+          ; which results in Timer Overflow Flag (TOF) being set, there is an additional
+          ; variable (timerOverflow1) which is used to keep track of this.
+          ;
+          ; Software uses this value to measure the spark to spark time. The value is
+          ; right shifted 1 bit before storage and use, which reduces the resolution to
+          ; 2 uSec units. This is probably done to facilitate the math since this avoids
+          ; perceived negative numbers. The 16-bit timer value is saved in sparkPeriodTimer
+          ; to be used in the next interrupt.
+          ;--------------------------------------
                     lda       timerCSR            ;reading timerCSR and then icrHigh resets ICF1
                     lds       #$00FF              ;why is stack being reset again?
                     ldd       icrHigh             ;read 16-bit input capture register & reset ICF1
@@ -230,22 +210,19 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     inc       timerOverflow2      ;<-- overflow happened, increment road speed counter
                     bne       .LDBCD              ;branch ahead if it hasn't wrapped
                     dec       timerOverflow2      ;otherwise, clip it at $FF
-
-; does this check for another, more recent overflow??
+          ;-------------------------------------- ;does this check for another, more recent overflow??
 .LDBCD              ldd       counterHigh         ;load current counter value (also resets the TOF)
                     subd      $00C8               ;subtract ICR snapshot value
                     bcc       .LDBD7              ;branch overflow did not recently happen
 
                     ldb       #$01                ;overflow happened, load $01 to store at timerOverflow1
                     bra       .LDBDD              ;branch ahead to load timerOverflow1 into A
-
-; <-- overflow did not recently happen
+          ;-------------------------------------- ;<-- overflow did not recently happen
 .LDBD7              clrb                          ;clear B to conditionally write to timerOverflow1
                     lda       timerOverflow1      ;load timerOverflow1
                     inca                          ;increment the value
                     bne       .LDBDF              ;if non-zero, branch ahead to zero timerOverflow1
-
-; code branches here if TOF is clear
+          ;-------------------------------------- ;branch here if TOF is clear
 .LDBDD              lda       timerOverflow1      ;load timerOverflow1
 
 .LDBDF              stb       timerOverflow1      ;store B in timerOverflow1 for later use (usually zero or one)
@@ -269,16 +246,13 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     subd      sparkPeriodTimer    ;'sparkPeriodTimer' is last ICR snapshot divided by 2 (0 to 32K)
 
 .LDBFE              std       ignPeriod           ;store ignition period
-
-; ------------------------------------------------------------------------------
-; Check bit that is set (below) when engine starts
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;Check bit that is set (below) when engine starts
                     lda       $0085               ;bits value
                     bita      #$40                ;test X0085.6 (engine started flag)
                     bne       .LDC52              ;branch down if engine already running
-; ------------------------------------------------------------------------------
-; Engine NOT Running (Code from here to LDC52 stops executing once eng starts)
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Engine NOT Running (Code from here to LDC52 stops executing once eng starts)
+          ;--------------------------------------
                     lda       ignPeriodFiltered   ;load filtered ignition period
                     cmpa      #ignPeriodEngStart-1  ;$39 (514 RPM) or $4D (380 RPM for cold weather chip)
                     bcc       .LDC4A              ;branch if RPM is less than this
@@ -286,16 +260,13 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     lda       startupCodeDelay    ;a counter used for a small code execution delay
                     cmpa      #startupDelayCount  ;usually $02 but $04 for cold weather chip
                     bcs       .LDC4F              ;branch ahead if 'startupCodeDelay' is LT 04
-
-; -----------------------------------------
+          ;--------------------------------------
                     lda       $0085               ;this executes once only after 'startupCodeDelay' reaches compare count
                     ora       #$40                ;set 0085.6 (set bit to control 1-time code)
                     sta       $0085
                     jsr       initRAMFromExt      ;this subroutine checks for differences between the battery-backed RAM
-; and it's mirror in external memory, if diffs, code re-syncs memory
-          #ifdef BUILD_R3360_AND_LATER
-; nothing
-          #else
+                                                  ;and it's mirror in external memory, if diffs, code re-syncs memory
+          #ifndef BUILD_R3360_AND_LATER
                     lda       #$FA                ;for older code, reset 1 Hz startup down-counter to 250 seconds
             #ifdef BUILD_R3383
                     sta       startupDownCount
@@ -333,9 +304,7 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     stb       startupTimerEven    ;init right bank startup timer
                     stb       startupTimerOdd     ;init left bank startup timer
 
-          #ifdef BUILD_R3360_AND_LATER
-; nothing for later code
-          #else
+          #ifndef BUILD_R3360_AND_LATER
 .LDB8D              ldb       bits_201F           ;bits value
                     bitb      #$20                ;test bits_201F.5
                     beq       .LDC52              ;branch ahead if zero
@@ -346,18 +315,14 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
           #endif
 .LDC48              bra       .LDC52              ;branch to next section
 
-; -----------------------------------------
-; code jumps here if eng speed is LT 514 (380 for cold chip)
+          ;--------------------------------------
+          ; code jumps here if eng speed is LT 514 (380 for cold chip)
+          ;--------------------------------------
 .LDC4A              clr       startupCodeDelay    ;code delay counter mentioned above
                     bra       .LDC52              ;branch to next section
-
-; -----------------------------------------
-
+          ;--------------------------------------
 .LDC4F              inc       startupCodeDelay    ;increment the counter
-
-; -----------------------------------------
-; Engine running condition code
-; -----------------------------------------
+          ;-------------------------------------- ;Engine running condition code
 .LDC52              ldd       $00CA               ;still the 16-bit ICR snapshot value (see LDBBD area)
                     lsrd                          ;divide by 2
                     std       sparkPeriodTimer    ;store timer (0-32K range) for use on next call (above)
@@ -365,18 +330,14 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     lda       $0088
                     bita      #$01                ;test X0088.0
                     bne       .checkForHiRPM      ;branch if bit is set
-
-; -----------------------------------------
-; Stepper motor adjustment
-; -----------------------------------------
+          ;-------------------------------------- ;Stepper motor adjustment
                     ldb       $0087
                     bitb      #$40                ;test X0087.6 bit is set when eng RPM > (1200 + ECT delta)
                     beq       .checkForHiRPM      ;branch if idle is OK
 
                     ldb       iacMotorStepCount   ;this is absolute value of pending IACV adjustment
                     bne       .checkForHiRPM      ;branch ahead to skip this section if value not zero
-; (meaning that an adjustment is already pending)
-
+                                                  ; (meaning that an adjustment is already pending)
                     ora       #$01                ;set X0088.0
                     sta       $0088
                     ldd       throttlePot         ;load 10-bit TPS value
@@ -392,13 +353,12 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 .checkForHiRPM      lda       ignPeriod           ;load MSB of ignition period
                     cmpa      #$07                ;$0700 = 4185 RPM
                     bcs       .LDCB0              ;branch ahead if RPM > 4185
-
-; ---------------------------------------------------
-; This subracts 1 from a purge valve timer variable
-; (if not zero) every 4th time through.
-
-; This section skipped if RPM > 4185
-; ---------------------------------------------------
+          ;--------------------------------------
+          ; This subracts 1 from a purge valve timer variable
+          ; (if not zero) every 4th time through.
+          ;
+          ; This section skipped if RPM > 4185
+          ;--------------------------------------
                     lda       bits_008C
                     bita      #$01                ;test bits_008C.0 (toggled bit)
                     bne       .LDC97              ;branch ahead if bit is 1
@@ -411,12 +371,11 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
                     subd      #$0001              ;otherwise, subtract 1
                     std       purgeValveTimer2    ;and store it
-
-; ---------------------------------------------------
-; Condition bit X00DC.0 (related to short term trim)
-
-; This section skipped if RPM > 4185
-; ---------------------------------------------------
+          ;--------------------------------------
+          ; Condition bit X00DC.0 (related to short term trim)
+          ;
+          ; This section skipped if RPM > 4185
+          ;--------------------------------------
 .LDC97              lda       $008B
                     anda      #$01                ;isolate X008B.0 (road speed > 4 KPH)
                     beq       .LDCAA              ;branch ahead if road speed is < 4 KPH
@@ -433,10 +392,7 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     anda      #$FE                ;clr X00DC.0 (VSS < 4 or TPS > 40%)
 
 .LDCAE              sta       $00DC
-
-; ---------------------------------------------------
-; A/C compressor control
-; ---------------------------------------------------
+          ;-------------------------------------- ;A/C compressor control
 .LDCB0              ldb       $00E2               ;bits
                     lda       ignPeriodFiltered   ;load filtered ignition period (MSB only)
                     suba      #$12                ;subtract $12
@@ -461,28 +417,26 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 .LDCCE              ora       #$04                ;P22 high (A/C compressor)
 
 .LDCD0              sta       port2data           ;write to port
-
-; -------------------------------------------------------------------------------
-; Obsolete Code
-
-; The X4004 register is decoded in the PAL to discrete outputs. Bits 5 and 6
-; are used for the I2C to the OBDD and come out of the PAL at pins 35 and 36.
-
-; Bit 7, which is used here, comes out at pin 37 but it looks dead ended on
-; the board due to missing components.
-
-; The number in brackets is clock execution clock cycles
-; Path 1 = 11 + 13 = 24
-; Path 2 = 11 + 10 = 21
-; This code block takes 21 or 24 clock cycles to execute.
-
-; Using the USE_4004_BIT4_FOR_ICI bit adds 20 clock cycles to the ICI.
-; Simulation adds 9 clocks (off) or 20 clocks (on) for the TPS/MAF.
-; HO2S simulation adds 36 plus 6 (jsr) for a total of 42.
-; -------------------------------------------------------------------------------
-
+          ;--------------------------------------
+          ; Obsolete Code
+          ;
+          ; The X4004 register is decoded in the PAL to discrete outputs. Bits 5 and 6
+          ; are used for the I2C to the OBDD and come out of the PAL at pins 35 and 36.
+          ;
+          ; Bit 7, which is used here, comes out at pin 37 but it looks dead ended on
+          ; the board due to missing components.
+          ;
+          ; The number in brackets is clock execution clock cycles
+          ; Path 1 = 11 + 13 = 24
+          ; Path 2 = 11 + 10 = 21
+          ; This code block takes 21 or 24 clock cycles to execute.
+          ;
+          ; Using the USE_4004_BIT4_FOR_ICI bit adds 20 clock cycles to the ICI.
+          ; Simulation adds 9 clocks (off) or 20 clocks (on) for the TPS/MAF.
+          ; HO2S simulation adds 36 plus 6 (jsr) for a total of 42.
+          ;--------------------------------------
 .LDCD2              ldd       throttlePot         ;[4] load 10-bit TPS value
-                    subd      #$00B9              ;[4] subtract $B9 (about 18% throttle)
+                    subd      #185                ;[4] subtract $B9 (about 18% throttle)
                     bcs       .LDCE3              ;[3] branch if < 18% to drive X4004.7 low
 
                     lda       i2cPort             ;[4] TPS > 18%
@@ -493,15 +447,14 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 .LDCE3              lda       i2cPort             ;[4] TPS < 18%
                     anda      #$7F                ;[2] drive X4004.7 low
                     sta       i2cPort             ;[4]
-
-; ------------------------------------------------------------------------------
-; Read ADC Result (TPS or MAF)
-
-; Below 4883 RPM the TPS is always read.
-; Above 4883 RPM the TPS and MAF alternate.
-; The jmp at the end of this section skips the calculation of TPS Direction
-; & Rate and the 24-bit TPS related value.
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Read ADC Result (TPS or MAF)
+          ;
+          ; Below 4883 RPM the TPS is always read.
+          ; Above 4883 RPM the TPS and MAF alternate.
+          ; The jmp at the end of this section skips the calculation of TPS Direction
+          ; & Rate and the 24-bit TPS related value.
+          ;--------------------------------------
 .LDCEB              clr       $00CE               ;to be used much later in linearizeMAF
                     lda       $0086
                     ora       #$02                ;set X0086.1 (MAF initialized bit?)
@@ -513,12 +466,12 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     lda       bits_201F
                     bita      #$40                ;test bits_201F.6 (air flow/throttle pot)
                     beq       .LDD0D              ;if 0, conflicting bits, branch to jump to O2 test
-; TODO: this needs to be understood better
-
-; ----------------------------------------------------------
-; MAF Simulation
-; Simulation adds 9 clocks when OFF and 20 clocks when ON
-; ----------------------------------------------------------
+          ;--------------------------------------
+          ; TODO: this needs to be understood better
+          ;--------------------------------------
+          ; MAF Simulation
+          ; Simulation adds 9 clocks when OFF and 20 clocks when ON
+          ;--------------------------------------
           #ifdef SIMULATION_MODE
                     lda       $2072               ;[4] load simulation control byte
                     cmpa      #SIM_CONTROL_BYTE   ;[2] compare it with SIM_CONTROL_BYTE
@@ -539,22 +492,21 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
           #else
 .LDD0D              jmp       .LDE79              ;jump way down to O2 test
           #endif
-; ----------------------------------------------------------
+
+;*******************************************************************************
 ; TPS Simulation
-; ----------------------------------------------------------
+
+.LDD10              proc
           #ifdef SIMULATION_MODE
-.LDD10              lda       $2072               ;[4] load simulation control byte
+                    lda       $2072               ;[4] load simulation control byte
                     cmpa      #SIM_CONTROL_BYTE   ;[2] compare it with SIM_CONTROL_BYTE
                     bne       .skip_sim2          ;[3] branch if simulation is off
 
                     lda       $2064               ;[4] TPS Simulation Bytes
                     ldb       $2065               ;[4]
                     bra       .sim2               ;[3]
-
-.skip_sim2          lda       AdcStsDataHigh      ;read 10-bit TPS (triggered earlier)
-          #else
-.LDD10              lda       AdcStsDataHigh      ;read 10-bit TPS (triggered earlier)
           #endif
+.skip_sim2          lda       AdcStsDataHigh      ;read 10-bit TPS (triggered earlier)
                     ldb       AdcDataLow
 
 .sim2               anda      #$03                ;mask 10-bit value
@@ -567,18 +519,20 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
           #else
                     jmp       .LDE79              ;(eng cranking) jump ahead to O2 test
           #endif
-; ------------------------------------------------------------------------------
-; Set or Clear X0087.0 which control Open/Closed Loop
 
+;*******************************************************************************
+; Set or Clear X0087.0 which control Open/Closed Loop
+;
 ; Normal path is from the bpl, just above to here. TPS being read and engine
 ; running. X0087.0 is set or cleared here. This bit is used for open/closed
 ; loop control. (bit is set when TPS > 40% and ECT cooler than 122 F)
-; ------------------------------------------------------------------------------
-.LDD22              subd      #410                ;subtract 410 dec from TPS (40% or 2.0 volts)
+
+.LDD22              proc
+                    subd      #410                ;subtract 410 dec from TPS (40% or 2.0 volts)
                     bcs       .LDD33              ;branch ahead to clr bit if TPS < 2.0 volts
 
                     lda       coolantTempCount    ;load ECT sensor count
-                    cmpa      #$51                ;compare with $51
+                    cmpa      #81                 ;compare with $51
                     bcs       .LDD33              ;branch ahead if ECT hotter than 50 C (122 F)
 
                     lda       $0087
@@ -589,12 +543,11 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     anda      #$FE                ;clr X0087.0 (to allow closed loop)
 
 .LDD37              sta       $0087               ;store it
-
-; -------------------------------------------------------------------------------
-; Set or Clear X00E2.3 based on TPS (30%) and ECT (50 C)
-
-; But it looks like it's never used so we can delete this.
-; -------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Set or Clear X00E2.3 based on TPS (30%) and ECT (50 C)
+          ;
+          ; But it looks like it's never used so we can delete this.
+          ;--------------------------------------
                     ldd       throttlePot         ;load 10-bit TPS value
                     subd      #307                ;subtract 307 dec from TPS (30% or 1.5 Volts)
                     lda       $00E2               ;LDA does not affect carry
@@ -610,18 +563,17 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 .LDD4C              anda      #$F7                ;clr X00E2.3 (TPS > 1.5V or ECT colder than 50 C)
 
 .LDD4E              sta       $00E2               ;store it
-
-; -------------------------------------------------------------------------------
-; Throttle Pot Calculation
-
-; When RPM < 4185, continue to next section (TPS Direction & Rate), else
-; call a TPS related routine, set the 24-bit value = (TP * 256) and jump down
-; -------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Throttle Pot Calculation
+          ;
+          ; When RPM < 4185, continue to next section (TPS Direction & Rate), else
+          ; call a TPS related routine, set the 24-bit value = (TP * 256) and jump down
+          ;--------------------------------------
                     lda       ignPeriod           ;load ignition period (MSB only)
           #ifdef BUILD_R3365
-                    cmpa      #$08                ;compare with $08
+                    cmpa      #8                  ;compare with $08
           #else
-                    cmpa      #$07                ;compare with $07
+                    cmpa      #7                  ;compare with $07
           #endif
                     bcc       .LDD60              ;branch ahead if < 4185 RPM
 
@@ -631,15 +583,16 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
 .LDD5D              jmp       .LDE70              ;jump to end of next section (RPM GT 4185)
 
-; -------------------------------------------------------------------------------
+;*******************************************************************************
 ; Calculate Throttle Direction and Rate
-
+;
 ; Code only gets here from the bcc above (when RPM < 4185).
 ; Note that the data tables at C0F8 and C731 are identical for R3526 tune.
-
+;
 ; The data table used here is the 6 row x 10 column table.
-; -------------------------------------------------------------------------------
-.LDD60              ldx       #$C0F8              ;point to start of data table
+
+.LDD60              proc
+                    ldx       #$C0F8              ;point to start of data table
                     ldb       fuelMapNumber       ;load fuel map number
                     beq       .LDD6E              ;branch ahead to use $C0F8 if fuel map 0
 
@@ -657,15 +610,10 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
                     cmpb      #$02                ;TPS reading was greater so subtract 2 from positive remainder
                     bcc       .LDD8F              ;branch ahead if TPS > (savedTpsValue plus 2) (throttle opening)
-; ---------------------
-; Throttle is steady
-; ---------------------
+          ;-------------------------------------- ;Throttle is steady
 .LDD7F              ldd       savedTpsValue       ;load last saved value
                     bra       .LDD99              ;branch to common code with last saved value
-
-; ---------------------
-; Throttle is closing
-; ---------------------
+          ;-------------------------------------- ;Throttle is closing
 .LDD83              cmpb      #$FD                ;TPS < savedTpsValue, compare negative value with -3
                     bcc       .LDD7F              ;if cc, value was more positive so branch up to steady throttle
 
@@ -673,22 +621,18 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     ora       #$20                ;set X008B.5 (this is the throttle_closing bit)
                     sta       $008B
                     bra       .LDD95
-
-; ---------------------
-; Throttle is opening
-; ---------------------
+          ;-------------------------------------- ;Throttle is opening
 .LDD8F              lda       $00D3
                     ora       #$40                ;set X00D3.6 (this is the throttle_opening bit)
                     sta       $00D3
-; throttle opening or closing gets to here (not steady condition)
+          ;-------------------------------------- ;throttle opening or closing gets to here (not steady condition)
 .LDD95              ldd       throttlePot         ;save current TPS value...
                     std       savedTpsValue       ;for next time through
-
-; ------------------------------------------
-; All 3 condition above end up here.
-; This section takes the absolute value of
-; the TPS delta and limits it to $FF.
-; ------------------------------------------
+          ;--------------------------------------
+          ; All 3 condition above end up here.
+          ; This section takes the absolute value of
+          ; the TPS delta and limits it to $FF.
+          ;--------------------------------------
 .LDD99              subd      throttlePot24bit    ;subtract top 16 bits of 24-bit TPS value from current TPS value
                     std       $00CC               ;store signed throttle delta (pos or neg) in X00CC/CD
                     bpl       .LDDA2              ;skip absolute value conversion if positive
@@ -708,9 +652,7 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
 .LDDB3              lda       $00CC               ;load signed throttle delta (MSB)
                     bpl       .LDDEF              ;branch ahead if delta is positive (TPs > upper 16 of throttlePot24bit)
-; -----------------------------------------
-; Throttle Delta is Negative (closing)
-; -----------------------------------------
+          ;-------------------------------------- ;Throttle Delta is Negative (closing)
                     lda       $008B               ;B holds abs of throttle delta ($FF max)
                     bita      #$01                ;test X008B.0 (road speed > 4 KPH)
                     bne       .LDDC3              ;branch ahead if road speed > 4 KPH
@@ -718,9 +660,8 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     lda       $00D3
                     bita      #$40                ;test X00D3.6 (throttle_opening bit)
                     beq       .LDD5D              ;if 0, throttle is steady so branch up to jump instruction
-; to jump way down and reset TPS D&R to 1024
-
-; if here, throttle delta is negative & road speed > 4 KPH
+                                                  ;to jump way down and reset TPS D&R to 1024
+          ;-------------------------------------- ;throttle delta is negative & road speed > 4 KPH
 .LDDC3              lda       $2011               ;this value comes from last byte in fuel map data struct (usually $64)
                     mul                           ;B is absolute value of TP delta (multiply A * B)
                     cmpa      $14,x               ;compare upper byte of result with value from 3rd row of table
@@ -749,11 +690,12 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     jsr       absoluteValAB       ;convert to absolute value
                     bra       .LDE0F              ;branch down to common code
 
-; -----------------------------------------
+;*******************************************************************************
 ; Throttle Delta is Positive (opening)
-; -----------------------------------------
 ; B holds abs of throttle delta ($FF max)
-.LDDEF              lda       $1E,x               ;get 4th row value from table
+
+.LDDEF              proc
+                    lda       $1E,x               ;get 4th row value from table
                     mul                           ;multiply delta by this value (16-bit result in AB)
                     cmpa      $0A,x               ;compare with 2nd row value for limiting reasons
                     bcs       .LDDF9              ;if upper byte A is < table value we're OK so branch ahead
@@ -775,17 +717,17 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
 
 .LDE0C              ldd       $00CA               ;load the previously stored, 16-bit result (a positive number)
                     lsrd                          ;logical shift right double
-; -----------------------------------------
-; Back to common throttle code
-; -----------------------------------------
-; the next 4 lines are a 16-bit divide by 4
+          ;--------------------------------------
+          ; Back to common throttle code
+          ; the next 4 lines are a 16-bit divide by 4
+          ;--------------------------------------
 .LDE0F              asra                          ;arithmetic shift right (into carry)
                     rorb                          ;rotate right (carry->B->carry)
                     asra                          ;arithmetic shift right (into carry)
                     rorb                          ;rotate right (carry->B->carry)
 
                     addd      #$0400              ;AB is now a pos or neg value to be added to the 1024 base value
-                    std       tpsDirectionAndRate  ;store TPS Dir & Rate (1024 +/-)
+                    std       tpsDirectionAndRate ;store TPS Dir & Rate (1024 +/-)
 
 ; -------------------------------------------------------------------------------
 ; Calculate 24-bit Throttle Pot Value
@@ -3106,7 +3048,7 @@ inputCapInt         ldb       bits_2059           ;bits_2059.5 controls 1-time s
                     pula                          ;pull the upper byte
                     bne       .LE800              ;branch if not zero (usually branches
 
-                    addd      hotFuelAdjustmment
+                    addd      hotFuelAdjustment 
                     bcc       .LE800              ;if value did not overflow, use it
 
                     ldd       #$FFFF              ;else clip at $FFFF
