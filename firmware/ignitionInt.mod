@@ -1324,19 +1324,16 @@ inputCapInt         proc
                     lda       o2ReferenceSense    ;make rich/lean decision here for misfire test
                     cba                           ;compare accums, A (reference value) minus B (HO2 reading)
                     bcs       .LE0FB              ;branch if HO2 reading greater then reference value (rich)
-; Wikipedia: lean mixture causes low voltage (excess oxygen)
-; rich mixture causes high voltage (depleted O2)
-
-; ---------------------------------------------------------------------------------------------------
-; Misfire Check -- Lean Condition -- (HO2 voltage is low, excess oxygen)
-
-; Check for misfire fault (40 & 50) here. A misfire results in excess (unused) oxygen.
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Wikipedia: lean mixture causes low voltage (excess oxygen)
+          ; rich mixture causes high voltage (depleted O2)
+          ;--------------------------------------
+          ; Misfire Check -- Lean Condition -- (HO2 voltage is low, excess oxygen)
+          ; Check for misfire fault (40 & 50) here. A misfire results in excess (unused) oxygen.
+          ;--------------------------------------
                     tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
                     bmi       .LE0C9              ;branch ahead if bit is 1 (odd or left bank)
-; ------------------
-; Even (Right) Bank
-; ------------------
+          ;-------------------------------------- ;Even (Right) Bank
                     lda       $00DD               ;load X00DD
                     bita      #$20                ;test X00DD.5
                     bne       .LE10C              ;branch to next section if bit is already set
@@ -1351,15 +1348,9 @@ inputCapInt         proc
                     sta       misfireCounterEven  ;store misfire counter
                     sta       copyOfX00E0         ;also stored here but never used
                     bra       .LE10C              ;branch to next section
-
-; -----------------------------------------
+          ;--------------------------------------
 .LE0C6              jmp       .LE523              ;jump label for skipping closed loop
-
-; -----------------------------------------
-
-; ------------------
-; Odd (Left) Bank
-; ------------------
+          ;-------------------------------------- ;Odd (Left) Bank
 .LE0C9              lda       $00DD               ;load X00DD
                     bita      #$40                ;test X00DD.6
                     bne       .LE10C              ;branch to next section if bit is already set
@@ -1374,9 +1365,7 @@ inputCapInt         proc
                     sta       misfireCounterOdd   ;store misfire counter
                     sta       copyOfX00E1         ;also stored here but never used
                     bra       .LE10C              ;branch to next section
-
-; -----------------------------------------
-
+          ;--------------------------------------
 .LE0E2              lda       faultBits_49
                     ora       #$10                ;<-- Set Fault Code 40 (Misfire A Fault) RIGHT SIDE!!
                     bra       .LE0EC
@@ -1386,29 +1375,22 @@ inputCapInt         proc
 
 .LE0EC              sta       faultBits_49
 
-          #ifdef    BUILD_R3360_AND_LATER
-; newer code does not use fault code 25
-          #else
+          #ifndef BUILD_R3360_AND_LATER           ;newer code does not use fault code 25
                     lda       faultBits_49
                     ora       #$08                ;<-- set Fault Code 25 (general misfire)
                     sta       faultBits_49
           #endif
                     bra       .LE10C              ;branch to next section
-
-; -----------------------------------------
-; code can branch here from above to bypass misfire test
+          ;-------------------------------------- ;branch here from above to bypass misfire test
 .LE0F0              clra                          ;clear A
                     sta       misfireCounterEven  ;reset even bank misfire counter to zero
                     sta       misfireCounterOdd   ;reset odd bank misfire counter to zero
                     lda       $00DD               ;load bits value
                     ora       #$60                ;set bits X00DD.6 and X00DD.5
                     bra       .LE10A              ;branch ahead to store value and continue
-
-; -------------------------------------------------------------------------------
-
-; Rich Condition -- (O2 voltage is high, depleted oxygen)
-
-; -------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Rich Condition -- (O2 voltage is high, depleted oxygen)
+          ;--------------------------------------
 .LE0FB              tst       $0088               ;test X0088.7 (0 = even, 1 = odd)
                     bmi       .LE106              ;branch ahead if bit 7 is 1 (left bank)
 
@@ -1420,47 +1402,45 @@ inputCapInt         proc
                     anda      #$BF                ;clear X00DD.6
 
 .LE10A              sta       $00DD               ;store bits value
-
-; -----------------------------------------------------------------------------------------------------------------
-; Make Open/Closed Loop Decision Here
-
-; X0087    All bits except 6 and 2 force open loop
-
-; Bit 0:  Set when MAF > 2.0 Volts AND Coolant Temp < 50 degrees C
-; Bit 1:  Set when MAF fault occurs
-; Bit 3:  Set when throttle pot is > 91% (approx 4.6 Volts)
-; Bit 4:  (otherwise unused, should be zero)
-; Bit 5:  Set when RPM > 3400 (value stored at 0xC0A7)
-; Bit 7:  Set & cleared in spark interrupt (todo)
-
-; bits_205B.2  When this bit is set, open loop is forced. It's set when:
-; 1) Road speed is > 4 KPH
-; AND
-; 2) Bit X0086.7 is set
-; AND
-; 3) Coolant temp is cooler than 83 deg C
-
-; bits_205B.5  When this bit is set, open loop is forced. It's set when:
-; 1) Bit X0086.7 is set
-; AND
-; 2) Bit X008A.5 is zero (park, neutral or manual, not drive)
-; AND
-; 3) Road speed < 4 KPH
-; AND
-; 4) Coolant temp is cooler than 40 deg C
-
-; More bits that force open loop:
-
-; X0085.7  Low engine RPM (less than 505 RPM, or 375 RPM for op-pride cold weather chip)
-; bits_0089.7  (todo)
-; bits_008C.3  (todo, bit bits_008C.2 seems to correlate to the open/closed condition)
-; X008A.6  Set at startup, timeout from 3rd row of coolant table (1 Hz dwn_cnt, also fueling component)
-
-; Plus a magic byte:
-
-; 0xC099  Default is zero, set to non-zero to force open loop
-
-; -----------------------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Make Open/Closed Loop Decision Here
+          ;
+          ; X0087    All bits except 6 and 2 force open loop
+          ;
+          ; Bit 0:  Set when MAF > 2.0 Volts AND Coolant Temp < 50 degrees C
+          ; Bit 1:  Set when MAF fault occurs
+          ; Bit 3:  Set when throttle pot is > 91% (approx 4.6 Volts)
+          ; Bit 4:  (otherwise unused, should be zero)
+          ; Bit 5:  Set when RPM > 3400 (value stored at 0xC0A7)
+          ; Bit 7:  Set & cleared in spark interrupt (todo)
+          ;
+          ; bits_205B.2  When this bit is set, open loop is forced. It's set when:
+          ; 1) Road speed is > 4 KPH
+          ; AND
+          ; 2) Bit X0086.7 is set
+          ; AND
+          ; 3) Coolant temp is cooler than 83 deg C
+          ;
+          ; bits_205B.5  When this bit is set, open loop is forced. It's set when:
+          ; 1) Bit X0086.7 is set
+          ; AND
+          ; 2) Bit X008A.5 is zero (park, neutral or manual, not drive)
+          ; AND
+          ; 3) Road speed < 4 KPH
+          ; AND
+          ; 4) Coolant temp is cooler than 40 deg C
+          ;
+          ; More bits that force open loop:
+          ;
+          ; X0085.7  Low engine RPM (less than 505 RPM, or 375 RPM for op-pride cold weather chip)
+          ; bits_0089.7  (todo)
+          ; bits_008C.3  (todo, bit bits_008C.2 seems to correlate to the open/closed condition)
+          ; X008A.6  Set at startup, timeout from 3rd row of coolant table (1 Hz dwn_cnt, also fueling component)
+          ;
+          ; Plus a magic byte:
+          ;
+          ; 0xC099  Default is zero, set to non-zero to force open loop
+          ;--------------------------------------
 .LE10C              lda       $0087               ;bits value
                     anda      #$BB                ;clr X0087.6 (RPM < 1200+) and X0087.2 (not written back to X0087)
                     ora       $C099               ;this value normally zero (set no bits)
@@ -1470,7 +1450,7 @@ inputCapInt         proc
                     lda       bits_205B           ;bits value
                     bita      #$04                ;test bits_205B.2
                     bne       .LE15D              ;if set, branch to jmp to LE523 (skip closed loop)
-            #ifndef    BUILD_R3383
+            #ifndef BUILD_R3383
                     bita      #$20                ;test bits_205B.5
                     bne       .LE15D              ;if set, branch to jmp to LE523 (skip closed loop)
             #endif
@@ -1512,25 +1492,21 @@ inputCapInt         proc
 .LE151              bita      #$20                ;Left Bank, test X0088.5 (left bank bit)
                     bne       .LE157              ;if bit set, branch->jmp->E5EA
                     bra       .LE160              ;branch to continue closed loop
-
-; -----------------------------------------
-
+          ;--------------------------------------
 .LE157              jmp       .LE5EA              ;jumps down further than closed loop (skips purge valve)
-
-; -----------------------------------------
+          ;--------------------------------------
                     jsr       LF3A3               ;<-- non-accessed code
-; -----------------------------------------
-
+          ;--------------------------------------
 .LE15D              jmp       .LE523              ;jumps to same point as open loop maps
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Start of Closed Loop Code
-
+;
 ; X00C8/C9 holds the 16-bit short term trim (either right or left)
 ; B accumulator holds the HO2 sensor reading (same bank)
 
-; ------------------------------------------------------------------------------
-.LE160              pshb                          ;push HO2 sensor reading
+.LE160              proc
+                    pshb                          ;push HO2 sensor reading
                     lda       startupTimerEven    ;right bank startup timer (init to 3, decrements at 1 Hz)
                     bne       .LE181              ;branch to jump if timer is not zero
 
@@ -1550,11 +1526,9 @@ inputCapInt         proc
                     sta       bits_0089           ;store it
 
 .LE17E              jmp       .LE21A              ;jump down to 'jsr' before rich/lean code
-
-; -----------------------------------------
+          ;--------------------------------------
 .LE181              jmp       .LE21D              ;jump down to rich/lean code
-
-; -----------------------------------------
+          ;--------------------------------------
 .LE184              ldd       mafDirectHi         ;load MAF high
                     addd      mafDirectLo         ;add MAF low
                     subd      $C1AF               ;subtract $043D (1085d) from air flow sum (2.65V avg)
@@ -1562,8 +1536,7 @@ inputCapInt         proc
 
                     subd      $C1B2               ;air flow is higher so subtract an additional $0100
                     bcc       .LE17E              ;bra->jmp->LE21A if air flow is higher (3.28V avg)
-
-; if here, MAF avg is between 2.65V and 3.28V
+          ;-------------------------------------- ;if here, MAF avg is between 2.65V and 3.28V
                     lda       coolantTempCount    ;load ECT sensor count
                     cmpa      $C17E               ;inside coolant temp table (value is $23 or 87 deg C)
                     bcc       .LE17E              ;bra->jmp->LE21A if temperature cooler than 87 C
@@ -1583,16 +1556,15 @@ inputCapInt         proc
                     bcs       .LE1A8              ;bra->jmp->LE21D if X0094 is LT $15
 
                     lda       $00A9               ;load MSB of 16-bit right bank value
-
-; ------------------------------------------------------------------------------
-; This code is executed when X0094 (right) or X0095 (left) is greater than $15
-
-; A accum contains MSB of X00A9/AA or X00AB/AC
-; Index contains #008E or #008F
-; Table at $C196 is used, top row values for this table are not temperatures.
-
-; This is fault condition code and not normally executed.
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; This code is executed when X0094 (right) or X0095 (left) is greater than $15
+          ;
+          ; A accum contains MSB of X00A9/AA or X00AB/AC
+          ; Index contains #008E or #008F
+          ; Table at $C196 is used, top row values for this table are not temperatures.
+          ;
+          ; This is fault condition code and not normally executed.
+          ;--------------------------------------
 .LE1B2              ldb       $02,x               ;X is X008E or X008F so loading X0090 or X0091
                     stb       $00CA               ;store it in temporary location
                     ldb       $00,x               ;load X008E or X008F
@@ -1610,8 +1582,7 @@ inputCapInt         proc
                     sta       $00CA               ;save MSB only
                     pulb                          ;pull the value from X008E thru X0091
                     bra       .LE1D3              ;branch
-
-; this option not normally used
+          ;-------------------------------------- ;this option not normally used
 .LE1D0              pulb                          ;pull the value from X008E thru X0091
                     mul                           ;multiply B by 2nd row value
                     tab                           ;transfer MSB of result into B
@@ -1654,9 +1625,9 @@ inputCapInt         proc
 
 .LE205              clra                          ;clear A
                     tab                           ;transfer A to B
-                    sta       $00,x               ;clear X008E or X008F
-                    sta       $02,x               ;clear X0090 or X0091
-                    sta       $06,x               ;clear X0094 or X0095
+                    sta       ,x                  ;clear X008E or X008F
+                    sta       2,x                 ;clear X0090 or X0091
+                    sta       6,x                 ;clear X0094 or X0095
                     tst       $0088               ;test 0088.7 (bank indicator)
                     bpl       .LE216              ;branch ahead if bit is 0 (right bank)
 
@@ -1665,21 +1636,17 @@ inputCapInt         proc
 
 .LE216              std       $00A9               ;Right Bank: clear X00A9/AA
                     bra       .LE21D              ;branch to next section
-
-; ------------------------------------------------------------------------------
-
+          ;--------------------------------------
 .LE21A              jsr       LF3C0               ;code can jump here from above (this routine clears some vars)
-
-; ---------------------------------------------------------------------------------------------------
-; Determine if Rich or Lean
-
-; X201B (right) and X201C (left) are offset or bias values that are added to the threshold value
-; The data value XC098 (usually zero) is also added/subtracted as an addition bias.
-
-; From Wikipedia:   lean mixture causes low voltage (excess oxygen)
-; rich mixture causes high voltage (depleted O2)
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Determine if Rich or Lean
+          ;
+          ; X201B (right) and X201C (left) are offset or bias values that are added to the threshold value
+          ; The data value XC098 (usually zero) is also added/subtracted as an addition bias.
+          ;
+          ; From Wikipedia:   lean mixture causes low voltage (excess oxygen)
+          ; rich mixture causes high voltage (depleted O2)
+          ;--------------------------------------
 .LE21D              pulb                          ;pull the HO2 reading reading
                     lda       $00BD               ;this is working value from X00BE (right) or X00BF (rt)
                     bne       .LE23A              ;branch if value is not zero
@@ -1705,44 +1672,32 @@ inputCapInt         proc
                     beq       .LE2B0              ;if zero, branch to jump to LE459 (into lean code)
 
 .LE240              jmp       .LE2EF              ;jump down (into rich_condition code)
-
-; --------------------------------------------------
+          ;--------------------------------------
 .LE243              adda      $C098               ;Rich: data value is zero (A = ref + 201x + XC098)
                     cba                           ;A - B again (same result, carry set, so continue))
                     bcc       .LE23A
-
-; ------------------------------------------------------------------------------
-; Rich Condition (Depleted Oxygen, High Voltage)
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Rich Condition (Depleted Oxygen, High Voltage)
+          ;--------------------------------------
                     lda       $00D2               ;bits value (all bits are bank specific)
                     tst       $0088               ;test bank indicator bit
                     bmi       .LE25D              ;branch ahead if 1 (left bank)
-; --------------
-; Right Bank
-; --------------
+          ;-------------------------------------- ;Right Bank
                     bita      #$04                ;test X00D2.2
                     beq       .LE267              ;if zero, branch to common bank code below
 
                     ora       #$40                ;set X00D2.6
                     anda      #$FB                ;clr X00D2.2
                     bra       .LE265              ;branch to store X00D2 and enter common code
-
-; ------------------------------------------
-
+          ;--------------------------------------
 .LE25A              jmp       .LE3B3              ;jump down to lean_condition code (label is used above)
-
-; --------------
-; Left Bank
-; --------------
+          ;-------------------------------------- ;Left Bank
 .LE25D              bita      #$08                ;test X00D2.3
                     beq       .LE267              ;if zero, branch to common bank code below
 
                     ora       #$80                ;set X00D2.7
                     anda      #$F7                ;clr X00D2.3
-
-; --------------
-; Common Code
-; --------------
+          ;-------------------------------------- ;Common Code
 .LE265              sta       $00D2               ;store X00D2 bits value
 
 .LE267              lda       bits_0089           ;if bit 2 or bit 3 is zero
@@ -1782,33 +1737,22 @@ inputCapInt         proc
                     lda       bits_205B           ;load bits value
                     tst       $0088               ;test bank indicator bit
                     bpl       .LE2B3              ;branch ahead if 0 (right bank)
-; --------------
-; Left Bank
-; --------------
+          ;-------------------------------------- ;Left Bank
                     bita      #$02                ;test bits_205B.1
                     beq       .LE2C9              ;branch is bit is zero
 
                     anda      #$FD                ;clear bits_205B.1
                     sta       bits_205B           ;store it
                     bra       .LE2BC              ;branch
-
-; ---------------------------------------
+          ;--------------------------------------
 .LE2B0              jmp       .LE459              ;jump down into lean_condition code (used above)
-
-; ---------------------------------------
-
-; --------------
-; Right Bank
-; --------------
+          ;-------------------------------------- ;Right Bank
 .LE2B3              bita      #$01                ;test bits_205B.0
                     beq       .LE2C9              ;branch if bit is zero
 
                     anda      #$FE                ;clear bits_205B.0
                     sta       bits_205B           ;store it
-
-; --------------
-; Common Code
-; --------------
+          ;-------------------------------------- ;Common Code
 .LE2BC              clr       $00CE               ;clear X00CE to zero
                     lda       $C096               ;data value is $40
                     sta       $00CF               ;store it in X00CF (used later)
@@ -1837,14 +1781,11 @@ inputCapInt         proc
                     ldd       $00C8               ;still the short-term lambda trim value from earlier?
                     subd      $00CE               ;subtract 16-bit
                     bra       .LE33B              ;branch
-
-; --------------------------------------------------
+          ;--------------------------------------
 .unused2            jmp       .LE459              ;unused code
-
-; --------------------------------------------------
+          ;--------------------------------------
 .unused3            jmp       .LE3B3              ;unused code
-
-; --------------------------------------------------
+          ;--------------------------------------
 .LE2EF              jsr       LF224               ;subroutine decrements value in X00BD if not zero
                     lda       bits_0089           ;load bits value
                     anda      #$07                ;mask bits_0089 bits 2:0
@@ -1905,13 +1846,12 @@ inputCapInt         proc
                     lda       $00DC               ;load bits value
                     bita      #$01                ;test X00DC.0 (set to 1 when road speed > 4 AND TPS < 40%)
                     bne       .LE3A6              ;if set, branch down to set short-term lambda trim to $0000
-
-; ---------------------------------------------------------------------
-; This code executed only when Road Speed > 4 AND TPS < 40%
-
-; X00D4 (right) or X00D5 (left) can be incremented and when rollover
-; occurs, the corresponding nibble in X00D6 is incremented.
-; ---------------------------------------------------------------------
+          ;--------------------------------------
+          ; This code executed only when Road Speed > 4 AND TPS < 40%
+          ;
+          ; X00D4 (right) or X00D5 (left) can be incremented and when rollover
+          ; occurs, the corresponding nibble in X00D6 is incremented.
+          ;--------------------------------------
                     ldd       purgeValveTimer     ;load purve valve timer value
                     beq       .LE359              ;skip subroutine if value is zero
                     jsr       purgeValveBits      ;purge valve timer subroutine, sets or clrs carry before return
@@ -1920,10 +1860,7 @@ inputCapInt         proc
 .LE359              lda       $00D2               ;load bits value
                     tst       $0088               ;test bank indicator bit
                     bmi       .LE384              ;branch ahead if 1 (left bank)
-
-; --------------
-; Right Bank
-; --------------
+          ;-------------------------------------- ;Right Bank
                     ora       #$01                ;set X00D2.0
                     sta       $00D2               ;store it
                     ldb       $00D4               ;load right bank counter
@@ -1948,10 +1885,7 @@ inputCapInt         proc
                     ora       #$10                ;set X00D3.4 (right bank fault bit)
                     sta       $00D3               ;store it
                     bra       .LE3A6              ;branch down to set short-term lambda trim to $0000
-
-; --------------
-; Left Bank
-; --------------
+          ;-------------------------------------- ;Left Bank
 .LE384              ora       #$02                ;set X00D2.1
                     sta       $00D2               ;store it
                     ldb       $00D5               ;load left bank counter
@@ -1975,23 +1909,18 @@ inputCapInt         proc
                     lda       $00D3               ;load bits value
                     ora       #$20                ;set X00D3.5 (left bank fault bit)
                     sta       $00D3               ;store it
-; -----------------------------------------
+          ;--------------------------------------
 .LE3A6              clra                          ;clear A
                     tab                           ;AB= $0000 (value will be written to short term trim location)
                     jmp       .LE543              ;jump down to write short term trim
-
-; -----------------------------------------
-
+          ;--------------------------------------
 .LE3AB              jsr       LF3A3               ;<-- Set O2 Sensor Fault Bit (A or B, depending on bank bit)
                     bra       .LE3A6              ;branch up to set short-term lambda trim to $0000
-
-; -----------------------------------------
-
+          ;--------------------------------------
 .LE3B0              jmp       .LE50A              ;jump ahead to next section after lean code
-
-; ------------------------------------------------------------------------------
-; Lean Condition (Excess Oxygen, Low Voltage)
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Lean Condition (Excess Oxygen, Low Voltage)
+          ;--------------------------------------
 .LE3B3              lda       $00D2               ;X00D2 holds bank related bits
                     tst       $0088               ;test bank indicator bit
                     bmi       .LE3C4              ;branch ahead if 1 (left bank)
@@ -2031,12 +1960,9 @@ inputCapInt         proc
 
                     ldd       $008E               ;load X008E/8F (rich condition uses 0x0090/91)
                     bra       .LE3F5              ;branch
-
-; ---------------------------------------
+          ;--------------------------------------
 .LE3F1              jmp       .LE459              ;jump ahead in lean condition code
-
-; ---------------------------------------
-
+          ;--------------------------------------
 .LE3F4              tab                           ;transfer A to B
 
 .LE3F5              psha                          ;push A to stack
@@ -2050,8 +1976,7 @@ inputCapInt         proc
                     anda      #$FD                ;clr bits_205B.1
                     sta       bits_205B           ;store it
                     bra       .LE412              ;branch
-
-; ---------------------------------------
+          ;--------------------------------------
 .LE409              bita      #$01                ;Right: test bits_205B.0
                     beq       .LE41E              ;branch if bit is zero
 
@@ -2064,8 +1989,7 @@ inputCapInt         proc
                     pula                          ;pull A from stack
                     addd      $00CE               ;add double value X00CE/CF
                     bra       .LE436              ;branch
-
-; ---------------------------------------
+          ;--------------------------------------
 .LE41E              pula                          ;pull A from stack
                     tst       $0086               ;test X0086.7
                     bpl       .LE431              ;branch ahead if X0086.7 is zero
@@ -2078,22 +2002,16 @@ inputCapInt         proc
 
                     ldx       #$C7D1              ;rich code above uses #$C7D3 (both are 4000 decimal)
                     bra       .LE434              ;branch
-
-; ---------------------------------------
+          ;--------------------------------------
 .LE431              ldx       #$C092              ;rich code above uses #$C094 (both are 8000 decimal)
 
-.LE434              addd      $00,x               ;add 8000
+.LE434              addd      ,x                  ;add 8000
 
 .LE436              std       $00CE               ;store in X00CE/CF for later
-
-; ---------------------------------------
-; Use 3 x 8 air flow table
-; ---------------------------------------
+          ;-------------------------------------- ;Use 3 x 8 air flow table
                     ldd       mafDirectHi         ;load MAF high (range 300 to 1023)
                     addd      mafDirectLo         ;add MAF low (range now 600 to 2046)
-                    lsrd                          ;shift right 1 bit
-                    lsrd                          ;shift right 1 bit
-                    lsrd                          ;shift right 1 bit (now upper 8 of 10 bits are in B, range $48 to $FF)
+                    lsrd:3                        ;shift right 3 bits (now upper 8 of 10 bits are in B, range $48 to $FF)
                     tba                           ;transfer B to A
                     ldb       #$08                ;load B with 8 (number of columns in data table)
                     ldx       #$C1CA              ;<-- MAF related data table (only place used)
@@ -2101,18 +2019,14 @@ inputCapInt         proc
                     suba      $00,x               ;subtract indexed 1st row value from shifted air flow sum (A)
                     ldb       $10,x               ;load indexed 3rd row value
                     mul                           ;and multiply 3rd row value and remainder
-                    asld
-                    asld                          ;2 left shifts multiply by 4
+                    asld:2                        ;2 left shifts multiply by 4
                     adda      $08,x               ;add the indexed 2nd row value
                     sta       $0069               ;store MSB in X0069 (value can be reset elsewhere)
 
                     ldd       $00C8               ;short term trim value (16-bit value)
                     addd      $00CE               ;add 16-bit value
                     bra       .LE495              ;branch
-
-; ---------------------------------------
-
-; ---------------------------------------
+          ;--------------------------------------
 .LE459              jsr       LF224               ;this subroutine decrements value in X00BD if not zero
                     lda       bits_0089           ;load bits value
                     anda      #$07                ;mask bits_0089 bits 2:0
@@ -2147,8 +2061,8 @@ inputCapInt         proc
                     bcs       .LE497              ;and branch if the carry was set
 
                     addb      $0069               ;else, add it again
-                    adca      #$00                ;and add carry again
-; ---------------------------------------
+                    adca      #0                  ;and add carry again
+          ;--------------------------------------
 .LE495              bcc       .LE50A              ;branch if carry is clear
 
 .LE497              lda       bits_0089           ;load bits value
@@ -2172,10 +2086,7 @@ inputCapInt         proc
 .LE4B3              lda       $00D2               ;load bits value
                     tst       $0088               ;test bank indicator bit
                     bmi       .LE4DE              ;branch ahead if 1 (left bank)
-
-; --------------
-; Right Bank
-; --------------
+          ;-------------------------------------- ;Right Bank
                     ora       #$04                ;set X00D2.2
                     sta       $00D2               ;store value
                     ldb       $00D4               ;load counter
@@ -2200,10 +2111,7 @@ inputCapInt         proc
                     ora       #$04                ;set X00D3.2
                     sta       $00D3               ;store bits value
                     bra       .LE500              ;branch ahead to set short term trim to $FFFF
-
-; --------------
-; Left Bank
-; --------------
+          ;-------------------------------------- ;Left Bank
 .LE4DE              ora       #$08                ;set X00D2.3
                     sta       $00D2               ;store bits value
                     ldb       $00D5               ;load counter
@@ -2227,20 +2135,13 @@ inputCapInt         proc
                     lda       $00D3               ;load bits value
                     ora       #$08                ;set X00D3.3
                     sta       $00D3               ;store bits value
-
-; ------------------------------------------
-; Common code: set short term trim to $FFFF
+          ;-------------------------------------- ;Common code: set short term trim to $FFFF
 .LE500              ldd       #$FFFF              ;AB = $FFFF (this value will be written to the short-term trim location)
                     bra       .LE543              ;branch down to common condition code
-
-; ------------------------------------------
-
+          ;--------------------------------------
 .LE505              jsr       LF3A3               ;Set O2 Sensor Fault Bit (A or B, depending on bank bit)
                     bra       .LE500              ;branch up to set short term trim to $FFFF
-
-; ---------------------------------------------------------------------
-; Reset Counters
-; ---------------------------------------------------------------------
+          ;-------------------------------------- ;Reset Counters
 .LE50A              psha                          ;push A to stack
                     lda       $00D6               ;load dual nibble counter
                     tst       $0088               ;test bank indicator bit
@@ -2256,15 +2157,13 @@ inputCapInt         proc
 .LE51E              sta       $00D6               ;store dual counter with cleared nibble
                     pula                          ;pull A from stack
                     bra       .LE543              ;branch
-
-; -------------------------------------------------------------------------------
-; Open Loop Map Destination
-
-; Fuel maps 1, 2 and 3 jump here immediately after the HO2 ADC measurement.
-; Closed loop maps also jump here when conditions require open loop.
-; Closed loop maps, running in closed loop, eventually get here too.
-
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Open Loop Map Destination
+          ;
+          ; Fuel maps 1, 2 and 3 jump here immediately after the HO2 ADC measurement.
+          ; Closed loop maps also jump here when conditions require open loop.
+          ; Closed loop maps, running in closed loop, eventually get here too.
+          ;--------------------------------------
 .LE523              lda       bits_0089           ;load bits value
                     anda      #$07                ;mask bits_0089 bits 2:0
                     bne       .LE53B              ;branch ahead if any are set
@@ -2284,21 +2183,17 @@ inputCapInt         proc
 .LE53B              lda       #$FF                ;load A with $FF
                     sta       purgeValveFailDelay  ;reset purge valve fault code delay counter to $FF
                     ldd       #$8000              ;load the default (neutral) value for short term trim
-
-; ------------------------------------------------------------------------------
-; Final Stage of Short Term Trim Code
-
-; Write short-term trim value for current bank back to the storage location.
-; Write X00BD (working value) back to X00BE or X00BF
-
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Final Stage of Short Term Trim Code
+          ;
+          ; Write short-term trim value for current bank back to the storage location.
+          ; Write X00BD (working value) back to X00BE or X00BF
+          ;--------------------------------------
 .LE543              std       $00C8               ;store 16-bit short term trim value
                     ldd       $00C8               ;(this is unneeded)
                     tst       $0088               ;test bank indicator bit
                     bpl       .LE564              ;branch ahead if 0 (right bank)
-; --------------
-; Left Bank
-; --------------
+          ;-------------------------------------- ;Left Bank
                     std       shortLambdaTrimL    ;store value as left short term trim
                     ldb       bits_0089           ;load bits value
                     bitb      #$40                ;test bits_0089.6
@@ -2314,10 +2209,7 @@ inputCapInt         proc
                     ldb       $00BD               ;load working value
                     stb       $00BF               ;store it in X00BF
                     bra       .LE57A              ;branch
-
-; --------------
-; Right Bank
-; --------------
+          ;-------------------------------------- ;Right Bank
 .LE564              std       shortLambdaTrimR    ;store value as left short term trim
                     ldb       bits_0089           ;load bits value
                     bitb      #$40                ;test bits_0089.6
@@ -2333,11 +2225,7 @@ inputCapInt         proc
                     ldb       $00BD               ;load working value
                     stb       $00BE               ;store it in X00BE
 
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
-
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
 .LE57A              lda       #$27
                     sta       AdcControlReg1
                     lda       #$C8
@@ -2346,17 +2234,12 @@ inputCapInt         proc
           #else
 .LE57A              jsr       rdSpdCompTest       ;road speed comparator test
           #endif
-; ---------------------------------------------------------------------------------------------------
-; Purge Valve Stuff
-; ---------------------------------------------------------------------------------------------------
+          ;-------------------------------------- ;Purge Valve Stuff
                     lda       fuelMapNumber       ;load fuel map number
                     beq       .LE5A5              ;branch ahead if fuel map is zero
                     cmpa      #$04                ;compare fuel map number with 4
                     bcc       .LE5A5              ;branch ahead if fuel map is 4 or 5
-
-; ----------------------------------
-; Fuel map 1, 2 and 3 (open loop)
-; ----------------------------------
+          ;-------------------------------------- ;Fuel map 1, 2 and 3 (open loop)
                     ldb       bits_008D           ;load bits value
                     bitb      #$10                ;test bits_008D.4
                     beq       .LE5EA              ;branch ahead if bits_008D.4 is zero
@@ -2374,10 +2257,7 @@ inputCapInt         proc
                     ldd       $C145               ;data value is 12,000 decimal
                     std       purgeValveTimer2    ;reset down counter to 12000 dec
                     bra       .LE5EA              ;branch ahead to fault code tests
-
-; ----------------------------------
-; Fuel map 0, 4 and 5 (closed loop)
-; ----------------------------------
+          ;-------------------------------------- ;Fuel map 0, 4 and 5 (closed loop)
 .LE5A5              ldb       bits_008D           ;load bits value
                     bitb      #$10                ;test bits_008D.4
                     beq       .LE5EA              ;branch ahead if bits_008D.4 is zero
@@ -2416,30 +2296,25 @@ inputCapInt         proc
                     cmpa      $C1ED               ;data value is $02 or $04 (compare with this value)
                     bhi       .LE5CC              ;branch up if value is higher than XC1ED
                     bra       .LE5EA              ;(unneeded)
-
-; ---------------------------------------------------------------------------------------------------
-; Test for Fault Codes 34, 36 and 59
-
-; This section is skipped when eng RPM > 4185.
-
-; Fault Code 34 = Injector Bank A
-; Fault Code 36 = Injector Bank B
-; Fault Code 59 = Air Leak or Low Fuel Pressure (This fault is unused and masked out.)
-
-; The short term trim values appear negative as they increase fueling due to the $8000 based
-; offset of the values (msb is set). If the high byte of the trim value is over $E0 ($F0 for
-; example) it indicates that much more fuel being called for. This can be the result of an air
-; leak, low fuel pressure or a problem with the injector bank.
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Test for Fault Codes 34, 36 and 59
+          ;
+          ; This section is skipped when eng RPM > 4185.
+          ;
+          ; Fault Code 34 = Injector Bank A
+          ; Fault Code 36 = Injector Bank B
+          ; Fault Code 59 = Air Leak or Low Fuel Pressure (This fault is unused and masked out.)
+          ;
+          ; The short term trim values appear negative as they increase fueling due to the $8000 based
+          ; offset of the values (msb is set). If the high byte of the trim value is over $E0 ($F0 for
+          ; example) it indicates that much more fuel being called for. This can be the result of an air
+          ; leak, low fuel pressure or a problem with the injector bank.
+          ;--------------------------------------
 .LE5EA              lda       ignPeriod           ;load ignition period MSB
                     cmpa      #$07                ;is period at least $0700 (LT 4185 RPM)
-                    bcc       .LE5F3              ;branch to avoid jump for normal engine speed
-                    jmp       .LE72B              ;<-- high engine speed, jump way down skip fault tests
-
-; ---------------------------------------------
-; <-- engine speed is below 4185 RPM
-.LE5F3              lda       bits_008C           ;load bits value
+                    jcs       .LE72B              ;<-- high engine speed, jump way down skip fault tests
+          ;-------------------------------------- ;<-- engine speed is below 4185 RPM
+                    lda       bits_008C           ;load bits value
                     bita      #$02                ;test bits_008C.1 (double pulse timeout bit)
                     beq       .LE667              ;if zero, branch to next fault check
 
@@ -2477,16 +2352,15 @@ inputCapInt         proc
 .LE62B              orb       #$04                ;<-- Set Fault Code 36 (Injector Bank B Fault) RIGHT SIDE!!
 
 .LE62D              stb       faultBits_4A
-
-; --------------------------------------------------------------------------------
-; The Group Fault bit is masked out and cannot set the MIL. If set, however,
-; it does enable this code section to execute. Here, software tries to determine
-; if the problem is an air leak or low fuel pressure. Interestingly, these two
-; faults are also masked out and unused.
-
-; Fault Code 23 - Low fuel Pressure
-; Fault Code 28 - Air Leak
-; --------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; The Group Fault bit is masked out and cannot set the MIL. If set, however,
+          ; it does enable this code section to execute. Here, software tries to determine
+          ; if the problem is an air leak or low fuel pressure. Interestingly, these two
+          ; faults are also masked out and unused.
+          ;
+          ; Fault Code 23 - Low fuel Pressure
+          ; Fault Code 28 - Air Leak
+          ;--------------------------------------
 .LE62F              lda       faultBits_4D        ;load fault bits faultBits_4D
                     bita      #$10                ;test bit 4 (Fault Code 59)
                     beq       .LE667              ;If not set, skip ahead
@@ -2511,8 +2385,9 @@ inputCapInt         proc
 
                     sta       groupFaultCounter   ;store counter
                     bra       .LE667              ;branch to next section
-
-; code gets here when 'groupFaultCounter' gets to 50 decimal
+          ;--------------------------------------
+          ; code gets here when 'groupFaultCounter' gets to 50 decimal
+          ;--------------------------------------
 .LE654              orb       #$01                ;<-- set fault code 23 (low fuel pressure -- unused)
                     stb       faultBits_4C
                     bra       .LE667              ;branch to next section
@@ -2524,13 +2399,11 @@ inputCapInt         proc
                     lda       faultBits_4B
                     ora       #$08                ;<-- set fault code 28 (air leak -- unused)
                     sta       faultBits_4B
-
-; ---------------------------------------------------------------------------------------------------
-; Injector Bank Fault Check
-
-; Bits X00D3.4 and X00D3.5 can be set above when the O2 volatge is high (rich, depleted oxygen)
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Injector Bank Fault Check
+          ;
+          ; Bits X00D3.4 and X00D3.5 can be set above when the O2 volatge is high (rich, depleted oxygen)
+          ;--------------------------------------
 .LE667              ldb       faultBits_4A        ;load fault bits value faultBits_4A
                     lda       $00D3               ;load bank fault bits
                     anda      #$30                ;test 2 bank related fault bits X00D3.5 and X00D3.4
@@ -2561,17 +2434,15 @@ inputCapInt         proc
 .LE693              orb       #$04                ;set injector bank B fault (Code 36)
 
 .LE695              stb       faultBits_4A        ;store faultBits_4A fault bits value
-
-; ------------------------------------------------------------------------------
-
-; This section is skipped for open loop fuel maps. It manipulates the lambda trim
-; values (normally in 0040 thru 0047) using the right or left short term trim values
-
-; X0040/41    A value similar to short term trim
-; X0042/43   Long term trim (Right)
-; X0044/45   A value similar to short term trim
-; X0046/47    Long term trim (Left)
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; This section is skipped for open loop fuel maps. It manipulates the lambda trim
+          ; values (normally in 0040 thru 0047) using the right or left short term trim values
+          ;
+          ; X0040/41    A value similar to short term trim
+          ; X0042/43   Long term trim (Right)
+          ; X0044/45   A value similar to short term trim
+          ; X0046/47    Long term trim (Left)
+          ;--------------------------------------
 .LE697              lda       bits_0089           ;load bits value
                     anda      #$03                ;mask bits_0089.1 and bits_0089.0
                     bne       .LE71A              ;if either set, branch and skip long term trim adjust
@@ -2599,32 +2470,24 @@ inputCapInt         proc
 
 .LE6BE              ldd       shortLambdaTrimL    ;Left: load left short term trim into AB regs
                     ldx       #secondaryLambdaL   ;load other left Lambda value into index reg
-
-; -------------------------------------------------------------------------
-; This block uses the short term trim values to adjust the values in
-; X0040/41 and X0044/45 (these are not the long term trim values)
-
-; If Right,  AB = right  short trim value,  X = #Left
-; If Left, AB = left short trim value,  X = #secondaryLambdaLeft
-; -------------------------------------------------------------------------
+          ;--------------------------------------
+          ; This block uses the short term trim values to adjust the values in
+          ; X0040/41 and X0044/45 (these are not the long term trim values)
+          ;
+          ; If Right,  AB = right  short trim value,  X = #Left
+          ; If Left, AB = left short trim value,  X = #secondaryLambdaLeft
+          ;--------------------------------------
 .LE6C3              jsr       LF119               ;subroutine reduces AB to 1/2 or 1/4
-                    pshb                          ;push B to stack
-                    psha                          ;push A to stack
-                    ldd       $00,x               ;load the other Lambda value
+                    pshd                          ;push D to stack
+                    ldd       ,x                  ;load the other Lambda value
                     jsr       LF119               ;subroutine reduces AB to 1/2 or 1/4
-                    subd      $00,x               ;subtract original value
+                    subd      ,x                  ;subtract original value
                     jsr       absoluteValAB       ;get the absolute value
-                    std       $00,x               ;store it as the other value
-                    pula                          ;pull MSB of short term trim
-                    pulb                          ;pull LSB of short term trim
-                    addd      $00,x               ;add indexed value
-                    std       $00,x               ;and store as new "other" value
-
-; ---------------------------------------------------------------------------------------------------
-
-; Long Term Trim Adjustment
-
-; ---------------------------------------------------------------------------------------------------
+                    std       ,x                  ;store it as the other value
+                    puld                          ;pull short term trim
+                    addd      ,x                  ;add indexed value
+                    std       ,x                  ;and store as new "other" value
+          ;-------------------------------------- ;Long Term Trim Adjustment
                     ldb       bits_008D           ;load bits value
                     bitb      #$11                ;test bits_008D.4 and bits_008D.0
                     bne       .LE72B              ;if either bit is set, branch to next section
@@ -2653,11 +2516,10 @@ inputCapInt         proc
                     ldd       $00,x               ;X is the "other" Lambda value
                     subd      #$8000              ;subtract $8000
                     bcc       .LE71C              ;branch if still positive
-
-; ----------------------------------------------------------------
-; AB is Lambda value (X0040/41 or X0044/45) minus $8000 (and is negative)
-; X  is address of X0040 or X0044
-; ----------------------------------------------------------------
+          ;--------------------------------------
+          ; AB is Lambda value (X0040/41 or X0044/45) minus $8000 (and is negative)
+          ; X  is address of X0040 or X0044
+          ;--------------------------------------
                     jsr       LF171               ;can subtract 1500 from short term trim location (preserves AB)
                     jsr       absoluteValAB       ;convert to absolute value
                     jsr       LF0FC               ;reduces value to 1/2 or 1/4 (uses code control value)
@@ -2670,12 +2532,10 @@ inputCapInt         proc
                     std       $02,x               ;store long term trim
 
 .LE71A              bra       .LE72B              ;this branch is also used above
-
-; ----------------------------------------------------------------
-; AB is Lambda value (X0040/41 or X0044/45) minus $8000 (and is negative)
-; X  is address of X0040 or X0044
-; ----------------------------------------------------------------
-
+          ;--------------------------------------
+          ; AB is Lambda value (X0040/41 or X0044/45) minus $8000 (and is negative)
+          ; X  is address of X0040 or X0044
+          ;--------------------------------------
 .LE71C              jsr       LF171               ;can subtract 1500 from short term trim location (preserves AB)
                     jsr       LF0FC               ;reduces value to 1/2 or 1/4 (uses code control value)
                     addd      $02,x               ;add long term trim, X0042/43 (right) or X0046/47 (left)
@@ -2685,11 +2545,7 @@ inputCapInt         proc
 
 .LE729              std       $02,x               ;store long term trim
 
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
-
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
 .LE72B              lda       #$27
                     sta       AdcControlReg1
                     lda       #$C8
@@ -2698,32 +2554,32 @@ inputCapInt         proc
           #else
 .LE72B              jsr       rdSpdCompTest       ;road speed test, loads lambdaReading in B before returning
           #endif
-; ---------------------------------------------------------------------------------------------------
-; Code above jumps ahead to this point if engine speed is GT 4185 RPM in order to
-; skip some code (above)
-
-; Normally we have one injector pulse per 4 coil pulses, but for startup the rate doubles for
-; a short period (about 3 secs). Also, the pulse width is wider.
-
-; The double injector pulses at startup are a result of 'doubleInjecterRate' not being zero.
-; This 16-bit value is init to 192 and counts down at a rate proportional to the ICI. During
-; normal start, this period is only equal to about 3 seconds. The bits_008C.0 toggle bit is used
-; to skip fueling every other time through.
-
-; During double pulse time: (may not be correct)
-
-; bits_008C.0   0088.7
-; (div/2)       (bank)
-; -----------------------
-; 0               0           Fuel Right
-; 1               0
-; 0               1           Fuel Left
-; 1               1
-; 0               0           Fuel Right
-; 1               0           (and so on)
-
-; LEADB skips fueling and bank toggle
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Code above jumps ahead to this point if engine speed is GT 4185 RPM in order to
+          ; skip some code (above)
+          ;
+          ; Normally we have one injector pulse per 4 coil pulses, but for startup the rate doubles for
+          ; a short period (about 3 secs). Also, the pulse width is wider.
+          ;
+          ; The double injector pulses at startup are a result of 'doubleInjecterRate' not being zero.
+          ; This 16-bit value is init to 192 and counts down at a rate proportional to the ICI. During
+          ; normal start, this period is only equal to about 3 seconds. The bits_008C.0 toggle bit is used
+          ; to skip fueling every other time through.
+          ;
+          ; During double pulse time: (may not be correct)
+          ;
+          ; bits_008C.0   0088.7
+          ; (div/2)       (bank)
+          ; -----------------------
+          ; 0               0           Fuel Right
+          ; 1               0
+          ; 0               1           Fuel Left
+          ; 1               1
+          ; 0               0           Fuel Right
+          ; 1               0           (and so on)
+          ;
+          ; LEADB skips fueling and bank toggle
+          ;--------------------------------------
                     lda       bits_008C           ;load bits value
                     bita      #$02                ;test bits_008C.1 (double pulse timeout bit)
                     bne       .LE73F              ;branch ahead if bit is zero (0 = not timed out)
@@ -2744,17 +2600,15 @@ inputCapInt         proc
                     beq       .LE750              ;if zero, branch to continue
 
                     jmp       .LEADB              ;Jump way down to Column Index and RPM calculation
-
-; This skips the bank toggle!!
-
-; ---------------------------------------------
-; code branches to here after 'doubleInjecterRate' reaches zero
+          ;-------------------------------------- ;This skips the bank toggle!!
+          ; code branches to here after 'doubleInjecterRate' reaches zero
+          ;--------------------------------------
 .LE74C              ora       #$02                ;set bits_008C.1 (to indicate double pulse time is over)
                     bra       .LE741              ;branch
-
-; ---------------------------------------------
-; code gets here only if MAF is being measured
-; this code executes every other time while 192 count not zero(maybe not!!)
+          ;--------------------------------------
+          ; code gets here only if MAF is being measured
+          ; this code executes every other time while 192 count not zero(maybe not!!)
+          ;--------------------------------------
 .LE750              lda       bits_0089           ;load bits value
                     bmi       .LE76C              ;branch ahead if bits_0089.7 is set
 
@@ -2769,113 +2623,100 @@ inputCapInt         proc
 .LE760              ldb       $0087               ;branches here when tpsClosedLoopCntr >= 20 dec
                     andb      #$7F                ;clr X0087.7 (to allow closed loop operation)
                     stb       $0087
-
-; ---------------------------------------------
-; Eng RPM limit test
-; ---------------------------------------------
-; branches here when tpsClosedLoopCntr < 20 dec
+          ;-------------------------------------- ;Eng RPM limit test
+          ; branches here when tpsClosedLoopCntr < 20 dec
+          ;--------------------------------------
 .LE766              lda       $0086               ;load bits value
                     bita      #$20                ;test X0086.5 (1 = RPM < limit, 0 = RPM > limit)
                     bne       .LE76F              ;branch if RPM < limit
 
 .LE76C              jmp       .LEAD5              ;RPM at limit, jump to tog bank bit & fall into RPM calc
-
-; ---------------------------------------------
-
-; branches here from above if eng cranking or low RPM
+          ;--------------------------------------
+          ; branches here from above if eng cranking or low RPM
+          ;--------------------------------------
 .LE76F              tst       $0085               ;test X0085.7 (indicates no or low eng RPM)
                     bpl       .LE7CC              ;branch if clear (engine running)
-
-; ---------------------------------------------------------------------------------------------------
-; Fueling Selection for Engine Cranking
-
-; This section of code is only executed until the engine starts, after that it's bypassed.
-
-; There are 3-row by 12-column data tables in the data section of the PROM. There is a default table
-; located at XC0D0 plus 5 more fuel map specific tables within the fuel map data structures. The top
-; row represents engine coolant temperature in ECT sensor counts. The 2nd row is the fueling value
-; for that temperature bracket. The 3rd row is an extra, time based fueling component. When the ECU
-; is turned on, two variables are initialized from this table. X009B is initialized from the 2nd row
-; value and X009C is initialized from the 3rd row value.
-
-; During cranking, the fuel pulse width is determined by the value in X009B. When the engine starts,
-; the value in X009C increases the fuel. However, this value is reduced to zero at the rate of 1 Hz.
-
-; This is a typical table:
-
-; C0D0 : 00 12 1B 25 47 75 94 B0 C8 E2 E8 EC    ;<-- ECT sensor count
-; C0DC : 0B 0A 07 0D 1A 2A 3C 46 46 46 50 50    ;inits X009B (cranking fueling value above $EC)
-; C0E8 : 1C 0D 06 0A 14 19 25 2B 2B 2B 2D 2D    ;inits X009C (time fueling component, 1 Hz countdown)
-
-; There's one problem though. Ambient temperature can be colder than the temperature range of the
-; table. The coldest value listed here is $EC which is about -18 C or zero F. This value, which is
-; located at XC0DB is compared with current ECT and, if ECT is colder, a different strategy is used.
-; A New Englander might call this strategy "wicked cold startup".
-
-; Wicked cold startup involves 2 things. First, the injector pulse width is based solely on engine
-; RPM. Second, the injector pulse is broken up into 11 smaller "micro-pulses", presumably to better
-; atomize the fuel.
-
-; ---------------------------------------------------------------------------------------------------
-
-; ---------------------------------------------
-; Engine is cranking so select fueling type
-; ---------------------------------------------
+          ;--------------------------------------
+          ; Fueling Selection for Engine Cranking
+          ;
+          ; This section of code is only executed until the engine starts, after that it's bypassed.
+          ;
+          ; There are 3-row by 12-column data tables in the data section of the PROM. There is a default table
+          ; located at XC0D0 plus 5 more fuel map specific tables within the fuel map data structures. The top
+          ; row represents engine coolant temperature in ECT sensor counts. The 2nd row is the fueling value
+          ; for that temperature bracket. The 3rd row is an extra, time based fueling component. When the ECU
+          ; is turned on, two variables are initialized from this table. X009B is initialized from the 2nd row
+          ; value and X009C is initialized from the 3rd row value.
+          ;
+          ; During cranking, the fuel pulse width is determined by the value in X009B. When the engine starts,
+          ; the value in X009C increases the fuel. However, this value is reduced to zero at the rate of 1 Hz.
+          ;
+          ; This is a typical table:
+          ;
+          ; C0D0 : 00 12 1B 25 47 75 94 B0 C8 E2 E8 EC    ;<-- ECT sensor count
+          ; C0DC : 0B 0A 07 0D 1A 2A 3C 46 46 46 50 50    ;inits X009B (cranking fueling value above $EC)
+          ; C0E8 : 1C 0D 06 0A 14 19 25 2B 2B 2B 2D 2D    ;inits X009C (time fueling component, 1 Hz countdown)
+          ;
+          ; There's one problem though. Ambient temperature can be colder than the temperature range of the
+          ; table. The coldest value listed here is $EC which is about -18 C or zero F. This value, which is
+          ; located at XC0DB is compared with current ECT and, if ECT is colder, a different strategy is used.
+          ; A New Englander might call this strategy "wicked cold startup".
+          ;
+          ; Wicked cold startup involves 2 things. First, the injector pulse width is based solely on engine
+          ; RPM. Second, the injector pulse is broken up into 11 smaller "micro-pulses", presumably to better
+          ; atomize the fuel.
+          ;-------------------------------------- ;Engine is cranking so select fueling type
                     lda       coolantTempCount    ;load ECT sensor counts
                     cmpa      $C0DB               ;last table value, $E8 to $EC ($EC= -18 C or zero F)
                     bcs       .LE7A4              ;branch ahead to normal startup if warmer than this
-
-; ------------------------------------------------------------------------------
-; Wicked Cold Startup
-
-; The code section below multiplies the MSB of the ignition period by a factor
-; which varies depending on fuel map and tune numbers. This number becomes
-; greater as RPM gets lower. There is a minimum value which is determined by
-; the value 1500. The value 20 determines the number of micro-pulses. The
-; formula is:  injectorPulseCntr/2 + 1 = number_of_micropulses
-
-; Normal engine cranking speed is between 100 and 200 RPM. This software
-; considers the engine to be running when RPM exceeds 500 (375 for the cold
-; weather chip). This table shows the relationship between RPM, MSB of the
-; spark period, the muliplication result (using $0A) and the resultant injector
-; pulse (as measured on an oscilloscope). The point at which the minimum value
-; of 1500 takes effect is clear to see.
-
-; Ign.Per.    Mpy by       Pulse
-; RPM    (MSB)       $0A
-; -------------------------------------------
-; 134     DA         2180       3.3 mS
-; 150     C3         1950        3.1 mS
-; 200     92         1460       2.6 mS   <-- this is the 1500 minimum
-; 250     75         1170       2.6 mS
-; 300     61          970       2.6 mS
-; 350     53          830      2.6 mS
-; 400     49          730      2.6 mS
-; 450     41          650      2.6 mS
-; 480     3D          610       2.6 mS
-
-; By the way, main voltage has a large affect on the injector pulse width. The
-; table above was measured with main voltage input set to 12.02 VDC. The table
-; below shows the effect of varying the voltage for rhe 2.6 mSec pulse.
-
-; ADC   Volts   Pulse
-; ----   -----   -------
-; 200   13.96   2.40 mS
-; 186   12.96   2.50 mS
-; 172   12.02   2.60 mS
-; 158   11.03   2.85 mS
-; 144    9.99   3.10 mS
-; 130    9.01   3.40 mS
-; 115    8.01   3.70 mS
-
-; One final point about the mechanics of how this works. This interrupt code
-; fires the injector bank and returns to the main loop, so the main loop is
-; being executed while the injector is open. There is a call to subroutine
-; LF04D (coldStart.asm) in the main loop. If 'injectorPulseCntr' is zero, the
-; subroutine just returns, however, if the value is non-zero, the state of
-; the injector is toggled and 'injectorPulseCntr' is decremented.
-
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;Wicked Cold Startup
+          ; The code section below multiplies the MSB of the ignition period by a factor
+          ; which varies depending on fuel map and tune numbers. This number becomes
+          ; greater as RPM gets lower. There is a minimum value which is determined by
+          ; the value 1500. The value 20 determines the number of micro-pulses. The
+          ; formula is:  injectorPulseCntr/2 + 1 = number_of_micropulses
+          ;
+          ; Normal engine cranking speed is between 100 and 200 RPM. This software
+          ; considers the engine to be running when RPM exceeds 500 (375 for the cold
+          ; weather chip). This table shows the relationship between RPM, MSB of the
+          ; spark period, the muliplication result (using $0A) and the resultant injector
+          ; pulse (as measured on an oscilloscope). The point at which the minimum value
+          ; of 1500 takes effect is clear to see.
+          ;
+          ; Ign.Per.    Mpy by       Pulse
+          ; RPM    (MSB)       $0A
+          ; -------------------------------------------
+          ; 134     DA         2180       3.3 mS
+          ; 150     C3         1950        3.1 mS
+          ; 200     92         1460       2.6 mS   <-- this is the 1500 minimum
+          ; 250     75         1170       2.6 mS
+          ; 300     61          970       2.6 mS
+          ; 350     53          830      2.6 mS
+          ; 400     49          730      2.6 mS
+          ; 450     41          650      2.6 mS
+          ; 480     3D          610       2.6 mS
+          ;
+          ; By the way, main voltage has a large affect on the injector pulse width. The
+          ; table above was measured with main voltage input set to 12.02 VDC. The table
+          ; below shows the effect of varying the voltage for rhe 2.6 mSec pulse.
+          ;
+          ; ADC   Volts   Pulse
+          ; ----   -----   -------
+          ; 200   13.96   2.40 mS
+          ; 186   12.96   2.50 mS
+          ; 172   12.02   2.60 mS
+          ; 158   11.03   2.85 mS
+          ; 144    9.99   3.10 mS
+          ; 130    9.01   3.40 mS
+          ; 115    8.01   3.70 mS
+          ;
+          ; One final point about the mechanics of how this works. This interrupt code
+          ; fires the injector bank and returns to the main loop, so the main loop is
+          ; being executed while the injector is open. There is a call to subroutine
+          ; LF04D (coldStart.asm) in the main loop. If 'injectorPulseCntr' is zero, the
+          ; subroutine just returns, however, if the value is non-zero, the state of
+          ; the injector is toggled and 'injectorPulseCntr' is decremented.
+          ;--------------------------------------
                     lda       #$14                ;(20 dec) controls number of micro-pulses
                     sta       injectorPulseCntr   ;store it
                     lda       ignPeriodFiltered   ;load MSB of filtered ignition period
@@ -2902,17 +2743,12 @@ inputCapInt         proc
 .LE79F              ldd       $00C8               ;load fueling value into AB
 
 .LE7A1              jmp       .LE983              ;jump down to Phase II Compensation
-
-; ------------------------------------------------------------------------------
-; Normal Cranking Fuel
-
-; This section calculates the cranking fuel pulse within the normal temperature
-; range, using the 2nd row value from the 3-row by 12 column data table. If the
-; engine is warm and the throttle is depressed while cranking, the throttle
-; position affects the amount of fuel.
-
-; ------------------------------------------------------------------------------
-
+          ;-------------------------------------- ;Normal Cranking Fuel
+          ; This section calculates the cranking fuel pulse within the normal temperature
+          ; range, using the 2nd row value from the 3-row by 12 column data table. If the
+          ; engine is warm and the throttle is depressed while cranking, the throttle
+          ; position affects the amount of fuel.
+          ;--------------------------------------
 .LE7A4              lda       coolantTempCount    ;load ECT sensor count
                     cmpa      #$40                ;compare with $40 (about 60 C or 140 F)
                     bcc       .LE7C2              ;branch ahead cooler
@@ -2921,8 +2757,8 @@ inputCapInt         proc
                     subd      #$0070              ;subtract $70 from TP value
                     bcs       .LE7C2              ;branch ahead if TP is LT $0070
 
-                    lsrd                          ;if here, warm engine and throttle depressed
-                    lsrd                          ;2 X lsrd gets the top 8 bits into 1 byte
+                    lsrd:2                        ;if here, warm engine and throttle depressed
+                                                  ;gets the top 8 bits into 1 byte
                     lda       $C0F6               ;data value is $19 (25 dec)
                     mul                           ;mpy 1/4 TPS by 25
                     cmpa      $C0F7               ;compare result MSB with value $0A
@@ -2936,38 +2772,35 @@ inputCapInt         proc
 
 .LE7C5              addb      #$FF                ;add $FF to 16-bit value
                     adca      $009B               ;add both the carry bit (if any) and the 2nd
-; row table value to the final 16-bit value
-
+          ;-------------------------------------- ;row table value to the final 16-bit value
                     jmp       .LE983              ;jump down to Phase II Compensation
-
-; ------------------------------------------------------------------------------
-; Time, Bank Time, Coolant Temp & Fuel Temp Adjustment
-
-; This is the start of the normal fueling process. When engine is running, code
-; branches here from LE76F above. A 16-bit multiplier value is calculated here
-; and stored in X00CA/CB for later use. This value is the result of 4 different
-; input factors:
-
-; 1 - The reducing value from the 3rd row of the 3 x 12 data table. This is the
-; value that is stored in X009C at initial power-on. This value is reduced
-; to zero at a 1 Hz rate by a periodically called timer routine. When tha
-; value reaches zero bit X008A.6 is cleared.
-
-; 2 - There are additional bank specific down counters that are stored in
-; startupTimerEven (right) and startupTimerOdd (left). These are both
-; initialized from the data value in XC1FF, so they cannot differ from each
-; other. This value is usually $03.
-
-; 3 - The value 'coolantTempAdjust' is an engine temperature based adjustment.
-; It typically starts in the high 40's (decimal) and reduces to the high
-; 30's as the engine warms. It does not go to zero as one might expect.
-
-; 4 - Finally, there may be a fuel temperature adjustment, which is applied
-; under unusual circumstances.
-
-; The final 16-bit value is checked for rollover and limited, if necessary, to $FFFF.
-
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Time, Bank Time, Coolant Temp & Fuel Temp Adjustment
+          ;
+          ; This is the start of the normal fueling process. When engine is running, code
+          ; branches here from LE76F above. A 16-bit multiplier value is calculated here
+          ; and stored in X00CA/CB for later use. This value is the result of 4 different
+          ; input factors:
+          ;
+          ; 1 - The reducing value from the 3rd row of the 3 x 12 data table. This is the
+          ; value that is stored in X009C at initial power-on. This value is reduced
+          ; to zero at a 1 Hz rate by a periodically called timer routine. When tha
+          ; value reaches zero bit X008A.6 is cleared.
+          ;
+          ; 2 - There are additional bank specific down counters that are stored in
+          ; startupTimerEven (right) and startupTimerOdd (left). These are both
+          ; initialized from the data value in XC1FF, so they cannot differ from each
+          ; other. This value is usually $03.
+          ;
+          ; 3 - The value 'coolantTempAdjust' is an engine temperature based adjustment.
+          ; It typically starts in the high 40's (decimal) and reduces to the high
+          ; 30's as the engine warms. It does not go to zero as one might expect.
+          ;
+          ; 4 - Finally, there may be a fuel temperature adjustment, which is applied
+          ; under unusual circumstances.
+          ;
+          ; The final 16-bit value is checked for rollover and limited, if necessary, to $FFFF.
+          ;--------------------------------------
 .LE7CC              clrb                          ;clear B
                     lda       $008A               ;load bits value
                     bita      #$40                ;test X008A.6 (0 = timeout of X009C 3rd row 1Hz value)
@@ -2985,15 +2818,10 @@ inputCapInt         proc
 
 .LE7E2              clra                          ;clear A
                     addb      coolantTempAdjust   ;add ECT based fuel adjustment
-                    adca      #$00                ;if rollover, add the carry bit to A
-                    asld                          ;x2
-                    asld                          ;x4
-                    addd      #$0096              ;add this value
-                    asld                          ;x2
-                    asld                          ;x4
-                    asld                          ;x8
-                    asld                          ;x16
-                    asld                          ;x32
+                    adca      #0                  ;if rollover, add the carry bit to A
+                    asld:2                        ;x4
+                    addd      #150                ;add this value
+                    asld:5                        ;x32
                     psha                          ;push the upper byte
                     lda       $008A               ;load bits value
                     bita      #$02                ;test X008A.1 (may be EFT related, usually set)
@@ -3006,39 +2834,32 @@ inputCapInt         proc
                     ldd       #$FFFF              ;else clip at $FFFF
 
 .LE800              std       $00CA               ;store double value for future use
-
-; ------------------------------------------------------------------------------
-; Lambda and Throttle Rate Adjustment to Fueling Value
-
-; The short term trim value is a 16-bit value having a neutral point of $8000.
-; The value $FFFF represent maximum fuel addition and the number $0000
-; represents maximum fuel reduction.
-
-; The Throttle Direction & Rate value is a 16-bit value that has a neutral
-; point of $0400 (1024 decimal). An opening throttle results in a higher
-; number and a closing throttle results in a lower number.
-
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Lambda and Throttle Rate Adjustment to Fueling Value
+          ;
+          ; The short term trim value is a 16-bit value having a neutral point of $8000.
+          ; The value $FFFF represent maximum fuel addition and the number $0000
+          ; represents maximum fuel reduction.
+          ;
+          ; The Throttle Direction & Rate value is a 16-bit value that has a neutral
+          ; point of $0400 (1024 decimal). An opening throttle results in a higher
+          ; number and a closing throttle results in a lower number.
+          ;--------------------------------------
                     ldd       $00C8               ;X00C8/C9 is still the short term trim value
                     asld                          ;shift left double (shift msb into carry)
                     sta       $00CC               ;store shifted MSB in X00CC
                     bcc       .LE80F              ;branch if value is below 32K
-; ---------------------------------------
-; Short term trim wants to increase fuel
-; ---------------------------------------
+          ;-------------------------------------- ;Short term trim wants to increase fuel
                     tab                           ;transfer shifted MSB into B
                     clra                          ;clear A
-                    addd      tpsDirectionAndRate  ;add throttle direction and rate (1024 +/-)
+                    addd      tpsDirectionAndRate ;add throttle direction and rate (1024 +/-)
                     bra       .LE818              ;branch
-
-; ---------------------------------------
-; Short term trim wants to decrease fuel
-; ---------------------------------------
-; stored short term trim < 32K
-.LE80F              ldd       tpsDirectionAndRate  ;throttle direction and rate (1024 +/-)
+          ;-------------------------------------- ;Short term trim wants to decrease fuel
+                                                  ;stored short term trim < 32K
+.LE80F              ldd       tpsDirectionAndRate ;throttle direction and rate (1024 +/-)
                     com       $00CC               ;1's comp of short term trim MSB
                     subb      $00CC               ;subtratc from TPS D&R
-                    sbca      #$00                ;if underflow, subtract 1 from upper byte
+                    sbca      #0                  ;if underflow, subtract 1 from upper byte
 
 .LE818              pshb                          ;push B to stack
                     ldb       bits_008C           ;load bits value
@@ -3047,43 +2868,38 @@ inputCapInt         proc
                     beq       .LE828              ;branch ahead if bit bits_008C.3 is zero
 
                     addb      tpMinCounter        ;add throttle pot related value to low byte
-                    adca      #$00                ;handle rollover
+                    adca      #0                  ;handle rollover
                     addb      tpMinCounter        ;add throttle pot related value to low byte
-                    adca      #$00                ;handle rollover
+                    adca      #0                  ;handle rollover
 
 .LE828              addd      #$0080              ;add $0080 to 16-bit value
-                    asld
-                    asld
-                    asld
-                    asld                          ;four asld's is a div by 16
+                    asld:4                        ;four asld's is a div by 16
                     jsr       mpy16               ;mpy AB by X00CA/CB
                     std       $00CA               ;store updated result at X00CA/CB
-
-; ------------------------------------------------------------------------------
-; Reinitialize RAM with Fuel Map Specific Values
-
-; It's not clear why this is done every time through the spark interrupt code.
-; It might be for robustness, assuming RAM can be occasionally corrupted. Or it
-; might be to defeat any attempts to "hack" or make run-time changes. Since
-; the values are reloaded from PROM just before use, any overwiting through
-; the serial port would be ineffective.
-
-; The following variables are reinitialized:
-
-; X2008/09 - the 16-bit fuel map multiplier from offset $80 in the fuel map
-; X200A    - value used to calculate the load based fuel map row index
-; X200B    - the safety margin to be added to the RPM limit below
-; X200C/0D - the 16-bit engine RPM limit (in 2 uSec period format)
-; X200E    - an ECT sensor related value
-; X200F    - an ECT sensor related value
-; X2010    - (todo)
-; X2011    - multiplier for TPS D&R (closing throttle only)
-; adcMuxTableStart - ADC control table pointer
-
-; The last 8 bytes in the fuel map data structure represent 7 values (one is
-; a 2-byte value) that are stored in RAM at addresses X200A through X2011.
-
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Reinitialize RAM with Fuel Map Specific Values
+          ;
+          ; It's not clear why this is done every time through the spark interrupt code.
+          ; It might be for robustness, assuming RAM can be occasionally corrupted. Or it
+          ; might be to defeat any attempts to "hack" or make run-time changes. Since
+          ; the values are reloaded from PROM just before use, any overwiting through
+          ; the serial port would be ineffective.
+          ;
+          ; The following variables are reinitialized:
+          ;
+          ; X2008/09 - the 16-bit fuel map multiplier from offset $80 in the fuel map
+          ; X200A    - value used to calculate the load based fuel map row index
+          ; X200B    - the safety margin to be added to the RPM limit below
+          ; X200C/0D - the 16-bit engine RPM limit (in 2 uSec period format)
+          ; X200E    - an ECT sensor related value
+          ; X200F    - an ECT sensor related value
+          ; X2010    - (todo)
+          ; X2011    - multiplier for TPS D&R (closing throttle only)
+          ; adcMuxTableStart - ADC control table pointer
+          ;
+          ; The last 8 bytes in the fuel map data structure represent 7 values (one is
+          ; a 2-byte value) that are stored in RAM at addresses X200A through X2011.
+          ;--------------------------------------
                     ldx       #$C082              ;addr of default ADC control table
                     stx       adcMuxTableStart    ;store as current table
                     ldx       #limpHomeMap        ;load X with addr XC000
@@ -3108,10 +2924,7 @@ inputCapInt         proc
                     stx       adcMuxTableStart    ;store ADC table pointer
                     ldx       fuelMapPtr          ;load X with base fuel map ptr (later use)
 
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
 .LE868              lda       #$27
                     sta       AdcControlReg1
                     lda       #$C8
@@ -3123,36 +2936,29 @@ inputCapInt         proc
                     lda       $0087               ;load bits value
                     bita      #$02                ;test X0087.1 (indicates MAF fault)
                     beq       .LE8C0              ;branch ahead if no MAF fault
-
-; ------------------------------------------------------------------------------
-; MAF Fault Substitution Code
-
-; This code executes when the MAF Fault Bit is set. Since the load based row
-; index cannot be calculated without a valid MAF reading, an alternate method
-; is needed. This method estimates the fuel requirement based only on throttle
-; position and engine temperature. The data values that are used to tailor
-; the results are stored in the data portion of the PROM. The code is set up
-; for different open and closed map values, however, both sets of values are
-; identical. The end result is a 16-bit value in the AB register set. The
-; normal fuel map code block is then bypassed.
-
-; ------------------------------------------------------------------------------
+          ;-------------------------------------- ;MAF Fault Substitution Code
+          ; This code executes when the MAF Fault Bit is set. Since the load based row
+          ; index cannot be calculated without a valid MAF reading, an alternate method
+          ; is needed. This method estimates the fuel requirement based only on throttle
+          ; position and engine temperature. The data values that are used to tailor
+          ; the results are stored in the data portion of the PROM. The code is set up
+          ; for different open and closed map values, however, both sets of values are
+          ; identical. The end result is a 16-bit value in the AB register set. The
+          ; normal fuel map code block is then bypassed.
+          ;--------------------------------------
                     ldd       throttlePot         ;load 10-bit TPS value
                     subd      throttlePotMinimum  ;subtract TPmin
                     bcc       .LE87A              ;branch if result is positive
 
-                    ldd       #$0000              ;else, limit value to zero
+                    ldd       #0                  ;else, limit value to zero
 
-.LE87A              lsrd                          ;shift right twice so that
-                    lsrd                          ;top bits are in B register
+.LE87A              lsrd:2                        ;shift right twice so that top bits are in B register
                     lda       fuelMapNumber       ;load fuel map number
                     beq       .LE885              ;branch if map 0
 
                     cmpa      #$04                ;compare with 4
                     bcs       .LE89E              ;branch if less than 4
-; -------------------------
-; Fuel Maps 0, 4 and 5
-; -------------------------
+          ;-------------------------------------- ;Fuel Maps 0, 4 and 5
 .LE885              lda       coolantTempCount    ;load ECT sensor count
                     cmpa      $C221               ;value is $47 (56 C or 138 F)
                     bcs       .LE895              ;branch if ECT is hotter
@@ -3166,10 +2972,7 @@ inputCapInt         proc
                     mul                           ;mpy top 8 bits of TPS by $24
                     addd      $C226               ;value is $0E00, add this 16-bit value
                     bra       .LE8B5              ;branch ahead
-
-; -------------------------
-; Fuel Maps 1, 2 and 3
-; -------------------------
+          ;-------------------------------------- ;Fuel Maps 1, 2 and 3
 .LE89E              lda       coolantTempCount    ;load ECT sensor count
                     cmpa      $C228               ;value is $47 (56 C or 138 F)
                     bcs       .LE8AE              ;branch if ECT is hotter
@@ -3182,37 +2985,27 @@ inputCapInt         proc
 .LE8AE              lda       $C22C               ;value is $24
                     mul                           ;mpy top 8 bits of TPS by $24
                     addd      $C22D               ;value is $E000, add this 16-bit value
-; -------------------------
-; Common code
-; -------------------------
+          ;-------------------------------------- ;Common code
 .LE8B5              cmpa      #$1B                ;compare MSB of result with $1B
                     bcs       .LE8BB              ;branch if value is lower
 
                     lda       #$1B                ;else, limit to $1Bxx maximum
 
-.LE8BB              asld                          ;2x
-                    asld                          ;4x
-                    asld                          ;8x (max value is $DFF8)
+.LE8BB              asld:3                        ;8x (max value is $DFF8)
                     bra       .LE921              ;branch to skip normal fuel map code and go
-
-; to fuel value filtering
-
-; ---------------------------------------------------------------------------------------------------
-; Use Row and Column Indexes to calculate 16-bit Fueling Value from Table
-
-; This code section is executed only when the MAF fault bit is not set. The index register (X)
-; contains the fuel map address pointer. The value is calculated here by first calculating the
-; contribution of each of the 4 table values surrounding the actual fueling point and then adding
-; the four values.
-
-; ---------------------------------------------------------------------------------------------------
+                                                  ;to fuel value filtering
+          ;--------------------------------------
+          ; Use Row and Column Indexes to calculate 16-bit Fueling Value from Table
+          ;
+          ; This code section is executed only when the MAF fault bit is not set. The index register (X)
+          ; contains the fuel map address pointer. The value is calculated here by first calculating the
+          ; contribution of each of the 4 table values surrounding the actual fueling point and then adding
+          ; the four values.
+          ;--------------------------------------
 .LE8C0              lda       fuelMapLoadIdx      ;load fuel map row index ($70 max)
                     anda      #$F0                ;mask upper nibble (4-bit row index)
                     ldb       fuelMapSpeedIdx     ;load fuel map column index ($F0 max)
-                    lsrb                          ;shift upper nibble of column index into low position
-                    lsrb
-                    lsrb
-                    lsrb
+                    lsrb:4                        ;shift upper nibble of column index into low position
                     aba                           ;add B to A (offset of upper left corner of box)
                     tab                           ;xfr A to B (value range: 0x00 thru 0x7F)
                     bne       .LE8D0              ;branch if not zero
@@ -3233,20 +3026,17 @@ inputCapInt         proc
                     subb      $00C9               ;subtract X00C9 from $10
                     std       $00C8               ;store A at X00C8 and B at X00C9
                     mul                           ;mpy A and B (value should be <= $FF and contained in B only)
-                    lda       $00,x               ;load upper left value from map into A
+                    lda       ,x                  ;load upper left value from map into A
                     mul                           ;mpy A and B
                     std       $00CC               ;store 16-bits at X00CC/CD (upper left contribution value)
 
                     bne       .LE8F7              ;branch ahead if result is not zero
-                    lda       $00,x               ;if zero, load value from map again
+                    lda       ,x                  ;if zero, load value from map again
                     bra       .LE921              ;and branch to filtering section with this value
-
-; -------------------------
+          ;--------------------------------------
 .LE8F2              ldd       $00CE               ;these 2 lines have nothing to do with this section of code
                     jmp       .LE967              ;it was just a convenient place to put a jump (used below)
-
-; -------------------------
-
+          ;--------------------------------------
 .LE8F7              lda       fuelMapLoadIdx      ;load fuel map row index
                     anda      #$0F                ;mask to get low nibble
                     ldb       $00C9               ;X00C9 is $10 minus lower nibble of column index
@@ -3259,7 +3049,7 @@ inputCapInt         proc
                     ldb       fuelMapSpeedIdx     ;load fuel map column index
                     andb      #$0F                ;mask to get low nibble
                     mul                           ;multiply
-                    lda       $01,x               ;get value from next column up in table
+                    lda       1,x                 ;get value from next column up in table
                     mul                           ;multiply
                     std       $00C8               ;store 16-bits at X00C8/C9 (upper right contribution value)
 
@@ -3274,16 +3064,14 @@ inputCapInt         proc
                     addd      $00CC               ;add upper left contribution
                     addd      $00C8               ;add upper right contribution
                     addd      $00CE               ;add lower left contribution
-
-; ---------------------------------------------------------------------------------------------------
-; Filtering of Uncompensated Fuel Value
-
-; Under certain conditions, the calculated fuel value if filtered to make it change more smoothly.
-; This is done by adding 3 parts old value with 1 part new value and dividing by 4.
-
-; Bit X008A.7 can be set in the Throttle Direction & Rate code.
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Filtering of Uncompensated Fuel Value
+          ;
+          ; Under certain conditions, the calculated fuel value if filtered to make it change more smoothly.
+          ; This is done by adding 3 parts old value with 1 part new value and dividing by 4.
+          ;
+          ; Bit X008A.7 can be set in the Throttle Direction & Rate code.
+          ;--------------------------------------
 .LE921              std       $00CE               ;store the uncompensated fueling value
                     lda       $008A               ;load bits value
                     bita      #$40                ;test X008A.6 (init to 1, 0 = timeout)
@@ -3309,10 +3097,7 @@ inputCapInt         proc
 
                     ldd       $00CE               ;load uncompensated fueling value
                     bra       .LE967              ;branch to Phase 1 comp
-
-; -----------------------
-; Filtering starts here
-; -----------------------
+          ;-------------------------------------- ;Filtering starts here
 .LE949              ldd       uncompFuelInjValue  ;load previous fueling value
                     asld                          ;double the value
                     rol       $00CC               ;rotate left (carry is included)
@@ -3325,36 +3110,28 @@ inputCapInt         proc
                     bcc       .LE95D              ;branch if no rollover
 
                     inc       $00CC               ;rollover, so increment MSB again
-
-; this part divides 16-bit value by 4
+          ;-------------------------------------- ;this part divides 16-bit value by 4
 .LE95D              lsr       $00CC               ;logical shift right (lsb into carry)
-                    rora                          ;rotate right A
-                    rorb                          ;rotate right C
+                    rord                          ;rotate right D
                     lsr       $00CC               ;logical shift right (lsb into carry)
-                    rora                          ;rotate right A
-                    rorb                          ;new filtered fueling value is now in AB
-
-; ---------------------------------------------------------------------------------------------------
-; Phase 1 Compensation
-
-; At this point, the uncompensated 16-bit fuel value is calculated and is in the AB register set.
-; The range of this value is determined by the range of values in the fuel map. For example, if
-; the lowest and highest values in the fuel map are $14 and $FF, the range will be $1400 to $FF00
-; or 5120 to 65,280 decimal.
-
-; When the 16-bit multiply routine is called, it multiplies AB by the value in X00CA/CB. The earlier
-; calculated compensation factor (time, temperature, throttle & Lambda) is currently in X00CA/CB.
-
-; These are the steps that happen here:
-
-; 1) Mpy uncompFuelInjValue by X00CA/CB (fuel map value by compensation factor)
-; 2) Mpy value by 4X but limit to $FFFF
-; 3) Mpy by fuel map multiplier (previously stored in X2008/09
-; 4) Double the value
-; 5) Limit to $FF00
-
-; ---------------------------------------------------------------------------------------------------
-
+                    rord                          ;new filtered fueling value is now in D
+          ;-------------------------------------- ;Phase 1 Compensation
+          ; At this point, the uncompensated 16-bit fuel value is calculated and is in the AB register set.
+          ; The range of this value is determined by the range of values in the fuel map. For example, if
+          ; the lowest and highest values in the fuel map are $14 and $FF, the range will be $1400 to $FF00
+          ; or 5120 to 65,280 decimal.
+          ;
+          ; When the 16-bit multiply routine is called, it multiplies AB by the value in X00CA/CB. The earlier
+          ; calculated compensation factor (time, temperature, throttle & Lambda) is currently in X00CA/CB.
+          ;
+          ; These are the steps that happen here:
+          ;
+          ; 1) Mpy uncompFuelInjValue by X00CA/CB (fuel map value by compensation factor)
+          ; 2) Mpy value by 4X but limit to $FFFF
+          ; 3) Mpy by fuel map multiplier (previously stored in X2008/09
+          ; 4) Double the value
+          ; 5) Limit to $FF00
+          ;--------------------------------------
 .LE967              std       uncompFuelInjValue  ;save new fuel value here for use next time
                     jsr       mpy16               ;mpy AB by X00CA/CB
                     asld                          ;double the value (MSB becomes carry)
@@ -3372,24 +3149,20 @@ inputCapInt         proc
                     bcc       .LE983              ;branch if carry clr
 
                     ldd       #$FF00              ;limit value to $FF00 (65280 dec)
-
-; ---------------------------------------------------------------------------------------------------
-; Phase 2 Compensation (long term trim adjustment)
-
-; The 16-bit long term trim value is applied here.
-
-; One count is added or subtracted to the fueling value for every $80 (128 dec) counts from the 32K
-; neutral point. The max adjustment is $00FF (positive) or $FF00 (negative). That equals +255 to
-; -256 in decimal.
-
-; During cranking a special fuel value is used and code jumps to here bypassing fuel map use,
-; filtering and Phase 1 compensation.
-
-; The data value at XC0A0 is actually a code control value that's used in several places in the
-; software. Here, bit 7 is tested and if the value is zero, the long term trim adjustment is
-; skipped. This value is normally $80, which enables the long term adjustment.
-
-; ---------------------------------------------------------------------------------------------------
+          ;-------------------------------------- ;Phase 2 Compensation (long term trim adjustment)
+          ; The 16-bit long term trim value is applied here.
+          ;
+          ; One count is added or subtracted to the fueling value for every $80 (128 dec) counts from the 32K
+          ; neutral point. The max adjustment is $00FF (positive) or $FF00 (negative). That equals +255 to
+          ; -256 in decimal.
+          ;
+          ; During cranking a special fuel value is used and code jumps to here bypassing fuel map use,
+          ; filtering and Phase 1 compensation.
+          ;
+          ; The data value at XC0A0 is actually a code control value that's used in several places in the
+          ; software. Here, bit 7 is tested and if the value is zero, the long term trim adjustment is
+          ; skipped. This value is normally $80, which enables the long term adjustment.
+          ;--------------------------------------
 .LE983              std       $00CC               ;store partially compensated fuel value in X00CC/CD
 
                     lda       $C0A0               ;data value is $80 (code control byte)
@@ -3418,15 +3191,10 @@ inputCapInt         proc
 
 .LE9A4              addd      $00CC               ;add adjustment to fuel value (range is +255 to -256)
                     std       $00CC               ;store in-process fuel value
-
-; ---------------------------------------------------------------------------------------------------
-; Phase 3 Adjustment (boost or reduce fuel)
-
-; This section boosts the fuel value to 1.25 or reduces it to 0.75 under certain conditions.
-; This still needs to be investigated and understood better.
-
-; ---------------------------------------------------------------------------------------------------
-
+          ;-------------------------------------- ;Phase 3 Adjustment (boost or reduce fuel)
+          ; This section boosts the fuel value to 1.25 or reduces it to 0.75 under certain conditions.
+          ; This still needs to be investigated and understood better.
+          ;--------------------------------------
 .LE9A8              lda       ignPeriod           ;load ignition period (MSB)
                     cmpa      #$07                ;compare with $07 (equivalent to 4185 RPM)
                     bcs       .LE9F2              ;branch to skip section if eng spd > 4185 RPM
@@ -3434,9 +3202,7 @@ inputCapInt         proc
                     ldd       $00D2               ;load X00D2/D3 (2 bytes of bank related bits)
                     tst       $0088               ;test bank indicator bit
                     bmi       .LE9DC              ;if set, branch to left bank
-; --------------
-; Right Bank
-; --------------
+          ;-------------------------------------- ;Right Bank
                     bitb      #$15                ;test X00D3 bits 4, 2, 0
                     bne       .LE9F2              ;if any are set, branch to skip
 
@@ -3451,29 +3217,19 @@ inputCapInt         proc
 
                     cmpa      #$01                ;test X00D2 bit 0
                     beq       .LE9D1              ;if bit is clear branch to 0.75 fuel
-; else fall thru to 1.25 fuel
-; --------------
-; 1.25 Fuel
-; --------------
+                                                  ; else fall thru to 1.25 fuel
+          ;-------------------------------------- ;1.25 Fuel
 .LE9C9              ldd       $00CC               ;load fuel value
-                    lsrd                          ;div by 4
-                    lsrd
+                    lsrd:2                        ;div by 4
                     addd      $00CC               ;add original value
                     bra       .LE9F4              ;branch to Phase 4
-
-; --------------
-; 0.75 Fuel
-; --------------
+          ;-------------------------------------- ;0.75 Fuel
 .LE9D1              ldd       $00CC               ;load fuel value
-                    lsrd                          ;div by 4
-                    lsrd
+                    lsrd:2                        ;div by 4
                     subd      $00CC               ;subtract original value (now it's negative)
                     jsr       absoluteValAB       ;convert to positive (absolute value)
                     bra       .LE9F4              ;branch to Phase 4
-
-; --------------
-; Left Bank
-; --------------
+          ;-------------------------------------- ;Left Bank
 .LE9DC              bitb      #$2A                ;test X00D3 bits 5, 3, 1
                     bne       .LE9F2              ;if any are set, branch to skip
 
@@ -3490,14 +3246,12 @@ inputCapInt         proc
                     beq       .LE9D1              ;if bit is clear, branch to 0.75 fuel
 
                     bra       .LE9C9              ;branch to 1.25 fuel
-
-; ---------------------------------------------------------------------------------------------------
-; Phase 4 (final adjustment, main voltage)
-
-; This makes the final fueling compensation based on main voltage. The road speed limit bit is also
-; checked for the right bank only. Only the right bank shuts off when the speed limit is reached.
-
-; ---------------------------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; Phase 4 (final adjustment, main voltage)
+          ;
+          ; This makes the final fueling compensation based on main voltage. The road speed limit bit is also
+          ; checked for the right bank only. Only the right bank shuts off when the speed limit is reached.
+          ;--------------------------------------
 .LE9F2              ldd       $00CC               ;Load the partially compensated fueling value
 
 .LE9F4              addd      mainVoltageAdj      ;used to adjust inj. pulse based on main voltage
@@ -3507,10 +3261,7 @@ inputCapInt         proc
 
 .LE9FB              std       compedFuelInjValue  ;store final fuel value
                     std       $00CC               ;also store it temporarily at X00CC/CD
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
                     lda       #$27
                     sta       AdcControlReg1
                     lda       #$C8
@@ -3522,17 +3273,12 @@ inputCapInt         proc
                     tst       $0088               ;test for bank (0 = even, 1 = odd)
                     bmi       .LEA73              ;if X0088.7 is high, branch to left bank
 
-          #ifndef BUILD_TVR_CODE
-; -----------------------------------------------
-; Road speed limiting code (not in TVR code)
-; -----------------------------------------------
+          #ifndef BUILD_TVR_CODE                  ;Road speed limiting code (not in TVR code)
                     lda       bits_2004           ;test bits_2004.0 (1 = road speed over limit)
                     bita      #$01                ;if set, skips injector refresh for right bank and
                     bne       .LEA71              ;branch down to toggle bank bit
           #endif
-; -----------------------------------------------
-; Right (even) Bank Timer Setup (X0088.7 = 0)
-; -----------------------------------------------
+          ;-------------------------------------- ;Right (even) Bank Timer Setup (X0088.7 = 0)
                     lda       timerCntrlReg1      ;load timer control register 1
                     anda      #$FE                ;clr OLVL1 (P21 for even Injector Bank)
                     sta       timerCntrlReg1
@@ -3556,8 +3302,7 @@ inputCapInt         proc
                     ldd       ocr1High            ;load 16-bit output compare value
                     std       ocr1High            ;this sequence clears OCF1
                     jmp       .LEAD5              ;jump ahead to toggle bank bit and fall into RPM calc
-
-; code branches here from above if bits_201F.2 is low or OCF1 is high
+          ;-------------------------------------- ;branches here from above if bits_201F.2 is low or OCF1 is high
 .LEA3B              lda       timerCSR
                     sta       $00CA               ;store Timer Control Status reg in 00CA
                     ldd       counterHigh         ;get current counter value
@@ -3589,11 +3334,7 @@ inputCapInt         proc
                     std       ocr1High            ;this sequence clears OCF1
 
 .LEA71              bra       .LEAD5              ;LEAD5 = toggle bank bit and fall into RPM calc
-
-; -----------------------------------------------
-; Left (odd) Bank Timer Setup (X0088.7 = 1)
-; -----------------------------------------------
-
+          ;-------------------------------------- ;Left (odd) Bank Timer Setup (X0088.7 = 1)
 .LEA73              lda       timerCntrlReg1
                     ora       #$04                ;set OLVL3 (P12 --> Even Injector Bank)
                     sta       timerCntrlReg1
@@ -3646,35 +3387,28 @@ inputCapInt         proc
                     std       ocr3high
                     cmpa      timerStsReg
                     std       ocr3high
-
-; -----------------------------------------------
-; Back to common bank code
-; -----------------------------------------------
-
+          ;-------------------------------------- ;Back to common bank code
 .LEAD5              lda       $0088
                     eora      #$80                ;<-- Toggle right/left bank bit
                     sta       $0088
-
-; ------------------------------------------------------------------------------
-;*** Calculate Engine RPM Bracket (column index) ***
-
-; This code compares the measured ignition pulse period with the 16-bit values
-; stored in the data table located at 0xC800. This results in the fuel map
-; indexing value which is based on engine speed. The upper nibble of this value
-; is the coarse column index (0 thru 15 for the 16 columns).
-
-; The second part of this code uses the filtered ignition pulse value
-; to calculate the engine RPM (up to 1950 RPM). The algorithm used
-; for the division is described in the M6800 Microprocessor Applications
-; Manual (1975). The pulse period is divided by 7,500,000 to get RPM.
-
-; ------------------------------------------------------------------------------
-
+          ;--------------------------------------
+          ;*** Calculate Engine RPM Bracket (column index) ***
+          ;
+          ; This code compares the measured ignition pulse period with the 16-bit values
+          ; stored in the data table located at 0xC800. This results in the fuel map
+          ; indexing value which is based on engine speed. The upper nibble of this value
+          ; is the coarse column index (0 thru 15 for the 16 columns).
+          ;
+          ; The second part of this code uses the filtered ignition pulse value
+          ; to calculate the engine RPM (up to 1950 RPM). The algorithm used
+          ; for the division is described in the M6800 Microprocessor Applications
+          ; Manual (1975). The pulse period is divided by 7,500,000 to get RPM.
+          ;--------------------------------------
 .LEADB              ldx       #rpmTable
                     lda       #$0F                ;load length of data table
                     sta       $00CA               ;store $0F into 00CA (general purpose var)
 ; Start Loop *
-.LEAE2              ldd       $00,x               ;value from C800 table (1st value is $0553 or 5502 RPM)
+.LEAE2              ldd       ,x                  ;value from C800 table (1st value is $0553 or 5502 RPM)
                     subd      ignPeriod
                     bcc       .LEAF5              ;branch out if period is LT table value (RPM is higher)
                     ldb       #$04                ;add 04 to index
@@ -3686,27 +3420,19 @@ inputCapInt         proc
 
 .LEAF5              std       $00C8               ;00C8/C9 is table entry minus current ignition period
                     lda       $00CA               ;00CA is table entry counter ($F->0) and it becomes
-                    asla                          ;the fuel map column index upper nibble
-                    asla
-                    asla
-                    asla
+                    asla:4                        ;the fuel map column index upper nibble
                     sta       $00CA               ;index shifted to upper nibble
                     lda       $02,x               ;load value from table column 3 ($40, $00 or $80)
                     bpl       .LEB0B              ;bra if value is not $80
                     ldd       $00C8               ;value is $80, reload speed delta from above
-                    lsrd
-                    lsrd
-                    lsrd
-                    lsrd                          ;shift speed delta down to lower nibble
+                    lsrd:4                        ;shift speed delta down to lower nibble
                     bra       .LEB15
-
-; value is $40 or $00
+          ;-------------------------------------- ;value is $40 or $00
 .LEB0B              bita      #$40                ;test bit 6
                     beq       .LEB13
                     ldb       $00C8               ;value is $40, reload speed delta from above (no shift)
                     bra       .LEB15
-
-; value is $00
+          ;-------------------------------------- ;value is $00
 .LEB13              ldb       $00C9               ;reload just the low byte of speed delta (no shift)
 
 .LEB15              lda       $03,x               ;load right-most value from table
@@ -3717,12 +3443,11 @@ inputCapInt         proc
                     jsr       rdSpdCompTest       ;road speed test, reloads lambdaReading in B before returning
           #endif
 .LEB1F              jsr       keepAlive
-; ------------------------------------------------------------------------------
-;*** Calculate Engine RPM ***
-
-; Now use filtered PW value to calculate RPM
-; This is a division loop.
-; ------------------------------------------------------------------------------
+          ;--------------------------------------
+          ; *** Calculate Engine RPM ***
+          ; Now use filtered PW value to calculate RPM
+          ; This is a division loop.
+          ;--------------------------------------
                     ldd       ignPeriodFiltered
                     cmpa      #pwRpmComputeLimit  ;don't compute the RPM beyond this speed (1953 RPM)
                     bhi       .computeRPM
@@ -3735,13 +3460,11 @@ inputCapInt         proc
                     stb       $00CA               ;C8/C9/CA is now the 24-bit value 0x7270E0 (7,500,000 decimal)
                     tab                           ;transfer a to b to clear b
                     ldx       #$0018              ;load index with 24 for 24-bit divide loop
-
-; Start Division Loop *
+          ;-------------------------------------- ;Start Division Loop *
 .rpmDivLoop         asl       $00CA               ;arith shift left (c <- b7, b0 <- 0)
                     rol       $00C9               ;rotate left (c <- b7, b0 <- c)
                     rol       $00C8               ;this results in 24-bit left shift (c <- b23, b0 <- 0)
-                    rolb                          ;rotate left (c <- b7, b0 <- c)
-                    rola                          ;rotate left (c <- b7, b0 <- c)
+                    rold                          ;rotate left (c <- b7, b0 <- c)
 
                     subd      ignPeriodFiltered
                     bcc       .LEB4E
@@ -3760,31 +3483,27 @@ inputCapInt         proc
 .LEB5B              addd      engineRPM
                     dex
                     bne       .LEB5B
-                    lsrd
-                    lsrd
-                    lsrd                          ;end unused code
+                    lsrd:3                        ;end unused code
 
 .storeEngineRPM     std       engineRPM
-
-; ------------------------------------------------------------------
-;*** High Road Speed Code ***
-
-; Check road speed and condition speedLimitIndicator and bits_2004.0
-; accordingly.
-; speedLimitIndicator:
-; set to $AA when speed is >=  122 MPH (109 for NAS D90)
-; set to $00 when speed is <  (122-4) MPH (109-7 for NAS D90)
-; bits_2004.0 is also set or cleared at the same time
-; ------------------------------------------------------------------
+          ;--------------------------------------
+          ;*** High Road Speed Code ***
+          ;
+          ; Check road speed and condition speedLimitIndicator and bits_2004.0
+          ; accordingly.
+          ; speedLimitIndicator:
+          ; set to $AA when speed is >=  122 MPH (109 for NAS D90)
+          ; set to $00 when speed is <  (122-4) MPH (109-7 for NAS D90)
+          ; bits_2004.0 is also set or cleared at the same time
+          ;--------------------------------------
                     lda       roadSpeed
                     ldb       bits_2004
                     suba      #highRoadSpeed_ON
                     bcs       .roadSpeedLow
-
-; road speed is greater than
+          ;-------------------------------------- ;road speed is greater than
                     orb       #$01                ;set bits_2004.0
                     lda       #highSpeedIndByte
-                    sta       speedLimitIndicator  ;set to $AA (or $91) to indicate high speed
+                    sta       speedLimitIndicator ;set to $AA (or $91) to indicate high speed
 
 .LEB76              stb       bits_2004
                     bra       .LEB86              ;branch to next section
@@ -3792,14 +3511,12 @@ inputCapInt         proc
 .roadSpeedLow       cmpa      #highRoadSpeed_OFF
                     bcc       .LEB86              ;branch to next section if road speed is GT 119 MPH
                     andb      #$FE                ;clr bits_2004.0
-                    clr       speedLimitIndicator  ;set to zero
+                    clr       speedLimitIndicator ;set to zero
                     bra       .LEB76              ;branch up to store bits_2004 and branch to next section
-
-; ------------------------------------------------------------------
-; This section executes only after the 009C timeout and if
-; bits_0089.0 and bits_0089.1 are both zero.
-; ------------------------------------------------------------------
-
+          ;--------------------------------------
+          ; This section executes only after the 009C timeout and if
+          ; bits_0089.0 and bits_0089.1 are both zero.
+          ;--------------------------------------
 .LEB86              lda       $008A
                     bita      #$40                ;test 008A.6 (0 = startup timeout, 009C 1Hz down-counter)
                     bne       .LEB92
@@ -3808,16 +3525,15 @@ inputCapInt         proc
                     beq       .LEB95              ;branch ahead (to skip jump) if both are zero
 
 .LEB92              jmp       .LEC53              ;jump way down to next section
-
-; ------------------------------------------------------------------
-;*** Check Engine RPM Limit ***
-
-; Bit 0x0086.5 is normally set and is cleared when over limit
-; Bit 0087.7 is set & clrd here (bit forces open loop)
-
-; A safety margin of $1B equates to about 100 RPM
-; A safety margin of $0F equates to about  75 RPM
-; ------------------------------------------------------------------
+          ;--------------------------------------
+          ;*** Check Engine RPM Limit ***
+          ;
+          ; Bit 0x0086.5 is normally set and is cleared when over limit
+          ; Bit 0087.7 is set & clrd here (bit forces open loop)
+          ;
+          ; A safety margin of $1B equates to about 100 RPM
+          ; A safety margin of $0F equates to about  75 RPM
+          ;--------------------------------------
 .LEB95              ldd       ignPeriodFiltered   ;load 16-bit filtered spark period
                     subd      rpmLimitRAM         ;subtract (X200C) RPM limit
                     bcc       .LEBA4              ;branch if RPM is OK
@@ -3863,8 +3579,7 @@ inputCapInt         proc
 
 .LEBDA              cmpa      $200E               ;<-- X0086.7 is set, compare with X200E
                     bcs       .LEBFD              ;branch if hotter
-; ----------------------------------------
-
+          ;--------------------------------------
 .LEBDF              ldd       $C14D               ;for R3360 this value is 008C
 
 .LEBE2              tst       bits_0089           ;test bits_0089.7
@@ -3881,8 +3596,7 @@ inputCapInt         proc
                     ora       #$40                ;set X00DC.6
                     sta       $00DC               ;store it
                     bra       .LEC4D              ;branch
-
-; ----------------------------------------
+          ;--------------------------------------
 .LEBFD              ldb       $008B               ;load bits value
                     lsrb                          ;shift X008B.0 into carry (road speed > 4)
                     bcc       .LEBDF              ;branch back if road speed < 4 KPH
@@ -3898,7 +3612,7 @@ inputCapInt         proc
                     lda       bits_0089           ;load bits value
                     ora       #$80                ;set bits_0089.7
                     sta       bits_0089           ;store it (end normal RPM code)
-; ----------------------------------------
+          ;--------------------------------------
 .LEC1A              lda       $00DC               ;code above branches here when RPM is above limit
                     bita      #$40                ;test X00DC.6
                     beq       .LEC38              ;branch if bit is zero
@@ -3933,10 +3647,9 @@ inputCapInt         proc
 .LEC4D              ldb       bits_0089
                     andb      #$F7                ;clear bits_0089.3 (this bit only used in this section)
                     stb       bits_0089
-; ------------------------------------------------------------------
-; This section uses the 'mysteryDownCounter'
-; ------------------------------------------------------------------
-
+          ;--------------------------------------
+          ; This section uses the 'mysteryDownCounter'
+          ;--------------------------------------
 .LEC53              lda       $0086
                     bmi       .LEC84              ;branch ahead if 0086.7 is one
 
@@ -3974,10 +3687,7 @@ inputCapInt         proc
 
 .LEC84              cli                           ;<-- clr interrupt mask
 
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
                     lda       #$27
                     sta       AdcControlReg1
                     lda       #$C8
@@ -4009,8 +3719,7 @@ inputCapInt         proc
 .LECAF              lda       $008B
                     anda      #$F7                ;clr 008B.3 (2 of 2) when down counter reaches zero
                     sta       $008B
-; (divider here? stppr mtr code below)
-
+          ;-------------------------------------- ;(divider here? stppr mtr code below)
 .LECB5              lda       iacMotorStepCount
                     bne       .LED29              ;branch way down if not equal to zero
                     lda       $0086
@@ -4100,10 +3809,7 @@ inputCapInt         proc
                     lda       bits_0089
                     ora       #$07                ;set bits_0089 bits 2:0
                     sta       bits_0089
-
-; ---------------------------------------
-; Lots of timeout counter checks
-; ---------------------------------------
+          ;-------------------------------------- ;Lots of timeout counter checks
                     ldx       #$009C              ;X009C was init from 3rd row of coolant table
                     jsr       LF135               ;1 Hz down counter for X009C
                     lda       $009C               ;009C decrements to zero at 1 Hz rate
@@ -4120,10 +3826,7 @@ inputCapInt         proc
                     anda      #$FD                ;clr 0087.1 (indicates MAF fault)
                     sta       $0087
 
-          #ifdef BUILD_R3365
-; -----------------------------------------------------------
-; Defender Only (R3365)
-; -----------------------------------------------------------
+          #ifdef BUILD_R3365                      ;Defender Only (R3365)
 .LED5F              lda       #$27
                     sta       AdcControlReg1
                     lda       #$C8
@@ -4148,20 +3851,17 @@ inputCapInt         proc
                     lda       $008A
                     bita      #$40                ;test 008A.6 (0 = startup timeout)
                     beq       .LED8C
-; ---------------------------------------
-
+          ;--------------------------------------
 .LED7F              lda       closedLoopDelay     ;counts down from $10 to zero (about 1 sec rate)
                     beq       .LED8C
 
                     ldx       #closedLoopDelay    ;load ADDRESS of closedLoopDelay
                     jsr       LF151               ;down counter for closedLoopDelay
                     bra       .LEDBC
-
-; ---------------------------------------
-
+          ;--------------------------------------
 .LED8C              lda       startupTimerEven    ;right bank startup timer
                     beq       .LEDA4              ;branch ahead if timer reached zero
-; ---------------------------------------
+          ;--------------------------------------
                     lda       bits_0089
                     anda      #$03                ;mask bits_0089 bits 1:0
                     beq       .LED9E              ;branch ahead if both bits are zero
@@ -4171,11 +3871,10 @@ inputCapInt         proc
 
 .LED9E              ldx       #startupTimerEven   ;load ADDRESS of timer
                     jsr       LF135               ;call timer 1 subroutine
-; ---------------------------------------
-
+          ;--------------------------------------
 .LEDA4              lda       startupTimerOdd     ;left bank startup timer
                     beq       .LEDBC              ;branch ahead if timer has reached zero
-; ---------------------------------------
+          ;--------------------------------------
                     lda       bits_0089
                     anda      #$03                ;mask bits_0089 bits 1:0
                     beq       .LEDB6              ;branch ahead if both bits are zero
@@ -4186,8 +3885,7 @@ inputCapInt         proc
 
 .LEDB6              ldx       #startupTimerOdd    ;load ADDRESS of timer
                     jsr       LF151               ;call timer 2 subroutine
-; ---------------------------------------
-
+          ;--------------------------------------
 .LEDBC              lda       #$FF                ;reset fuel pump delay
                     sta       fuelPumpTimer
                     lda       port1data
@@ -4205,5 +3903,3 @@ inputCapInt         proc
                     sta       i2cPort             ;[4]
           #endif
                     jmp       iciReentry
-
-; ------------------------------------------------------------------------------
