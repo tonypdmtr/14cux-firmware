@@ -2,7 +2,12 @@
 # Borland compatible makefile				     <tonyp@acm.org>
 ################################################################################
 
+!ifdef TEST
+ASM = @asm11 main -s- -l- -fq+
+!else
 ASM = @asm11 main -s+ -l+ -fq+
+!endif
+
 EXBIN = @../utils/lua53 ../utils/exbin.lua
 
 ################################################################################
