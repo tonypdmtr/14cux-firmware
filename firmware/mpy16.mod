@@ -18,19 +18,19 @@
 mpy16               proc
                     ldx       #$00C8
                     std       ,x                  ;store double at X00C8/C9
-                    ldb       $03,x               ;load 00CA into B
+                    ldb       3,x                 ;load 00CA into B
                     mul
-                    std       $04,x               ;store double at X00CC/CD
-                    ldd       $01,x               ;load double from 00C9/CA
+                    std       4,x                 ;store double at X00CC/CD
+                    ldd       1,x                 ;load double from 00C9/CA
                     mul
-                    addb      $05,x               ;add value from 00CD
+                    addb      5,x                 ;add value from 00CD
                     adca      #0
-                    sta       $05,x               ;store at 00CD
+                    sta       5,x                 ;store at 00CD
                     lda       ,x                  ;load from 00C8
-                    ldb       $02,x               ;load from 00CA
+                    ldb       2,x                 ;load from 00CA
                     mul
-                    addb      $04,x               ;add from 00CC
+                    addb      4,x                 ;add from 00CC
                     adca      #0
-                    addb      $05,x               ;add from 00CD
+                    addb      5,x                 ;add from 00CD
                     adca      #0
                     rts

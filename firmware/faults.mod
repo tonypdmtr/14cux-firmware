@@ -32,46 +32,46 @@
 faultCodeScan       proc
                     clrb
           #ifdef BUILD_R3360_AND_LATER            ;this is the later L-R version
-.faultScanLoop      ldx       #faultBits_49
+Loop@@              ldx       #faultBits_49
                     abx                           ;add B (offset) to X
                     lda       ,x                  ;load indexed fault byte
                     ldx       #.faultMasks        ;load address of fault masks
                     abx                           ;add B (offset) to X
                     anda      ,x                  ;AND fault code with mask value
-                    bne       .foundFaultBit      ;branch ahead if not zero
+                    bne       FoundFaultBit@@     ;branch ahead if not zero
                     incb
                     cmpb      #6                  ;compare with 6
-                    bne       .faultScanLoop      ;loop back if less than 6
-                    bra       .storeFaultRet      ;branch to store zero (no fault)
+                    bne       Loop@@              ;loop back if less than 6
+                    bra       Save@@              ;branch to store zero (no fault)
           #else                                   ;this is the TVR version (before mask values)
                     ldx       #$0048
-.faultScanLoop      inx
-                    lda       $00,x
-                    bne       .foundFaultBit
+Loop@@              inx
+                    lda       ,x
+                    bne       FoundFaultBit@@
                     incb
                     cmpb      #$06
-                    bne       .faultScanLoop
-                    bra       .storeFaultRet
+                    bne       Loop@@
+                    bra       Save@@
           #endif
-.foundFaultBit      pshb                          ;B is index counter (0 thru 5)
+FoundFaultBit@@     pshb                          ;B is index counter (0 thru 5)
                     tab                           ;transfer A to B (fault code)
-                    clra                          ;clr A
+                    clra
           ;-------------------------------------- ;start loop (A is zero, B is fault code)
-.isolateFaultBit    lsrb                          ;logic shift right
-                    bcs       .faultCodeFromBit   ;branch out if carry set (1 was shifted out)
+IsolFaultBit@@      lsrb                          ;logic shift right
+                    bcs       CodeFromBit@@       ;branch out if carry set (1 was shifted out)
                     inca                          ;increment A
-                    bne       .isolateFaultBit    ;should only loop a max of 7 times
+                    bne       IsolFaultBit@@      ;should only loop a max of 7 times
 
-.faultCodeFromBit   sta       tmpFaultCodeStorage  ;this is the bit number of the set bit
+CodeFromBit@@       sta       tmpFaultCodeStorage ;this is the bit number of the set bit
                     pulb                          ;B is index counter (0 thru 5)
-                    lda       #$08                ;8 bits per byte
+                    lda       #8                  ;8 bits per byte
                     mul                           ;mpy to get to 8-bit segment
                     addb      tmpFaultCodeStorage
                     ldx       #?FaultCodes        ;address of fault code table (below)
                     abx                           ;add B to index
-                    lda       $00,x               ;get value from table
+                    lda       ,x                  ;get value from table
 
-.storeFaultRet      sta       tmpFaultCodeStorage
+Save@@              sta       tmpFaultCodeStorage
                     rts
 
 ;------------------------------------------------------------------------------
@@ -133,8 +133,7 @@ Right@@             lda       faultBits_49
 ; It clears some bank related values.
 
 LF3C0               proc
-                    clra
-                    tab
+                    clrd
                     std       $008E
                     std       $0090
                     std       $0094

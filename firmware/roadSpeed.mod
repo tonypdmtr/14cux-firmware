@@ -109,14 +109,12 @@ adcRoutine7         proc
                     ldb       #$B0                ;limit road speed reading to 109 MPH for others
                     #endif
                     bra       .LD38D              ;skip loading transition counter and store value as road speed
-
-; if here, road speed is LT 122 (or 119?)
+                                                  ;if here, road speed is LT 122 (or 119?)
 .roadSpeedOK        ldb       $2002               ;capture transition counter as road speed
 
 .LD38D              stb       roadSpeed           ;store as road speed (or 176 KPH limit)
                     beq       .LD3A5              ;branch if road speed is zero
-
-; if here, VSS appears to be working (non-zero)
+                                                  ;if here, VSS appears to be working (non-zero)
                     inc       $207D               ;X207D looks like a fault delay (slowdown) counter
                     ldb       $C258               ;this value is usually $0A
                     cmpb      $207D               ;compare counter with $0A
@@ -137,12 +135,12 @@ adcRoutine7         proc
                     stb       $2002               ;reset vssStateCounter
                     cli                           ;clear interrupt mask
 
-                    #ifdef    NEW_STYLE_AC_CODE
-                    lda       startupDownCount1Hz  ;this down-counter is used by A/C routine and is
+          #ifdef NEW_STYLE_AC_CODE
+                    lda       startupDownCount1Hz ;this down-counter is used by A/C routine and is
                     beq       .lessThan13         ;just decremented here
                     deca                          ;decrement 1 Hz counter but not less than zero
                     sta       startupDownCount1Hz
-                    #endif
+          #endif
 
 ; ---------------------------------------------
 ;*** Condition Idle Bit ***
@@ -162,11 +160,11 @@ adcRoutine7         proc
 
 .LD3C9              sta       $008B
 
-; -----------------------------------------------------------
+;*******************************************************************************
 ; Fault Code 68 Test (Vehicle Speed Sensor)
-
+;
 ; If road speed value is zero and
-
+;
 ; 1) MAF is > 3.0 volts
 ; 2) Engine speed is between 2250 and 3600 RPM
 ; (2100 and 3600 for Griffith)
@@ -208,25 +206,25 @@ adcRoutine7         proc
 
                     bra       .LD41E              ;end of Road Speed Sensor fault check
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Road Speed Comparator (Level) Test
-
+;
 ; This is called from 8 different places in the ICI code. The ADC comparator
 ; mode is used to determine if the sample of the incoming waveform is high or
 ; low. The goal is to sample the waveform often enough to count every high to
 ; level transition and, thereby, determine road speed.
-
+;
 ; The O2 sensor value 'lambdaReading' is loaded into the B accumulator before
 ; returning, although, it appear that only one call needs it.
-
+;
 ; The variable 'faultCode26Counter' is incremented from 0 to $FFFF while the
 ; vehicle is moving. The effect is somewhat like a distance traveled indicator.
 ; 'faultCode26Counter' has something to do with DTC 26 which is the Very Lean
 ; Mixture Fault. This fault code may be unused.
-
+;
 ; The road speed code (above) does not enter at the beginning of this code
 ; section. rdSpdCompTest is only called from the ICI.
-
+;
 ; Update 17-Mar-2014
 ; All ADC measurements use the expanded cycle (Settling Time = 1) which
 ; adds 9 uS to the measurement time. This may not be needed for the road
@@ -236,12 +234,12 @@ adcRoutine7         proc
 ; (the cost of the jsr).
 ; Clock cycle execution time is in square brackets.
 
-; ------------------------------------------------------------------------------
-rdSpdCompTest       lda       #$27                ;[2] SC=0 PC=1 Set comparator mode on ch 7 (RS)
+rdSpdCompTest       proc
+                    lda       #$27                ;[2] SC=0 PC=1 Set comparator mode on ch 7 (RS)
                     sta       AdcControlReg1      ;[4] Hitachi says write this reg starts conversion
                     lda       #$C8                ;[2] load compare value (to determine high or low)
                     sta       AdcDataLow          ;[4] write comparitor value (R4 reg)
-; 1 if Vin > $C8, 0 if Vin < $C8
+                                                  ; 1 if Vin > $C8, 0 if Vin < $C8
 .LD40D              lda       AdcStsDataHigh      ;[4]
                     bita      #$40                ;[2] test busy flag (BSY)
                     bne       .LD40D              ;[3] loop back if busy
@@ -249,7 +247,7 @@ rdSpdCompTest       lda       #$27                ;[2] SC=0 PC=1 Set comparator 
                     beq       .lowLevel           ;[3] branch if low
                     bra       .highLevel          ;[3] high, branch to set 008B.7
 
-; ---------------------------------------------------------------
+;*******************************************************************************
 ; Comparator test does not use this code
 ; ---------------------------------------------------------------
 ; VSS fault code test (above) branches here when RS is not zero
@@ -288,5 +286,4 @@ rdSpdCompTest       lda       #$27                ;[2] SC=0 PC=1 Set comparator 
 ; nor the loading of 'lambdaReading' before rts
 
 .loadO2AndRet       ldb       lambdaReading       ;[4] load O2 sensor before returning
-
 .rsReturn           rts                           ;[5]

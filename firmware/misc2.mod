@@ -55,24 +55,24 @@ keepAlive           proc
 ;
 ; Note that reading CSR and then counterhigh will clear TOF
 
-LF0D5               cli                           ;clear interrupt mask
-                    nop
-                    nop                           ;(this area is different than older R2419 code)
+LF0D5               proc
+                    cli                           ;clear interrupt mask
+                    nop:2                         ;(this area is different than older R2419 code)
                     sei                           ;set interrupt mask
                     lda       timerCSR
                     bita      #$20                ;test timer overflow flag (TOF)
-                    beq       .LF0EE              ;branch ahead if no overflow
+                    beq       _2@@                ;branch ahead if no overflow
 
                     inc       timerOverflow2      ;overflow, so increment both overflow counters
-                    bne       .LF0E7
+                    bne       _1@@
                     dec       timerOverflow2
 
-.LF0E7              lda       timerOverflow1
+_1@@                lda       timerOverflow1
                     inca
-                    beq       .LF0EE
+                    beq       _2@@
                     sta       timerOverflow1
 
-.LF0EE              ldd       counterHigh         ;clear TOF and return counter value
+_2@@                ldd       counterHigh         ;clear TOF and return counter value
                     rts
 
 ;*******************************************************************************
@@ -90,13 +90,13 @@ LF0D5               cli                           ;clear interrupt mask
 ; when the table value exceeds the value in A (or when B becomes zero).
 
 indexIntoTable      proc
-                    cmpa      $01,x               ;subtract table value from coolant temp
-                    bcs       .indexingRet        ;return if result is LT zero
+Loop@@              cmpa      1,x                 ;subtract table value from coolant temp
+                    bcs       Done@@              ;return if result is LT zero
                     decb                          ;decrement counter
-                    beq       .indexingRet        ;return if counter is zero
+                    beq       Done@@              ;return if counter is zero
                     inx                           ;increment index to next higher value in table
-                    bra       indexIntoTable
-.indexingRet        rts
+                    bra       Loop@@
+Done@@              equ       :AnRTS
 
 ;*******************************************************************************
 ; This routine is called from two places in the ICI, right after the call to
@@ -124,25 +124,25 @@ LF0FC               proc
                     pshb                          ;push B
                     ldb       $C0A0               ;load code control byte ($80) into B
                     andb      #$07                ;B is now zero
-; -------------------------------------------------
-; This is used by LF0FC (above) and LF119 (below)
-; B accumulator comes in as zero from either path.
-; The result is that AB will be reduced to either
-; 1/2 or 1/4 of it's value.
-; -------------------------------------------------
-.LF103              addb      #$02                ;B is now #$02
-                    ldx       #$0000              ;clear index reg
+          ;--------------------------------------
+          ; This is used by LF0FC (above) and LF119 (below)
+          ; B accumulator comes in as zero from either path.
+          ; The result is that AB will be reduced to either
+          ; 1/2 or 1/4 of it's value.
+          ;--------------------------------------
+.LF103              addb      #2                  ;B is now 2
+                    clrx                          ;clear index reg
                     abx                           ;add B to X (X is now $0002)
                     ldb       bits_008D           ;bits value
                     bitb      #$71                ;test 4 bits in bits_008D (bits 6,5,4,0)
                     pulb                          ;restore original AB value (does not affect zero flag)
-                    beq       .LF113              ;branch if all 4 bits are zero
+                    beq       Loop@@              ;branch if all 4 bits are zero
 
                     ldx       #$0001              ;X is now #$0001
 
-.LF113              lsrd                          ;AB = AB/2
+Loop@@              lsrd                          ;AB = AB/2
                     dex
-                    bne       .LF113              ;loops once or twice
+                    bne       Loop@@              ;loops once or twice
 
                     pulx                          ;pull X
                     rts                           ;return
@@ -181,14 +181,12 @@ LF119               proc
 ; ------------------------------------------------------------------------------
           #ifdef OBSOLETE_CODE
 shiftEngDebugData   stb       $00C8
-                    ldd       $00,x
+                    ldd       ,x
                     tst       $00C8
                     beq       .LF134
-
 .LF12E              asld
                     dec       $00C8
                     bne       .LF12E
-
 .LF134              rts
           #endif
 
@@ -226,7 +224,7 @@ LF135               proc
                     bitb      #$08                ;test X0088.3
                     beq       .LF14B              ;branch ahead every other time
 
-                    dec       $00,x               ;decrement indexed value
+                    dec       ,x                  ;decrement indexed value
 .LF14B              lda       $C0F4               ;$96 for R3526, $FF for TVR
 
 .LF14E              sta       timer1value         ;store maintenance variable
@@ -254,18 +252,18 @@ LF151               proc
                     lsrb:2                        ;div by 4 (now 2.048 mSec/count)
                     incb                          ;add 1 (an adjustment factor?)
                     sba                           ;subtract B from A
-                    bcc       .LF16D              ;branch if result < timer2Value
+                    bcc       Save@@              ;branch if result < timer2Value
 
                     ldb       bits_201F
                     eorb      #$01                ;toggle bits_201F.0
                     stb       bits_201F
                     bitb      #$01                ;test bits_201F.0
-                    beq       .LF16A              ;branch ahead every other time
+                    beq       _1@@                ;branch ahead every other time
 
-                    dec       $00,x               ;'closedLoopDelay' or 'startupTimerOdd'
-.LF16A              lda       $C0F4               ;$96 for R3526, $FF for TVR
+                    dec       ,x                  ;'closedLoopDelay' or 'startupTimerOdd'
+_1@@                lda       $C0F4               ;$96 for R3526, $FF for TVR
 
-.LF16D              sta       timer2Value         ;store maintenance variable
+Save@@              sta       timer2Value         ;store maintenance variable
                     rts                           ;and return
 
 ;*******************************************************************************
@@ -292,51 +290,45 @@ LF171               proc
                     psha                          ;push MSB
                     adda      #$02                ;add 2 to MSB ($0200 to value)
                     cmpa      #$04                ;this checks to within 512 counts of both ends
-                    bhi       .LF1AB              ;if higher just branch to end and return
+                    bhi       Done@@              ;if higher just branch to end and return
 
                     lda       $0088               ;test bank indicator bit
-                    bmi       .LF184              ;branch ahead if right bank
-; ------------------
-; Right Bank
-; ------------------
+                    bmi       _1@@                ;branch ahead if right bank
+          ;-------------------------------------- ;Right Bank
                     lda       bits_0089           ;load bits value
                     bita      #$10                ;test bits_0089.4
-                    beq       .LF1AB              ;if zero, branch to pull A and return
-                    bra       .LF18A
-
-; ------------------
-; Left Bank
-; ------------------
-.LF184              lda       bits_0089           ;load bits value
+                    beq       Done@@              ;if zero, branch to pull A and return
+                    bra       _2@@
+          ;-------------------------------------- ;Left Bank
+_1@@                lda       bits_0089           ;load bits value
                     bita      #$20                ;test bits_0089.5
-                    beq       .LF1AB              ;if zero, branch to pull A and return
+                    beq       Done@@              ;if zero, branch to pull A and return
 
-.LF18A              pshb                          ;push B to stack
+_2@@                pshb                          ;push B to stack
                     tst       $0088               ;test bank indicator bit
-                    bmi       .LF19D              ;branch down if right bank
-; ------------------------------------------------
-; Right Bank (subtract 1500 from short term trim)
-; ------------------------------------------------
+                    bmi       _3@@                ;branch down if right bank
+          ;--------------------------------------
+          ; Right Bank (subtract 1500 from short term trim)
+          ;--------------------------------------
                     ldd       shortLambdaTrimR    ;$8000 (+/-)
                     subd      $C7DB               ;for R3526, this value is 1500 decimal
                     std       shortLambdaTrimR
                     lda       $0088
                     ora       #$40                ;clear X0088.6
-                    bra       .LF1A8              ;branch to store, pull and return
-
-; ------------------------------------------------
-; Left Bank (subtract 1500 from short term trim)
-; ------------------------------------------------
-.LF19D              ldd       shortLambdaTrimL    ;$8000 (+/-)
+                    bra       _4@@                ;branch to store, pull and return
+          ;--------------------------------------
+          ; Left Bank (subtract 1500 from short term trim)
+          ;--------------------------------------
+_3@@                ldd       shortLambdaTrimL    ;$8000 (+/-)
                     subd      $C7DB               ;for R3526, this value is 1500 decimal
                     std       shortLambdaTrimL
                     lda       $0088
                     ora       #$20                ;clear X0088.5
 
-.LF1A8              sta       $0088               ;store bits value
-                    pulb                          ;pull B
-.LF1AB              pula                          ;pull A
-                    rts                           ;return
+_4@@                sta       $0088               ;store bits value
+                    pulb
+Done@@              pula
+                    rts
 
 ;*******************************************************************************
 ; This subroutine is called from 2 places in the ICI. Once from rich condition
@@ -352,70 +344,64 @@ LF171               proc
 
 LF1AD               proc
                     lda       $0088               ;test bank indicator bit
-                    bpl       .LF1BF              ;if 0088.7 is zero, branch to left side code
-
-; ------------------
-; Right Bank
-; ------------------
+                    bpl       _1@@                ;if 0088.7 is zero, branch to left side code
+          ;-------------------------------------- ;Right Bank
                     lda       $0095               ;right bank signed counter
-                    beq       .LF1D3              ;return if X0095 is zero
+                    beq       Done@@              ;return if X0095 is zero
                     inx                           ;rich: X0090, lean: X008E (increment to LSB of values)
                     lda       bits_00A8           ;load bits value
                     asra                          ;shift lsb into carry
-                    bcs       .LF1CD              ;branch if carry set (if bits_00A8.0 was 1)
+                    bcs       _3@@                ;branch if carry set (if bits_00A8.0 was 1)
                     sec                           ;set carry
                     rola                          ;rotate left (this restores the original value)
-                    bra       .LF1CF              ;branch to mask all unused bits in bits_00A8 and return
-
-; ------------------
-; Left Bank
-; ------------------
-.LF1BF              lda       $0094               ;left bank signed counter
-                    beq       .LF1D3              ;return if X0094 is zero
+                    bra       _4@@                ;branch to mask all unused bits in bits_00A8 and return
+          ;-------------------------------------- ;Left Bank
+_1@@                lda       $0094               ;left bank signed counter
+                    beq       Done@@              ;return if X0094 is zero
                     lda       bits_00A8           ;load bits value
-                    bmi       .LF1CB              ;branch ahead if bits_00A8.7 is set
+                    bmi       _2@@                ;branch ahead if bits_00A8.7 is set
                     ora       #$80                ;set bits_00A8.7
-                    bra       .LF1CF              ;branch to mask all unused bits in bits_00A8 and return
+                    bra       _4@@                ;branch to mask all unused bits in bits_00A8 and return
 
-.LF1CB              anda      #$01                ;clear bits_00A8.7
+_2@@                anda      #$01                ;clear bits_00A8.7
 
-.LF1CD              inc       $00,x               ;increment indexed value
-; ----------------------------
-; Mask unused bits and return
-; ----------------------------
-.LF1CF              anda      #$81
+_3@@                inc       ,x                  ;increment indexed value
+          ;-------------------------------------- ;Mask unused bits and return
+_4@@                anda      #$81
                     sta       bits_00A8
-.LF1D3              rts
+Done@@              rts
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Update X00A9/AA (left) or X00AB/AC (right)
 ; (called from 2 places in ICI)
-; ------------------------------------------------------------------------------
-LF1D4               ldd       mafDirectHi
+
+LF1D4               proc
+                    ldd       mafDirectHi
                     addd      mafDirectLo
                     tst       $0088               ;test bank indicator bit
                     bpl       .LF1E5              ;branch ahead if left bank
-; -------------------------------------
+          ;--------------------------------------
                     inc       $0095               ;right bank
                     addd      $00AB
                     std       $00AB
                     rts
 
-; -------------------------------------
-.LF1E5              inc       $0094               ;left bank
+;*******************************************************************************
+.LF1E5              proc
+                    inc       $0094               ;left bank
                     addd      $00A9
                     std       $00A9
                     rts
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; This code is unused and is here for the sake of byte-for-byte test builds.
 ; Some labels were added for proper disassembly.
-; ------------------------------------------------------------------------------
-; maybeUnused5:
+
+; maybeUnused5
                     bcs       .LF21D
                     bra       .LF221
 
-; maybeUnused6:
+; maybeUnused6
                     ldb       iacvValue1          ;value is 128 +/-
                     bpl       .LF1FE
                     andb      #$7F
@@ -448,42 +434,35 @@ LF1D4               ldd       mafDirectHi
                     bcc       .LF223
 
 .LF221              lda       #$01
-
 .LF223              rts
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Decrements value in X00BD, if not zero (called from 2 places in ICI)
-; ------------------------------------------------------------------------------
-LF224               lda       $00BD
-                    beq       .LF22B
+
+LF224               proc
+                    lda       $00BD
+                    beq       Done@@
                     deca
                     sta       $00BD
-.LF22B              rts
+Done@@              rts
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Returns absolute value of 16-bit negative number in AB
-; ------------------------------------------------------------------------------
-absoluteValAB       coma
-                    comb
-                    addd      #$0001
+
+absoluteValAB       proc
+                    negd
                     rts
 
-; ------------------------------------------------------------------------------
+;*******************************************************************************
 ; Sums values from battery backed RAM and returns the result in A.
 ; This is used during startup and during shutdown (Inertia Switch routine).
-; ------------------------------------------------------------------------------
-calcBatteryBackedChecksum
+
+calcBatteryBackedChecksum proc
                     ldx       #batteryBackedRAM
                     lda       ,x
-
-.startChecksumCalcLoop
-                    inx
+Loop@@              inx
                     cpx       #ramChecksum
-                    beq       .doneWithChecksumCalc
+                    beq       Done@@
                     adda      ,x
-                    bra       .startChecksumCalcLoop
-
-.doneWithChecksumCalc
-                    rts
-
-; ------------------------------------------------------------------------------
+                    bra       Loop@@
+Done@@              equ       :AnRTS
